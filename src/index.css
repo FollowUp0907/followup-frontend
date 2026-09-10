@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-canvas text-body font-sans text-body-md;
+    margin: 0;
+  }
+
+  /* Cal Sans 대체: 디스플레이 헤드라인은 항상 600 + 음수 자간 */
+  h1, h2, h3 {
+    @apply font-display text-ink;
+    font-weight: 600;
+  }
+
+  *:focus-visible {
+    outline: 2px solid #111111;
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .container-content {
+    @apply mx-auto w-full max-w-content px-lg;
+  }
+}
+
+/* 스크롤바를 얇게 — 칸반 보드 가로 스크롤에서 사용 */
+.thin-scroll::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.thin-scroll::-webkit-scrollbar-thumb {
+  background: #e5e7eb;
+  border-radius: 9999px;
+}

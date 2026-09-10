@@ -1,0 +1,86 @@
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import * as actionItemApi from '@/api/actionItemApi'
+import type { ActionItemFilters } from '@/api/actionItemApi'
+import { qk } from '@/lib/queryKeys'
+import type { ActionItemCreateReqDto, ActionItemListResDto, ActionItemUpdateReqDto } from '@/types/api'
+
+export function useActionItems(projectId: number, filters: ActionItemFilters = {}) {
+  return useQuery({
+    queryKey: qk.actionItems(projectId, filters),
+    queryFn: () => actionItemApi.listActionItems(projectId, filters),
+    enabled: Number.isFinite(projectId) && projectId > 0,
+  })
+}
+
+export function useActionItem(actionItemId: number) {
+  return useQuery({
+    queryKey: qk.actionItem(actionItemId),
+    queryFn: () => actionItemApi.getActionItem(actionItemId),
+    enabled: Number.isFinite(actionItemId) && actionItemId > 0,
+  })
+}
+
+/** 프로젝트 하위의 후속 업무 관련 캐시를 한 번에 무효화 */
+function invalidateProjectScope(qc: ReturnType<typeof useQueryClient>, projectId: number) {
+  qc.invalidateQueries({ queryKey: ['project', projectId, 'action-items'] })
+  qc.invalidateQueries({ queryKey: qk.dashboard(projectId) })
+}
+
+export function useCreateActionItem(projectId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: ActionItemCreateReqDto) => actionItemApi.createActionItem(projectId, data),
+    onSuccess: () => invalidateProjectScope(qc, projectId),
+  })
+}
+
+export function useUpdateActionItem(projectId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: number; data: ActionItemUpdateReqDto }) =>
+      actionItemApi.updateActionItem(id, data),
+    // 칸반에서 상태를 바꿀 때 즉시 반응하도록 낙관적 업데이트를 건다.
+    onMutate: async ({ id, data }) => {
+      await qc.cancelQueries({ queryKey: ['project', projectId, 'action-items'] })
+      const snapshots = qc.getQueriesData<ActionItemListResDto[]>({
+        queryKey: ['project', projectId, 'action-items'],
+      })
+      snapshots.forEach(([key, list]) => {
+        if (!list) return
+        qc.setQueryData<ActionItemListResDto[]>(
+          key,
+          list.map((item) =>
+            item.id === id
+              ? {
+                  ...item,
+                  ...(data.status ? { status: data.status } : {}),
+                  ...(data.priority ? { priority: data.priority } : {}),
+                  ...(data.title ? { title: data.title } : {}),
+                  ...(data.dueDate !== undefined ? { dueDate: data.dueDate ?? undefined } : {}),
+                  ...(data.assigneeUserId !== undefined
+                    ? { assigneeUserId: data.assigneeUserId ?? undefined }
+                    : {}),
+                }
+              : item,
+          ),
+        )
+      })
+      return { snapshots }
+    },
+    onError: (_e, _v, context) => {
+      context?.snapshots.forEach(([key, list]) => qc.setQueryData(key, list))
+    },
+    onSettled: (_d, _e, variables) => {
+      invalidateProjectScope(qc, projectId)
+      qc.invalidateQueries({ queryKey: qk.actionItem(variables.id) })
+    },
+  })
+}
+
+export function useDeleteActionItem(projectId: number) {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (actionItemId: number) => actionItemApi.deleteActionItem(actionItemId),
+    onSuccess: () => invalidateProjectScope(qc, projectId),
+  })
+}
