@@ -3,8 +3,10 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
+import { ChevronRight, Plus } from 'lucide-react'
 import { errorMessage } from '@/api/client'
-import { AppShell } from '@/components/layout/AppShell'
+import { TopNav } from '@/components/layout/TopNav'
+import { Footer } from '@/components/layout/Footer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
@@ -32,7 +34,10 @@ export default function ProjectsPage() {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { name: '', description: '' } })
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: { name: '', description: '' },
+  })
 
   const onSubmit = handleSubmit(async (values) => {
     try {
@@ -50,89 +55,104 @@ export default function ProjectsPage() {
   })
 
   return (
-    <AppShell>
-      <PageHeader
-        title="내 프로젝트"
-        description="참여 중인 프로젝트입니다. 회의와 후속 업무는 모두 프로젝트에 속합니다."
-        actions={<Button onClick={() => setOpen(true)}>프로젝트 생성</Button>}
-      />
+    <div className="flex min-h-screen flex-col bg-canvas">
+      <TopNav variant="plain" />
 
-      {isLoading && (
-        <div className="grid gap-lg sm:grid-cols-2 lg:grid-cols-3">
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} className="h-[148px]" />
-          ))}
-        </div>
-      )}
+      <main className="flex-1">
+        <div className="mx-auto w-full max-w-[800px] px-lg py-[64px]">
+          <PageHeader
+            title="프로젝트"
+            description="참여 중인 프로젝트를 선택하세요."
+            actions={
+              <Button onClick={() => setOpen(true)}>
+                <Plus size={16} /> 새 프로젝트
+              </Button>
+            }
+          />
 
-      {isError && (
-        <EmptyState
-          title="프로젝트를 불러오지 못했습니다"
-          description={errorMessage(error)}
-          action={
-            <Button variant="secondary" onClick={() => refetch()}>
-              다시 시도
-            </Button>
-          }
-        />
-      )}
+          {isLoading && (
+            <div className="flex flex-col gap-sm">
+              {[0, 1].map((i) => (
+                <Skeleton key={i} className="h-[104px]" />
+              ))}
+            </div>
+          )}
 
-      {!isLoading && !isError && projects?.length === 0 && (
-        <EmptyState
-          title="아직 프로젝트가 없습니다"
-          description="프로젝트를 만들고 첫 회의록을 넣어 보세요."
-          action={<Button onClick={() => setOpen(true)}>프로젝트 생성</Button>}
-        />
-      )}
-
-      {!!projects?.length && (
-        <ul className="grid gap-lg sm:grid-cols-2 lg:grid-cols-3">
-          {projects.map((p) => (
-            <SurfaceCard as="li" key={p.id} className="transition-shadow hover:shadow-card">
-              <Link to={`/projects/${p.id}`} className="block p-xl">
-                <h2 className="truncate text-title-lg text-ink">{p.name}</h2>
-                <p className="mt-xs line-clamp-2 min-h-[42px] text-body-sm text-muted">
-                  {p.description || '설명이 없습니다.'}
-                </p>
-                <p className="mt-lg text-caption font-normal text-muted-soft">
-                  최근 업데이트 {formatServerRelative(p.updatedAt)}
-                </p>
-              </Link>
-            </SurfaceCard>
-          ))}
-        </ul>
-      )}
-
-      <Modal
-        open={open}
-        onClose={() => setOpen(false)}
-        title="새 프로젝트"
-        description="프로젝트를 만들면 자동으로 OWNER 권한을 갖습니다."
-        footer={
-          <>
-            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
-              취소
-            </Button>
-            <Button type="submit" form="create-project-form" loading={createProject.isPending}>
-              생성
-            </Button>
-          </>
-        }
-      >
-        <form id="create-project-form" onSubmit={onSubmit} noValidate className="flex flex-col gap-md">
-          <FormRow label="프로젝트명" htmlFor="name" error={errors.name?.message}>
-            <Input id="name" placeholder="FollowUp 프론트엔드" invalid={!!errors.name} {...register('name')} />
-          </FormRow>
-          <FormRow label="설명" htmlFor="description" hint="선택" error={errors.description?.message}>
-            <Textarea
-              id="description"
-              className="min-h-[100px]"
-              placeholder="이 프로젝트에서 다루는 내용을 적어 주세요."
-              {...register('description')}
+          {isError && (
+            <EmptyState
+              title="프로젝트를 불러오지 못했습니다"
+              description={errorMessage(error)}
+              action={
+                <Button variant="secondary" onClick={() => refetch()}>
+                  다시 시도
+                </Button>
+              }
             />
-          </FormRow>
-        </form>
-      </Modal>
-    </AppShell>
+          )}
+
+          {!isLoading && !isError && projects?.length === 0 && (
+            <EmptyState
+              title="아직 프로젝트가 없습니다"
+              description="프로젝트를 만들고 첫 회의록을 넣어 보세요."
+              action={<Button onClick={() => setOpen(true)}>프로젝트 생성</Button>}
+            />
+          )}
+
+          {!!projects?.length && (
+            <ul className="flex flex-col gap-sm">
+              {projects.map((p) => (
+                <SurfaceCard as="li" key={p.id} className="shadow-none transition-shadow hover:shadow-card">
+                  <Link to={`/projects/${p.id}`} className="flex items-center justify-between gap-md p-xl">
+                    <div className="min-w-0">
+                      <h2 className="truncate text-title-md text-ink">{p.name}</h2>
+                      <p className="mt-xxs line-clamp-1 text-body-sm text-body">
+                        {p.description || '설명이 없습니다.'}
+                      </p>
+                      <p className="mt-xs text-caption font-normal text-muted-soft">
+                        최근 업데이트 {formatServerRelative(p.updatedAt)}
+                      </p>
+                    </div>
+                    <ChevronRight size={18} className="shrink-0 text-muted" />
+                  </Link>
+                </SurfaceCard>
+              ))}
+            </ul>
+          )}
+
+          <Modal
+            open={open}
+            onClose={() => setOpen(false)}
+            title="새 프로젝트"
+            description="프로젝트를 만들면 자동으로 OWNER 권한을 갖습니다."
+            footer={
+              <>
+                <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
+                  취소
+                </Button>
+                <Button type="submit" form="create-project-form" loading={createProject.isPending}>
+                  생성
+                </Button>
+              </>
+            }
+          >
+            <form id="create-project-form" onSubmit={onSubmit} noValidate className="flex flex-col gap-md">
+              <FormRow label="프로젝트명" htmlFor="name" error={errors.name?.message}>
+                <Input id="name" placeholder="FollowUp 프론트엔드" invalid={!!errors.name} {...register('name')} />
+              </FormRow>
+              <FormRow label="설명" htmlFor="description" hint="선택" error={errors.description?.message}>
+                <Textarea
+                  id="description"
+                  className="min-h-[100px]"
+                  placeholder="이 프로젝트에서 다루는 내용을 적어 주세요."
+                  {...register('description')}
+                />
+              </FormRow>
+            </form>
+          </Modal>
+        </div>
+      </main>
+
+      <Footer />
+    </div>
   )
 }

@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { PageWidth } from '@/components/layout/PageWidth'
 import { Avatar, DueBadge, PriorityBadge, StatusBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { SurfaceCard } from '@/components/ui/Card'
@@ -36,10 +37,7 @@ export default function MeetingNewPage() {
   const createMeeting = useCreateMeeting(projectId)
   const { data: allItems } = useActionItems(projectId)
 
-  const openItems = useMemo(
-    () => (allItems ?? []).filter((i) => i.status !== 'DONE'),
-    [allItems],
-  )
+  const openItems = useMemo(() => (allItems ?? []).filter((i) => i.status !== 'DONE'), [allItems])
 
   const [participantIds, setParticipantIds] = useState<number[]>(() => (user ? [user.userId] : []))
   const [carryOverIds, setCarryOverIds] = useState<number[]>([])
@@ -78,7 +76,7 @@ export default function MeetingNewPage() {
   })
 
   return (
-    <>
+    <PageWidth size={720}>
       <PageHeader
         title="새 회의"
         description="회의를 만들고 회의록을 작성하면 AI 분석으로 넘어갈 수 있습니다."
@@ -174,9 +172,7 @@ export default function MeetingNewPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() =>
-                      setCarryOverIds(
-                        carryOverIds.length === openItems.length ? [] : openItems.map((i) => i.id),
-                      )
+                      setCarryOverIds(carryOverIds.length === openItems.length ? [] : openItems.map((i) => i.id))
                     }
                   >
                     {carryOverIds.length === openItems.length ? '전체 해제' : '전체 선택'}
@@ -218,6 +214,6 @@ export default function MeetingNewPage() {
           </div>
         </div>
       </form>
-    </>
+    </PageWidth>
   )
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { LogOut, Menu } from 'lucide-react'
 import { useAuth } from '@/features/auth/AuthContext'
 import { Avatar } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
@@ -8,12 +9,22 @@ import { Logo } from './Logo'
 
 const MARKETING_LINKS = [
   { label: '기능', href: '#features' },
-  { label: '동작 방식', href: '#how' },
-  { label: '흐름', href: '#loop' },
-  { label: 'FAQ', href: '#faq' },
+  { label: '요금제', href: '#pricing' },
 ]
 
-export function TopNav({ variant = 'app' }: { variant?: 'app' | 'marketing' }) {
+/**
+ * variant
+ *  - marketing : 랜딩용. 전체 로고 + 앵커 링크 + 로그인/가입 CTA
+ *  - plain     : 프로젝트 목록처럼 내비게이션이 없는 화면. 전체 로고 + 로그아웃
+ *  - app       : 프로젝트 안. 심볼 + 구분선 + 탭(ProjectLayout 이 children 으로 넘김) + 아바타
+ */
+export function TopNav({
+  variant = 'plain',
+  children,
+}: {
+  variant?: 'app' | 'marketing' | 'plain'
+  children?: React.ReactNode
+}) {
   const { user, isAuthenticated, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -40,36 +51,52 @@ export function TopNav({ variant = 'app' }: { variant?: 'app' | 'marketing' }) {
     navigate('/login', { replace: true })
   }
 
-  return (
-    <header className="sticky top-0 z-40 border-b border-hairline-soft bg-canvas/90 backdrop-blur">
-      <div className="container-content flex h-16 items-center justify-between gap-md">
-        <div className="flex items-center gap-xl">
-          <Logo to={isAuthenticated ? '/projects' : '/'} />
-          {variant === 'marketing' && (
-            <nav className="hidden items-center gap-lg md:flex">
-              {MARKETING_LINKS.map((l) => (
-                <a key={l.href} href={l.href} className="text-nav-link text-muted transition-colors hover:text-ink">
-                  {l.label}
-                </a>
-              ))}
-            </nav>
-          )}
-        </div>
+  const isApp = variant === 'app'
 
-        <div className="flex items-center gap-sm">
+  return (
+    <header className="sticky top-0 z-40 border-b border-hairline bg-canvas/90 backdrop-blur">
+      <div className={cn('flex h-16 items-center gap-sm px-lg', isApp ? 'w-full' : 'container-content')}>
+        {isApp ? (
+          <>
+            <Logo variant="symbol" height={22} to="/projects" />
+            <span className="mx-sm h-6 w-px shrink-0 bg-hairline" aria-hidden />
+          </>
+        ) : (
+          <Logo variant="full" height={22} to={isAuthenticated ? '/projects' : '/'} />
+        )}
+
+        {variant === 'marketing' && (
+          <nav className="ml-xl hidden items-center gap-lg md:flex">
+            {MARKETING_LINKS.map((l) => (
+              <a key={l.href} href={l.href} className="text-nav-link text-body transition-colors hover:text-ink">
+                {l.label}
+              </a>
+            ))}
+          </nav>
+        )}
+
+        {/* 프로젝트 탭 */}
+        {children && <div className="thin-scroll min-w-0 flex-1 overflow-x-auto">{children}</div>}
+
+        <div className={cn('flex items-center gap-sm', !children && 'ml-auto')}>
           {isAuthenticated ? (
             <div className="relative" ref={menuRef}>
               <button
                 type="button"
                 onClick={() => setMenuOpen((v) => !v)}
-                className="flex items-center gap-xs rounded-pill border border-hairline py-xxs pl-xxs pr-sm transition-colors active:bg-surface-card"
+                className={cn(
+                  'flex items-center gap-xs rounded-pill transition-colors active:bg-surface-card',
+                  isApp ? 'p-xxs' : 'border border-hairline py-xxs pl-xxs pr-sm',
+                )}
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
               >
-                <Avatar name={user?.name || user?.email || '?'} size={28} />
-                <span className="hidden max-w-[140px] truncate text-nav-link text-ink sm:block">
-                  {user?.name || user?.email || '내 계정'}
-                </span>
+                <Avatar name={user?.name || user?.email || '?'} size={isApp ? 32 : 28} />
+                {!isApp && (
+                  <span className="hidden max-w-[140px] truncate text-nav-link text-ink sm:block">
+                    {user?.name || user?.email || '내 계정'}
+                  </span>
+                )}
               </button>
               {menuOpen && (
                 <div
@@ -91,17 +118,17 @@ export function TopNav({ variant = 'app' }: { variant?: 'app' | 'marketing' }) {
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="block w-full rounded-sm px-sm py-xs text-left text-body-sm text-body transition-colors hover:bg-surface-card"
+                    className="flex w-full items-center gap-xs rounded-sm px-sm py-xs text-left text-body-sm text-body transition-colors hover:bg-surface-card"
                     role="menuitem"
                   >
-                    로그아웃
+                    <LogOut size={14} /> 로그아웃
                   </button>
                 </div>
               )}
             </div>
           ) : (
             <>
-              <Link to="/login" className="hidden px-sm text-nav-link text-ink sm:block">
+              <Link to="/login" className="hidden px-sm text-nav-link text-body sm:block">
                 로그인
               </Link>
               <ButtonLink to="/signup" size="md">
@@ -116,9 +143,7 @@ export function TopNav({ variant = 'app' }: { variant?: 'app' | 'marketing' }) {
               onClick={() => setMobileOpen((v) => !v)}
               aria-label="메뉴 열기"
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-                <path d="M2 4.5h12M2 8h12M2 11.5h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-              </svg>
+              <Menu size={16} />
             </button>
           )}
         </div>

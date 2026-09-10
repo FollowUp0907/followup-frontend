@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { CalendarClock, CheckSquare, ChevronDown, ChevronsUp, Equal, GripVertical, Plus } from 'lucide-react'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar, DueBadge, PriorityBadge } from '@/components/ui/Badge'
@@ -11,7 +12,15 @@ import { SegmentedControl } from '@/components/ui/NavPillGroup'
 import { useToast } from '@/components/ui/Toast'
 import { useActionItems, useCreateActionItem, useUpdateActionItem } from '@/features/actionItems/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
-import { PRIORITY_LABEL, PRIORITY_ORDER, STATUS_LABEL, STATUS_ORDER } from '@/lib/constants'
+import {
+  PRIORITY_ICON_COLOR,
+  PRIORITY_LABEL,
+  PRIORITY_ORDER,
+  STATUS_DOT_COLOR,
+  STATUS_LABEL,
+  STATUS_ORDER,
+  taskKey,
+} from '@/lib/constants'
 import { cn } from '@/lib/cn'
 import { dayjs, formatDate, isDueSoon, isOverdue } from '@/lib/date'
 import type { ActionItemListResDto, ActionItemPriority, ActionItemStatus } from '@/types/api'
@@ -40,6 +49,7 @@ export default function TaskBoardPage() {
 
   const [createOpen, setCreateOpen] = useState(false)
   const [dragOverColumn, setDragOverColumn] = useState<ActionItemStatus | null>(null)
+  const [draggingId, setDraggingId] = useState<number | null>(null)
 
   const setParam = (key: string, value: string | null) => {
     const next = new URLSearchParams(searchParams)
@@ -90,7 +100,9 @@ export default function TaskBoardPage() {
                 { value: 'list', label: '목록' },
               ]}
             />
-            <Button onClick={() => setCreateOpen(true)}>업무 추가</Button>
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus size={16} /> 업무 추가
+            </Button>
           </>
         }
       />
@@ -138,7 +150,14 @@ export default function TaskBoardPage() {
             </FormRow>
           )}
           {hasActiveFilter && (
-            <Button variant="ghost" onClick={() => setSearchParams(view === 'board' ? {} : { view }, { replace: true })}>
+            <Button
+              variant="ghost"
+              onClick={() =>
+                setSearchParams(view === 'board' ? {} : { view }, {
+                  replace: true,
+                })
+              }
+            >
               필터 초기화
             </Button>
           )}
@@ -197,13 +216,22 @@ export default function TaskBoardPage() {
                   if (item) void changeStatus(item, status)
                 }}
                 className={cn(
-                  'rounded-lg border border-transparent bg-surface-card p-md transition-colors',
-                  dragOverColumn === status && 'border-ink bg-surface-soft',
+                  'rounded-lg bg-surface-soft p-sm transition-shadow',
+                  dragOverColumn === status
+                    ? 'shadow-[inset_0_0_0_1.5px_#3b82f6]'
+                    : 'shadow-[inset_0_0_0_1.5px_transparent]',
                 )}
               >
-                <div className="mb-md flex items-center justify-between px-xs">
+                <div className="flex items-center gap-xs px-xs pb-md pt-xs">
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-pill"
+                    style={{ background: STATUS_DOT_COLOR[status] }}
+                    aria-hidden
+                  />
                   <h2 className="text-title-sm text-ink">{STATUS_LABEL[status]}</h2>
-                  <span className="text-caption font-normal tabular-nums text-muted">{items.length}</span>
+                  <span className="ml-auto rounded-pill bg-canvas px-xs py-[1px] text-caption tabular-nums text-muted">
+                    {items.length}
+                  </span>
                 </div>
 
                 <ul className="space-y-sm">
@@ -213,13 +241,18 @@ export default function TaskBoardPage() {
                         item={item}
                         projectId={projectId}
                         assigneeName={memberName(item.assigneeUserId)}
-                        onChangeStatus={(s) => changeStatus(item, s)}
+                        dragging={draggingId === item.id}
+                        onDragStart={() => setDraggingId(item.id)}
+                        onDragEnd={() => {
+                          setDraggingId(null)
+                          setDragOverColumn(null)
+                        }}
                       />
                     </li>
                   ))}
                   {items.length === 0 && (
-                    <li className="rounded-md border border-dashed border-hairline px-sm py-lg text-center text-caption font-normal text-muted-soft">
-                      여기로 카드를 끌어다 놓으세요
+                    <li className="rounded-md border border-dashed border-surface-strong px-sm py-lg text-center text-caption font-normal text-muted-soft">
+                      업무 없음
                     </li>
                   )}
                 </ul>
@@ -246,7 +279,10 @@ export default function TaskBoardPage() {
                 {filtered.map((item) => (
                   <tr key={item.id} className="border-b border-hairline-soft last:border-0">
                     <td className="px-lg py-sm">
-                      <Link to={`/projects/${projectId}/tasks/${item.id}`} className="text-body-sm text-ink hover:underline">
+                      <Link
+                        to={`/projects/${projectId}/tasks/${item.id}`}
+                        className="text-body-sm text-ink hover:underline"
+                      >
                         {item.title}
                       </Link>
                     </td>
@@ -309,56 +345,72 @@ function TaskCard({
   item,
   projectId,
   assigneeName,
-  onChangeStatus,
+  onDragStart,
+  onDragEnd,
+  dragging,
 }: {
   item: ActionItemListResDto
   projectId: number
   assigneeName: string
-  onChangeStatus: (status: ActionItemStatus) => void
+  onDragStart: () => void
+  onDragEnd: () => void
+  dragging: boolean
 }) {
   const overdue = isOverdue(item.dueDate, item.status)
+  const PriorityIcon = item.priority === 'HIGH' ? ChevronsUp : item.priority === 'LOW' ? ChevronDown : Equal
+
   return (
-    <article
+    <Link
+      to={`/projects/${projectId}/tasks/${item.id}`}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData('text/plain', String(item.id))
         e.dataTransfer.effectAllowed = 'move'
+        onDragStart()
       }}
+      onDragEnd={onDragEnd}
       className={cn(
-        'cursor-grab rounded-lg border bg-canvas p-md shadow-soft transition-shadow active:cursor-grabbing',
+        'group relative block cursor-grab rounded-md border bg-canvas px-md py-sm shadow-soft',
+        'transition-[box-shadow,opacity,transform] hover:shadow-card active:cursor-grabbing',
         overdue ? 'border-error/40' : 'border-hairline',
+        dragging && 'rotate-[-2deg] scale-[0.98] opacity-35',
       )}
     >
-      <Link to={`/projects/${projectId}/tasks/${item.id}`} className="block">
-        <p className="text-title-sm text-ink">{item.title}</p>
-        <div className="mt-sm flex flex-wrap items-center gap-xxs">
-          <PriorityBadge priority={item.priority} />
-          <DueBadge dueDate={item.dueDate} status={item.status} />
-        </div>
-        <div className="mt-sm flex items-center gap-xs">
-          <Avatar name={item.assigneeUserId ? assigneeName : undefined} size={24} />
-          <span className="truncate text-caption font-normal text-muted">
-            {item.assigneeUserId ? assigneeName : '담당자 미지정'}
+      <GripVertical
+        size={14}
+        className="absolute right-sm top-sm text-muted-soft opacity-0 transition-opacity group-hover:opacity-100"
+        aria-hidden
+      />
+
+      <div className="flex items-center gap-xxs">
+        <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-sm bg-brand-accent">
+          <CheckSquare size={11} className="text-white" />
+        </span>
+        <span className="font-mono text-[11px] tracking-[0.02em] text-muted-soft">{taskKey(item.id)}</span>
+      </div>
+
+      <p className="mb-sm mt-xs pr-lg text-title-sm leading-snug text-ink">{item.title}</p>
+
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-sm">
+          {item.priority && (
+            <PriorityIcon
+              size={14}
+              strokeWidth={2.5}
+              style={{ color: PRIORITY_ICON_COLOR[item.priority] }}
+              aria-label={PRIORITY_LABEL[item.priority]}
+            />
+          )}
+          <span
+            className={cn('flex items-center gap-xxs text-caption font-normal', overdue ? 'text-error' : 'text-muted')}
+          >
+            <CalendarClock size={12} />
+            {item.dueDate ? item.dueDate.slice(5) : '미정'}
           </span>
         </div>
-      </Link>
-
-      <div className="mt-md border-t border-hairline-soft pt-sm">
-        <Select
-          className="h-8 text-caption"
-          value={item.status}
-          onClick={(e) => e.stopPropagation()}
-          onChange={(e) => onChangeStatus(e.target.value as ActionItemStatus)}
-          aria-label="상태 변경"
-        >
-          {STATUS_ORDER.map((s) => (
-            <option key={s} value={s}>
-              {STATUS_LABEL[s]}
-            </option>
-          ))}
-        </Select>
+        <Avatar name={item.assigneeUserId ? assigneeName : undefined} size={24} />
       </div>
-    </article>
+    </Link>
   )
 }
 

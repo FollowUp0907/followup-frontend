@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { PageWidth } from '@/components/layout/PageWidth'
 import { Avatar, DueBadge, PriorityBadge, StatusBadge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -124,7 +125,7 @@ export default function TaskDetailPage() {
   }
 
   return (
-    <>
+    <PageWidth size={800}>
       <PageHeader
         title={item.title}
         breadcrumb={
@@ -211,7 +212,10 @@ export default function TaskDetailPage() {
             <SegmentedControl<ActionItemStatus>
               value={item.status}
               onChange={changeStatus}
-              options={STATUS_ORDER.map((s) => ({ value: s, label: STATUS_LABEL[s] }))}
+              options={STATUS_ORDER.map((s) => ({
+                value: s,
+                label: STATUS_LABEL[s],
+              }))}
             />
             <p className="mt-sm text-caption font-normal text-muted-soft">
               완료된 업무도 필요하면 다시 진행 중으로 되돌릴 수 있습니다.
@@ -231,7 +235,13 @@ export default function TaskDetailPage() {
               </div>
               <div className="flex items-center justify-between gap-md">
                 <dt className="text-muted">우선순위</dt>
-                <dd>{item.priority ? <PriorityBadge priority={item.priority} /> : <span className="text-ink">미지정</span>}</dd>
+                <dd>
+                  {item.priority ? (
+                    <PriorityBadge priority={item.priority} />
+                  ) : (
+                    <span className="text-ink">미지정</span>
+                  )}
+                </dd>
               </div>
               <div className="flex items-center justify-between gap-md">
                 <dt className="text-muted">담당자</dt>
@@ -296,6 +306,6 @@ export default function TaskDetailPage() {
         onConfirm={onDelete}
         onClose={() => setConfirmDelete(false)}
       />
-    </>
+    </PageWidth>
   )
 }

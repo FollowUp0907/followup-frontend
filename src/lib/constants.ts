@@ -36,9 +36,22 @@ export function avatarColor(seed: string | number) {
   return AVATAR_COLORS[hash % AVATAR_COLORS.length]
 }
 
-/** 차트 색: 상태별 */
-export const STATUS_CHART_COLOR: Record<ActionItemStatus, string> = {
-  TODO: '#d4d4d8',
+
+/** 보드 컬럼 헤더의 상태 점 (시안 STATUS_META) */
+export const STATUS_DOT_COLOR: Record<ActionItemStatus, string> = {
+  TODO: '#898989',
   IN_PROGRESS: '#3b82f6',
-  DONE: '#111111',
+  DONE: '#10b981',
+}
+
+/** 보드 카드의 우선순위 아이콘 색 (시안 PRIORITY_ICON) */
+export const PRIORITY_ICON_COLOR: Record<ActionItemPriority, string> = {
+  HIGH: '#ef4444',
+  MEDIUM: '#f59e0b',
+  LOW: '#3b82f6',
+}
+
+/** 업무 키 표기 (시안의 FU-101 형태) */
+export function taskKey(id: number) {
+  return `FU-${100 + id}`
 }

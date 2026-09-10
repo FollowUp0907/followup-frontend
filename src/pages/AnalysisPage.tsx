@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { PageWidth } from '@/components/layout/PageWidth'
 import { Badge } from '@/components/ui/Badge'
 import { Button, ButtonLink, Spinner } from '@/components/ui/Button'
 import { EmptyState, SurfaceCard } from '@/components/ui/Card'
@@ -81,7 +82,12 @@ export default function AnalysisPage() {
     if (hydratedFor === analysis.id) return
 
     const draft = analysis.draft
-    setDecisions((draft?.decisions ?? []).map((d) => ({ key: nextKey(), content: d.content ?? '' })))
+    setDecisions(
+      (draft?.decisions ?? []).map((d) => ({
+        key: nextKey(),
+        content: d.content ?? '',
+      })),
+    )
     setRows(
       (draft?.actionItems ?? []).map((a) => {
         const matchedMember = matchMemberByName(a.assigneeName)
@@ -101,10 +107,7 @@ export default function AnalysisPage() {
     setHydratedFor(analysis.id)
   }, [analysis, hydratedFor, matchMemberByName])
 
-  const unmatchedCount = useMemo(
-    () => rows.filter((r) => !r.assigneeUserId && r.aiAssigneeName).length,
-    [rows],
-  )
+  const unmatchedCount = useMemo(() => rows.filter((r) => !r.assigneeUserId && r.aiAssigneeName).length, [rows])
   const invalidRows = useMemo(() => rows.filter((r) => !r.title.trim()).length, [rows])
 
   const patchRow = (key: string, patch: Partial<DraftRow>) =>
@@ -242,7 +245,7 @@ export default function AnalysisPage() {
   const isConfirmed = analysis.status === 'CONFIRMED'
 
   return (
-    <>
+    <PageWidth size={720}>
       {header}
 
       {isConfirmed && (
@@ -419,7 +422,9 @@ export default function AnalysisPage() {
                             value={row.priority}
                             disabled={isConfirmed}
                             onChange={(e) =>
-                              patchRow(row.key, { priority: e.target.value as ActionItemPriority | '' })
+                              patchRow(row.key, {
+                                priority: e.target.value as ActionItemPriority | '',
+                              })
                             }
                           >
                             <option value="">미지정</option>
@@ -437,7 +442,11 @@ export default function AnalysisPage() {
                           value={row.priorityReason}
                           disabled={isConfirmed}
                           placeholder="예) 배포 전에 해결해야 하는 오류"
-                          onChange={(e) => patchRow(row.key, { priorityReason: e.target.value })}
+                          onChange={(e) =>
+                            patchRow(row.key, {
+                              priorityReason: e.target.value,
+                            })
+                          }
                         />
                       </FormRow>
                     </div>
@@ -479,8 +488,8 @@ export default function AnalysisPage() {
               <SurfaceCard className="p-xl">
                 <h2 className="text-title-md text-ink">확정하기</h2>
                 <p className="mt-xs text-body-sm text-muted">
-                  확정하면 후속 업무 {rows.filter((r) => r.title.trim()).length}건과 결정 사항{' '}
-                  {decisions.filter((d) => d.content.trim()).length}건이 저장됩니다.
+                  확정하면 후속 업무 {rows.filter((r) => r.title.trim()).length}
+                  건과 결정 사항 {decisions.filter((d) => d.content.trim()).length}건이 저장됩니다.
                 </p>
                 {invalidRows > 0 && (
                   <p className="mt-sm text-body-sm text-error">
@@ -491,12 +500,7 @@ export default function AnalysisPage() {
                   <Button fullWidth size="lg" onClick={() => setConfirmOpen(true)}>
                     확정하고 업무 생성
                   </Button>
-                  <Button
-                    fullWidth
-                    variant="secondary"
-                    onClick={startAnalysis}
-                    loading={requestAnalysis.isPending}
-                  >
+                  <Button fullWidth variant="secondary" onClick={startAnalysis} loading={requestAnalysis.isPending}>
                     다시 분석
                   </Button>
                   <p className="text-caption font-normal text-muted-soft">
@@ -518,7 +522,7 @@ export default function AnalysisPage() {
         onConfirm={onConfirm}
         onClose={() => setConfirmOpen(false)}
       />
-    </>
+    </PageWidth>
   )
 }
 

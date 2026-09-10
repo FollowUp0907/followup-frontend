@@ -1,10 +1,12 @@
 import { NavLink } from 'react-router-dom'
+import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
 export interface PillItem {
   to: string
   label: string
   end?: boolean
+  icon?: LucideIcon
 }
 
 /** Cal.com 시그니처 컴포넌트 — pill 안의 pill */
@@ -12,7 +14,7 @@ export function NavPillGroup({ items, className }: { items: PillItem[]; classNam
   return (
     <nav
       className={cn(
-        'thin-scroll inline-flex max-w-full gap-xxs overflow-x-auto rounded-pill bg-surface-soft p-[6px]',
+        'thin-scroll inline-flex max-w-full gap-xxs overflow-x-auto rounded-pill bg-surface-soft p-[4px]',
         className,
       )}
     >
@@ -23,11 +25,12 @@ export function NavPillGroup({ items, className }: { items: PillItem[]; classNam
           end={item.end}
           className={({ isActive }) =>
             cn(
-              'whitespace-nowrap rounded-md px-[14px] py-xs text-nav-link transition-colors',
-              isActive ? 'bg-canvas text-ink shadow-pill' : 'text-muted',
+              'inline-flex items-center gap-xs whitespace-nowrap rounded-pill px-[14px] py-xs text-nav-link transition-colors',
+              isActive ? 'bg-canvas text-ink shadow-pill' : 'text-muted hover:text-ink',
             )
           }
         >
+          {item.icon && <item.icon size={15} />}
           {item.label}
         </NavLink>
       ))}

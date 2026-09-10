@@ -2,14 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
-import {
-  Avatar,
-  Badge,
-  DueBadge,
-  MeetingStatusBadge,
-  PriorityBadge,
-  StatusBadge,
-} from '@/components/ui/Badge'
+import { PageWidth } from '@/components/layout/PageWidth'
+import { Avatar, Badge, DueBadge, MeetingStatusBadge, PriorityBadge, StatusBadge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
@@ -18,7 +12,13 @@ import { useToast } from '@/components/ui/Toast'
 import { useMeetingActionItems } from '@/features/actionItems/useMeetingActionItems'
 import { useDeleteMeeting, useMeeting, useUpdateMeeting } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
-import { formatDate, formatDateTime, formatServerDateTime, fromDateTimeLocalInput, toDateTimeLocalInput } from '@/lib/date'
+import {
+  formatDate,
+  formatDateTime,
+  formatServerDateTime,
+  fromDateTimeLocalInput,
+  toDateTimeLocalInput,
+} from '@/lib/date'
 
 export default function MeetingDetailPage() {
   const { projectId, memberName } = useProjectContext()
@@ -97,7 +97,7 @@ export default function MeetingDetailPage() {
   }
 
   return (
-    <>
+    <PageWidth size={800}>
       <PageHeader
         title={meeting.title}
         description={formatDateTime(meeting.scheduledAt)}
@@ -311,6 +311,6 @@ export default function MeetingDetailPage() {
         onConfirm={onDelete}
         onClose={() => setConfirmDelete(false)}
       />
-    </>
+    </PageWidth>
   )
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { PageWidth } from '@/components/layout/PageWidth'
 import { Avatar, Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -31,7 +32,10 @@ export default function MembersPage() {
 
   const countFor = (userId: number) => {
     const mine = (actionItems ?? []).filter((i) => i.assigneeUserId === userId)
-    return { total: mine.length, done: mine.filter((i) => i.status === 'DONE').length }
+    return {
+      total: mine.length,
+      done: mine.filter((i) => i.status === 'DONE').length,
+    }
   }
 
   const invite = async () => {
@@ -63,7 +67,7 @@ export default function MembersPage() {
   }
 
   return (
-    <>
+    <PageWidth size={720}>
       <PageHeader
         title="구성원"
         description="프로젝트를 만든 사람은 OWNER, 초대된 사람은 MEMBER 권한을 갖습니다."
@@ -164,6 +168,6 @@ export default function MembersPage() {
         onConfirm={remove}
         onClose={() => setTarget(null)}
       />
-    </>
+    </PageWidth>
   )
 }

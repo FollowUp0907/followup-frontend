@@ -16,7 +16,7 @@ export function AuthLayout({
     <div className="grid min-h-screen lg:grid-cols-[1fr_520px]">
       {/* 좌: 브랜드 면 — 다크 서피스는 이 화면과 푸터에서만 쓴다 */}
       <aside className="hidden flex-col justify-between bg-surface-dark p-xxl lg:flex">
-        <Logo dark />
+        <Logo variant="full" height={20} className="text-on-dark" />
         <div>
           <h2 className="max-w-[420px] text-display-md text-on-dark">
             회의가 끝나는 순간,
@@ -45,7 +45,7 @@ export function AuthLayout({
 
       <main className="flex flex-col justify-center bg-canvas px-lg py-xxl sm:px-xxl">
         <div className="mx-auto w-full max-w-[400px]">
-          <Logo className="mb-xl lg:hidden" />
+          <Logo variant="full" height={20} className="mb-xl lg:hidden" />
           <h1 className="text-display-sm text-ink">{title}</h1>
           <p className="mt-xs text-body-md text-muted">{description}</p>
           <div className="mt-xl">{children}</div>

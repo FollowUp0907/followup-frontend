@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { PageWidth } from '@/components/layout/PageWidth'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { SurfaceCard } from '@/components/ui/Card'
@@ -36,7 +37,10 @@ export default function ProjectSettingsPage() {
       return
     }
     try {
-      await updateProject.mutateAsync({ name: name.trim(), description: description.trim() })
+      await updateProject.mutateAsync({
+        name: name.trim(),
+        description: description.trim(),
+      })
       toast.success('프로젝트 정보를 저장했습니다.')
     } catch (e) {
       toast.error(errorMessage(e))
@@ -54,7 +58,7 @@ export default function ProjectSettingsPage() {
   }
 
   return (
-    <>
+    <PageWidth size={600}>
       <PageHeader title="프로젝트 설정" description="프로젝트 기본 정보를 관리합니다." />
 
       <div className="grid gap-lg lg:grid-cols-12">
@@ -146,6 +150,6 @@ export default function ProjectSettingsPage() {
       >
         <Input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder={project.name} />
       </ConfirmDialog>
-    </>
+    </PageWidth>
   )
 }

@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom'
 import { Logo } from './Logo'
 
-const COLUMNS: Array<{ title: string; links: Array<{ label: string; to: string }> }> = [
+const COLUMNS: Array<{
+  title: string
+  links: Array<{ label: string; to: string }>
+}> = [
   {
     title: '제품',
     links: [
@@ -45,7 +48,7 @@ export function Footer() {
       <div className="container-content py-[64px]">
         <div className="grid gap-xl md:grid-cols-2 lg:grid-cols-5">
           <div className="lg:col-span-1">
-            <Logo dark />
+            <Logo variant="full" height={20} className="text-on-dark" />
             <p className="mt-md max-w-[220px] text-body-sm text-on-dark-soft">
               회의가 끝나는 순간, 후속 업무가 시작됩니다.
             </p>
