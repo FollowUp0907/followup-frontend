@@ -80,3 +80,125 @@ Origin: https://example.vercel.app
 - `PATCH /api/action-item/{id}` 에 `assigneeUserId: null` / `dueDate: null` 을 보내면 "값 지우기" 로 처리되나요, 아니면 무시되나요?
 - `GET /api/project/{id}/action-items` 의 `status` 쿼리 파라미터에 `TODO,IN_PROGRESS` 처럼 여러 개를 줄 수 있나요? (지금은 전체를 받아 클라이언트에서 거르고 있습니다)
 - 회의 목록/후속 업무 목록에 페이지네이션 계획이 있나요? 지금은 전체를 한 번에 받는 전제로 구현돼 있습니다.
+
+---
+
+# 🔴 추가 요청: 구글 로그인 API (`POST /api/auth/google`)
+
+프론트에 구글 로그인 UI 와 연동 코드를 **전부 붙여 뒀습니다.** 백엔드에 엔드포인트 하나만 추가되면 바로 동작합니다.
+현재는 이 API 가 없어서, 프론트가 404/405 를 받으면 *"백엔드에 구글 로그인 API가 아직 없습니다"* 라고 안내하고 있습니다.
+
+## 왜 백엔드가 필요한가
+
+구글이 발급한 ID 토큰으로는 우리 API 를 호출할 수 없습니다.
+**백엔드가 구글 토큰을 검증하고 → 우리 서비스의 `accessToken` 을 발급**해 줘야, 기존 API 들이 그대로 인증을 통과합니다.
+
+```
+[브라우저]
+  구글 로그인 버튼 클릭
+      ↓
+  구글이 ID 토큰(JWT) 발급
+      ↓
+  POST /api/auth/google { idToken }
+      ↓
+[백엔드]
+  1. 구글 공개키로 ID 토큰 서명 검증
+  2. aud == 우리 클라이언트 ID 확인
+  3. iss == "accounts.google.com" 또는 "https://accounts.google.com" 확인
+  4. exp 만료 확인
+  5. email_verified == true 확인
+  6. email 로 사용자 조회 → 없으면 자동 가입 (name = 구글 프로필 이름)
+  7. 기존 로그인과 동일한 TokenResDto 발급
+      ↓
+  { accessToken, tokenType, expiresIn }   ← 기존 /api/auth/login 과 같은 응답
+```
+
+## 요청 / 응답 명세
+
+### `POST /api/auth/google`
+
+인증 불필요 (permitAll)
+
+**Request**
+
+```json
+{
+  "idToken": "eyJhbGciOiJSUzI1NiIsImtpZCI6..."
+}
+```
+
+| 필드 | 타입 | 필수 | 설명 |
+| --- | --- | --- | --- |
+| `idToken` | string | O | Google Identity Services 가 발급한 ID 토큰(JWT) |
+
+**Response 200**
+
+기존 `TokenResDto` 를 **그대로** 재사용해 주세요. 프론트가 이미 그 타입으로 받고 있습니다.
+
+```json
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiJ9...",
+  "tokenType": "Bearer",
+  "expiresIn": 86400000
+}
+```
+
+**에러**
+
+| 상태 | 상황 |
+| --- | --- |
+| 400 | `idToken` 누락 / 형식 오류 |
+| 401 | 서명 검증 실패, 만료, `aud` 불일치, `email_verified == false` |
+| 409 | (선택) 같은 이메일이 이미 비밀번호 계정으로 가입돼 있어 연결을 막고 싶을 때 |
+
+프론트는 `ErrorResponse { code, message }` 의 `message` 를 사용자에게 그대로 보여줍니다.
+사용자에게 보여도 되는 문장으로 내려 주세요.
+
+## 검증 구현 (Spring)
+
+`google-api-client` 의 `GoogleIdTokenVerifier` 를 쓰면 1~5번이 한 번에 처리됩니다.
+
+```gradle
+implementation 'com.google.api-client:google-api-client:2.7.0'
+```
+
+```java
+GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+        new NetHttpTransport(), GsonFactory.getDefaultInstance())
+    .setAudience(List.of(googleClientId))   // 프론트와 동일한 클라이언트 ID
+    .build();
+
+GoogleIdToken token = verifier.verify(req.getIdToken());
+if (token == null) throw new UnauthorizedException("구글 인증에 실패했습니다.");
+
+GoogleIdToken.Payload payload = token.getPayload();
+if (!Boolean.TRUE.equals(payload.getEmailVerified())) {
+    throw new UnauthorizedException("이메일이 인증되지 않은 구글 계정입니다.");
+}
+
+String email = payload.getEmail();
+String name  = (String) payload.get("name");
+// email 로 조회 → 없으면 가입 → 기존 JWT 발급 로직 재사용
+```
+
+> `spring-boot-starter-oauth2-client` 의 리다이렉트 방식(`/oauth2/authorization/google`)은 **쓰지 않아도 됩니다.**
+> 프론트가 이미 토큰을 받아서 넘기는 구조라, 위 검증 로직 하나면 충분합니다.
+
+## 클라이언트 ID 는 프론트/백엔드가 같은 값을 써야 합니다
+
+Google Cloud Console 에서 **웹 애플리케이션** 타입 OAuth 2.0 클라이언트 ID 를 하나 만들고, 그 값을 공유해 주세요.
+
+- 프론트: `.env` 의 `VITE_GOOGLE_CLIENT_ID`
+- 백엔드: `setAudience(...)` 에 들어갈 값
+
+**승인된 자바스크립트 원본**에 아래를 등록해야 합니다. (리디렉션 URI 는 필요 없습니다)
+
+```
+http://localhost:5173
+https://<vercel-배포-도메인>
+```
+
+## 확인 부탁드릴 것
+
+- 같은 이메일이 **비밀번호 가입**과 **구글 가입** 양쪽에 있을 때 어떻게 처리할까요? (같은 계정으로 합치기 / 에러)
+- 구글로 가입한 계정은 `password` 컬럼을 어떻게 두실 건가요? (nullable, 또는 provider 컬럼 추가)

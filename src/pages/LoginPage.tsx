@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
+import { GoogleLoginButton } from '@/components/auth/GoogleLoginButton'
 import { Button } from '@/components/ui/Button'
 import { FormRow, Input } from '@/components/ui/Field'
 import { errorMessage } from '@/api/client'
@@ -93,6 +94,8 @@ export default function LoginPage() {
           테스트 계정 채우기
         </Button>
       </form>
+
+      <GoogleLoginButton redirectTo={redirectTo} />
     </AuthLayout>
   )
 }

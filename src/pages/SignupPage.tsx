@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
+import { GoogleLoginButton } from '@/components/auth/GoogleLoginButton'
 import { Button } from '@/components/ui/Button'
 import { FormRow, Input } from '@/components/ui/Field'
 import { errorMessage } from '@/api/client'
@@ -105,6 +106,8 @@ export default function SignupPage() {
           회원가입
         </Button>
       </form>
+
+      <GoogleLoginButton />
     </AuthLayout>
   )
 }

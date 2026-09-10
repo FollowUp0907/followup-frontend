@@ -9,6 +9,7 @@ import {
   getToken,
   getUserIdFromToken,
   isTokenExpired,
+  readIdTokenProfile,
   saveSession,
   updateProfileName,
 } from '@/lib/auth'
@@ -18,6 +19,8 @@ interface AuthContextValue {
   user: StoredProfile | null
   isAuthenticated: boolean
   login: (email: string, password: string) => Promise<void>
+  /** 구글 ID 토큰으로 로그인 (백엔드가 검증 후 우리 JWT 발급) */
+  loginWithGoogle: (idToken: string) => Promise<void>
   signup: (name: string, email: string, password: string) => Promise<void>
   logout: () => void
   /** 멤버 목록에서 알아낸 실제 이름을 프로필에 반영 (백엔드에 /me 가 없어서 필요) */
@@ -46,6 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearSession()
     setUser(null)
     queryClient.clear()
+    // 구글 자동 로그인이 걸려 있으면 로그아웃 직후 다시 로그인되는 것을 막는다.
+    window.google?.accounts.id.disableAutoSelect()
   }, [queryClient])
 
   // axios 인터셉터가 401 을 만나면 세션을 비운다.
@@ -68,6 +73,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(getProfile())
   }, [])
 
+  const loginWithGoogle = useCallback(async (idToken: string) => {
+    const token = await authApi.googleLogin({ idToken })
+    // 이름·이메일은 구글 ID 토큰에서 읽어 프로필 표시에만 사용한다.
+    const profile = readIdTokenProfile(idToken)
+    saveSession(token.accessToken, profile)
+    setUser(getProfile())
+  }, [])
+
   const signup = useCallback(async (name: string, email: string, password: string) => {
     await authApi.signup({ name, email, password })
     const token = await authApi.login({ email, password })
@@ -81,8 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const value = useMemo<AuthContextValue>(
-    () => ({ user, isAuthenticated: !!user, login, signup, logout, syncName }),
-    [user, login, signup, logout, syncName],
+    () => ({ user, isAuthenticated: !!user, login, loginWithGoogle, signup, logout, syncName }),
+    [user, login, loginWithGoogle, signup, logout, syncName],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

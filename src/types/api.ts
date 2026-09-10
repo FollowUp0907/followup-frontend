@@ -30,6 +30,10 @@ export interface LoginReqDto {
   email: string
   password: string
 }
+/** 구글 로그인 — GIS 가 발급한 ID 토큰(JWT)을 그대로 보낸다. */
+export interface GoogleLoginReqDto {
+  idToken: string
+}
 export interface TokenResDto {
   accessToken: string
   tokenType: string

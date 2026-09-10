@@ -26,6 +26,18 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
   }
 }
 
+/**
+ * 구글 ID 토큰에서 이름·이메일을 읽는다.
+ * 백엔드에 /me 가 없어서 프로필 표시용으로만 쓰고, 인증 판단에는 쓰지 않는다.
+ * (검증은 백엔드가 한다 — 여기서 읽은 값은 신뢰 대상이 아니라 표시용)
+ */
+export function readIdTokenProfile(idToken: string): { email: string; name: string } {
+  const payload = decodeJwtPayload(idToken)
+  const email = typeof payload?.email === 'string' ? payload.email : ''
+  const name = typeof payload?.name === 'string' ? payload.name : ''
+  return { email, name }
+}
+
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)
 }

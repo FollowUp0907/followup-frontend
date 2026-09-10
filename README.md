@@ -206,7 +206,63 @@ POST /api/analysis/{id}/confirm  ← 사용자가 확정한 값만 전송
 
 ---
 
-## 7. 만약 Vercel 의 `/api` 프록시가 동작하지 않으면
+## 7. 구글 로그인 설정
+
+구글 로그인은 **`VITE_GOOGLE_CLIENT_ID` 가 설정돼 있을 때만** 로그인/회원가입 화면에 버튼이 나타납니다.
+비워 두면 버튼이 아예 렌더링되지 않으므로, 설정 전에도 앱은 정상 동작합니다.
+
+### 7-1. Google Cloud Console
+
+1. https://console.cloud.google.com → 프로젝트 생성(또는 선택)
+2. **API 및 서비스 → OAuth 동의 화면** 설정 (External / 앱 이름 / 지원 이메일)
+3. **API 및 서비스 → 사용자 인증 정보 → 사용자 인증 정보 만들기 → OAuth 클라이언트 ID**
+   - 애플리케이션 유형: **웹 애플리케이션**
+   - **승인된 자바스크립트 원본**에 추가 (리디렉션 URI 는 필요 없습니다)
+     ```
+     http://localhost:5173
+     https://<vercel-배포-도메인>
+     ```
+4. 생성된 **클라이언트 ID** 를 복사
+
+### 7-2. 프론트 설정
+
+`.env` 에 넣습니다.
+
+```
+VITE_GOOGLE_CLIENT_ID=1234567890-xxxxxxxx.apps.googleusercontent.com
+```
+
+Vercel 은 **Settings → Environment Variables** 에 같은 이름으로 추가한 뒤 재배포하세요.
+
+> 환경변수를 바꾸면 dev 서버를 **재시작**해야 반영됩니다.
+
+### 7-3. 백엔드 (필수)
+
+**백엔드에 `POST /api/auth/google` 이 있어야 실제 로그인이 됩니다.**
+구글 ID 토큰만으로는 우리 API 를 호출할 수 없고, 백엔드가 검증 후 자체 JWT 를 발급해야 하기 때문입니다.
+
+명세와 Spring 구현 예시는 [BACKEND_NOTES.md](./BACKEND_NOTES.md) 마지막 섹션에 정리해 뒀습니다.
+백엔드와 프론트는 **같은 클라이언트 ID** 를 써야 합니다. (백엔드는 `aud` 검증에 사용)
+
+이 API 가 없는 동안 버튼을 누르면 *"백엔드에 구글 로그인 API(/api/auth/google)가 아직 없습니다"* 안내가 표시되고,
+이메일 로그인은 그대로 사용할 수 있습니다.
+
+### 동작 흐름
+
+```
+구글 버튼 클릭
+   ↓  Google Identity Services 가 ID 토큰 발급
+POST /api/auth/google { idToken }
+   ↓  백엔드가 구글 공개키로 검증 → 없으면 자동 가입 → 우리 JWT 발급
+{ accessToken, tokenType, expiresIn }   ← 기존 로그인과 동일한 응답
+   ↓  localStorage 저장 → /projects 이동
+```
+
+관련 파일: `src/lib/googleAuth.ts`, `src/components/auth/GoogleLoginButton.tsx`, `src/api/authApi.ts`
+
+---
+
+## 8. 만약 Vercel 의 `/api` 프록시가 동작하지 않으면
 
 `vercel.json` 의 rewrite 는 대상이 `http://` 인 외부 주소입니다. 혹시 이 방식이 막히면(502 등),
 아래 서버리스 함수로 바꾸면 동일하게 동작합니다.
