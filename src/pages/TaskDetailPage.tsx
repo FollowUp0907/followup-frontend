@@ -13,7 +13,7 @@ import { useActionItem, useDeleteActionItem, useUpdateActionItem } from '@/featu
 import { useMeeting } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { PRIORITY_LABEL, PRIORITY_ORDER, STATUS_LABEL, STATUS_ORDER } from '@/lib/constants'
-import { formatDate, formatDateTime, toDateInput } from '@/lib/date'
+import { formatDate, formatDateTime, formatServerDateTime, toDateInput } from '@/lib/date'
 import type { ActionItemPriority, ActionItemStatus } from '@/types/api'
 
 export default function TaskDetailPage() {
@@ -83,8 +83,12 @@ export default function TaskDetailPage() {
       toast.error('업무명을 입력해 주세요.')
       return
     }
+    // 백엔드가 null 을 "값 지우기" 로 처리하지 않고 무시한다(2026-09-10 확인).
+    // 그래서 비우려 한 필드는 따로 기억해 두고, 저장 결과를 보고 사용자에게 알려 준다.
+    const clearingAssignee = !assigneeUserId && !!item.assignee
+    const clearingDueDate = !dueDate && !!item.dueDate
     try {
-      await updateItem.mutateAsync({
+      const saved = await updateItem.mutateAsync({
         id: item.id,
         data: {
           title: title.trim(),
@@ -94,7 +98,15 @@ export default function TaskDetailPage() {
           priority: priority || undefined,
         },
       })
-      toast.success('업무를 수정했습니다.')
+      const kept = [
+        clearingAssignee && saved.assignee ? '담당자' : null,
+        clearingDueDate && saved.dueDate ? '마감일' : null,
+      ].filter(Boolean)
+      if (kept.length) {
+        toast.error(`${kept.join(' · ')}는 지금 비울 수 없어 이전 값이 유지됐습니다. 나머지는 저장했습니다.`)
+      } else {
+        toast.success('업무를 수정했습니다.')
+      }
       setEditing(false)
     } catch (e) {
       toast.error(errorMessage(e))
@@ -237,12 +249,12 @@ export default function TaskDetailPage() {
               </div>
               <div className="flex items-center justify-between gap-md">
                 <dt className="text-muted">생성일</dt>
-                <dd className="text-ink">{formatDateTime(item.createdAt)}</dd>
+                <dd className="text-ink">{formatServerDateTime(item.createdAt)}</dd>
               </div>
               {item.completedAt && (
                 <div className="flex items-center justify-between gap-md">
                   <dt className="text-muted">완료일</dt>
-                  <dd className="text-ink">{formatDateTime(item.completedAt)}</dd>
+                  <dd className="text-ink">{formatServerDateTime(item.completedAt)}</dd>
                 </div>
               )}
             </dl>

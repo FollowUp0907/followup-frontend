@@ -9,7 +9,7 @@ import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { useToast } from '@/components/ui/Toast'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { useDeleteProject, useUpdateProject } from '@/features/projects/queries'
-import { formatDateTime } from '@/lib/date'
+import { formatServerDateTime } from '@/lib/date'
 
 export default function ProjectSettingsPage() {
   const { projectId, project, isOwner } = useProjectContext()
@@ -112,11 +112,11 @@ export default function ProjectSettingsPage() {
               </div>
               <div className="flex justify-between gap-md">
                 <dt className="text-muted">생성일</dt>
-                <dd className="text-ink">{formatDateTime(project.createdAt)}</dd>
+                <dd className="text-ink">{formatServerDateTime(project.createdAt)}</dd>
               </div>
               <div className="flex justify-between gap-md">
                 <dt className="text-muted">수정일</dt>
-                <dd className="text-ink">{formatDateTime(project.updatedAt)}</dd>
+                <dd className="text-ink">{formatServerDateTime(project.updatedAt)}</dd>
               </div>
               <div className="flex justify-between gap-md">
                 <dt className="text-muted">내 권한</dt>

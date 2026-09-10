@@ -13,7 +13,7 @@ import { useAddMember, useRemoveMember } from '@/features/members/queries'
 import { useActionItems } from '@/features/actionItems/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { ROLE_LABEL } from '@/lib/constants'
-import { formatDate } from '@/lib/date'
+import { formatServerDate } from '@/lib/date'
 import type { ProjectMemberResDto } from '@/types/api'
 
 export default function MembersPage() {
@@ -105,7 +105,7 @@ export default function MembersPage() {
                       담당 업무 {stats.done}/{stats.total}
                     </span>
                     <span className="text-caption font-normal text-muted-soft">
-                      참여 {formatDate(m.joinedAt)}
+                      참여 {formatServerDate(m.joinedAt)}
                     </span>
                     <Badge tone={m.role === 'OWNER' ? 'ink' : 'neutral'}>{ROLE_LABEL[m.role]}</Badge>
                     {isOwner && m.role !== 'OWNER' && (

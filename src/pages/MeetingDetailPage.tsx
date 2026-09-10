@@ -18,7 +18,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useMeetingActionItems } from '@/features/actionItems/useMeetingActionItems'
 import { useDeleteMeeting, useMeeting, useUpdateMeeting } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
-import { formatDate, formatDateTime, fromDateTimeLocalInput, toDateTimeLocalInput } from '@/lib/date'
+import { formatDate, formatDateTime, formatServerDateTime, fromDateTimeLocalInput, toDateTimeLocalInput } from '@/lib/date'
 
 export default function MeetingDetailPage() {
   const { projectId, memberName } = useProjectContext()
@@ -287,11 +287,11 @@ export default function MeetingDetailPage() {
               </div>
               <div className="flex justify-between gap-md">
                 <dt className="text-muted">생성일</dt>
-                <dd className="text-ink">{formatDateTime(meeting.createdAt)}</dd>
+                <dd className="text-ink">{formatServerDateTime(meeting.createdAt)}</dd>
               </div>
               <div className="flex justify-between gap-md">
                 <dt className="text-muted">수정일</dt>
-                <dd className="text-ink">{formatDateTime(meeting.updatedAt)}</dd>
+                <dd className="text-ink">{formatServerDateTime(meeting.updatedAt)}</dd>
               </div>
             </dl>
             <div className="mt-lg border-t border-hairline-soft pt-lg">

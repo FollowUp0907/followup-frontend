@@ -8,7 +8,7 @@ import { EmptyState, SectionTitle, Skeleton, SurfaceCard } from '@/components/ui
 import { useDashboard } from '@/features/dashboard/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { STATUS_CHART_COLOR, STATUS_LABEL } from '@/lib/constants'
-import { formatDate, formatDateTime, toPercent } from '@/lib/date'
+import { formatDate, formatDateTime, progressPercent } from '@/lib/date'
 
 function StatTile({
   label,
@@ -264,7 +264,7 @@ export default function DashboardPage() {
           ) : (
             <ul className="space-y-md">
               {data.memberProgress.map((m) => {
-                const rate = toPercent(m.completionRate)
+                const rate = progressPercent(m.doneCount, m.totalCount, m.completionRate)
                 return (
                   <li key={m.userId}>
                     <div className="flex items-center justify-between gap-sm">

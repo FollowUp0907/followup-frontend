@@ -12,7 +12,7 @@ import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { useCreateProject, useProjects } from '@/features/projects/queries'
-import { formatRelative } from '@/lib/date'
+import { formatServerRelative } from '@/lib/date'
 
 const schema = z.object({
   name: z.string().min(1, '프로젝트명을 입력해 주세요.').max(150, '150자 이하로 입력해 주세요.'),
@@ -95,7 +95,7 @@ export default function ProjectsPage() {
                   {p.description || '설명이 없습니다.'}
                 </p>
                 <p className="mt-lg text-caption font-normal text-muted-soft">
-                  최근 업데이트 {formatRelative(p.updatedAt)}
+                  최근 업데이트 {formatServerRelative(p.updatedAt)}
                 </p>
               </Link>
             </SurfaceCard>

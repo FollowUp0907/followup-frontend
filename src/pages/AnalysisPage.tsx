@@ -12,7 +12,7 @@ import { useAnalysis, useConfirmAnalysis, useRequestAnalysis } from '@/features/
 import { useMeeting } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { PRIORITY_LABEL, PRIORITY_ORDER } from '@/lib/constants'
-import { formatDateTime, toDateInput } from '@/lib/date'
+import { formatDateTime, formatServerDateTime, toDateInput } from '@/lib/date'
 import type { ActionItemPriority, AnalysisResDto } from '@/types/api'
 
 /** 화면에서 편집하는 초안 행 (AI 결과 + 사용자 수정본) */
@@ -248,7 +248,7 @@ export default function AnalysisPage() {
       {isConfirmed && (
         <div className="mb-lg flex flex-wrap items-center justify-between gap-md rounded-lg border border-hairline bg-surface-soft px-lg py-md">
           <p className="text-body-sm text-body">
-            이 분석은 {formatDateTime(analysis.confirmedAt)}에 확정되어 후속 업무가 생성되었습니다.
+            이 분석은 {formatServerDateTime(analysis.confirmedAt)}에 확정되어 후속 업무가 생성되었습니다.
           </p>
           <ButtonLink to={`${base}/tasks`} size="sm">
             후속 업무 보기
@@ -470,7 +470,7 @@ export default function AnalysisPage() {
                 </div>
                 <div className="flex justify-between gap-md">
                   <dt className="text-muted">분석 시각</dt>
-                  <dd className="text-ink">{formatDateTime(analysis.createdAt)}</dd>
+                  <dd className="text-ink">{formatServerDateTime(analysis.createdAt)}</dd>
                 </div>
               </dl>
             </SurfaceCard>
