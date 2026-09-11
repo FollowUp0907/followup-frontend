@@ -6,7 +6,9 @@ import path from 'node:path'
 // 브라우저 -> vite dev server -> 백엔드 이므로 CORS 문제가 발생하지 않는다.
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
-  const target = env.VITE_DEV_PROXY_TARGET || 'http://13.124.207.246:8080'
+  // 배포된 백엔드 주소는 저장소에 두지 않는다. .env 의 VITE_DEV_PROXY_TARGET 에 넣는다.
+  // (.env 는 gitignore 대상, 값은 .env.example 참고)
+  const target = env.VITE_DEV_PROXY_TARGET || 'http://localhost:8080'
 
   return {
     plugins: [react()],

@@ -4,7 +4,7 @@
 
 - **스택**: React 18 · TypeScript · Vite · Tailwind CSS · React Router · TanStack Query · React Hook Form · Zod · Axios · Recharts · dayjs
 - **디자인**: Cal.com 디자인 시스템 토큰 (`tailwind.config.js` 에 전부 정의)
-- **백엔드**: Spring Boot (AWS EC2 + RDS), OpenAPI 문서 `http://13.124.207.246:8080/swagger-ui/index.html`
+- **백엔드**: Spring Boot (AWS EC2 + RDS), OpenAPI 문서 `<백엔드 주소>/swagger-ui/index.html`
 
 ---
 
@@ -57,7 +57,7 @@ npm run lint
 그래서 이 프로젝트는 **항상 같은 오리진으로 `/api/...` 를 호출하고, 프록시가 백엔드로 넘겨주는 구조**를 씁니다.
 
 ```
-[브라우저] --/api/...--> [Vite dev server 또는 Vercel] --> [http://13.124.207.246:8080/api/...]
+[브라우저] --/api/...--> [Vite dev server 또는 Vercel 프록시 함수] --> [<백엔드 주소>/api/...]
 ```
 
 | 환경 | 프록시 설정 위치 |
@@ -74,7 +74,7 @@ npm run lint
 | 변수 | 기본값 | 설명 |
 | --- | --- | --- |
 | `VITE_API_BASE_URL` | (빈 값) | 비워 두면 같은 오리진(`/api`)으로 호출합니다. 백엔드가 https + CORS 를 지원하게 되면 여기에 백엔드 주소를 넣어 직접 호출할 수 있습니다. |
-| `VITE_DEV_PROXY_TARGET` | `http://13.124.207.246:8080` | 로컬 dev server 가 `/api` 를 넘길 대상. 백엔드를 로컬에서 돌린다면 `http://localhost:8080` 으로 바꾸세요. |
+| `VITE_DEV_PROXY_TARGET` | `http://localhost:8080` | 로컬 dev server 가 `/api` 를 넘길 대상. 배포된 백엔드를 보려면 그 주소를 넣으세요. |
 
 로컬 백엔드로 붙는 경우:
 
@@ -273,7 +273,7 @@ POST /api/auth/google { idToken }
 // api/[...path].ts — Vercel 서버리스 프록시 (rewrite 대안)
 export const config = { runtime: 'nodejs' }
 
-const BACKEND = process.env.BACKEND_ORIGIN ?? 'http://13.124.207.246:8080'
+const BACKEND = process.env.BACKEND_ORIGIN
 
 export default async function handler(req: Request) {
   const url = new URL(req.url)

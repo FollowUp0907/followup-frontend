@@ -1,6 +1,6 @@
 /**
  * FollowUp Backend API 타입
- * 출처: http://13.124.207.246:8080/v3/api-docs (OpenAPI v1)
+ * 출처: 백엔드의 /v3/api-docs (OpenAPI v1) — Swagger UI 는 /swagger-ui/index.html
  * 백엔드 DTO 이름을 그대로 따라가서, 명세가 바뀌면 이 파일만 고치면 되도록 한다.
  */
 
