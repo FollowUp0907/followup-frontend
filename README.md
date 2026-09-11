@@ -20,7 +20,7 @@ npm install
 npm run dev
 ```
 
-브라우저에서 http://localhost:5173 을 엽니다.
+브라우저에서 http://localhost:3000 을 엽니다.
 
 테스트 계정은 로그인 화면의 **테스트 계정 채우기** 버튼으로 채울 수 있습니다.
 
@@ -219,7 +219,7 @@ POST /api/analysis/{id}/confirm  ← 사용자가 확정한 값만 전송
    - 애플리케이션 유형: **웹 애플리케이션**
    - **승인된 자바스크립트 원본**에 추가 (리디렉션 URI 는 필요 없습니다)
      ```
-     http://localhost:5173
+     http://localhost:3000
      https://<vercel-배포-도메인>
      ```
 4. 생성된 **클라이언트 ID** 를 복사

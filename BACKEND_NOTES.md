@@ -68,7 +68,7 @@ Origin: https://example.vercel.app
 **프론트에서는 프록시(로컬은 Vite, 배포는 Vercel rewrites)로 우회해 두었기 때문에 지금 당장 막히지는 않습니다.**
 다만 아래 중 하나가 되면 구조가 훨씬 단순해집니다.
 
-- `CorsConfiguration` 에 배포 도메인(`https://*.vercel.app`, 확정 도메인)과 `http://localhost:5173` 허용
+- `CorsConfiguration` 에 배포 도메인(`https://*.vercel.app`, 확정 도메인)과 `http://localhost:3000` 허용
 - 가능하면 ALB/Nginx + 인증서로 **https** 제공
 
 ## 3. `/api/auth/me` 같은 내 정보 조회 API 가 있으면 좋겠습니다
@@ -257,7 +257,7 @@ Google Cloud Console 에서 **웹 애플리케이션** 타입 OAuth 2.0 클라�
 **승인된 자바스크립트 원본**에 아래를 등록해야 합니다. (리디렉션 URI 는 필요 없습니다)
 
 ```
-http://localhost:5173
+http://localhost:3000
 https://<vercel-배포-도메인>
 ```
 

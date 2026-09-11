@@ -14,7 +14,9 @@ export default defineConfig(({ mode }) => {
       alias: { '@': path.resolve(__dirname, './src') },
     },
     server: {
-      port: 5173,
+      port: 3000,
+      // 3000 이 막혀 있으면 조용히 다른 포트로 옮겨가지 않고 바로 실패시킨다.
+      strictPort: true,
       proxy: {
         '/api': {
           target,
