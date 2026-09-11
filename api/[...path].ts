@@ -79,11 +79,13 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     headers[key] = Array.isArray(value) ? value.join(', ') : value
   }
 
-  let body: Buffer | undefined
+  // fetch 의 BodyInit 은 Buffer 를 직접 받지 않는다. ArrayBuffer 로 넘긴다.
+  let body: ArrayBuffer | undefined
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     const chunks: Buffer[] = []
     for await (const chunk of req) chunks.push(chunk as Buffer)
-    body = Buffer.concat(chunks)
+    const buf = Buffer.concat(chunks)
+    body = buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer
   }
 
   let upstream: Response
