@@ -16,6 +16,12 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
  *   백엔드에 CORS 가 열리고 https 가 붙으면 이 함수를 지우고
  *   VITE_API_BASE_URL 에 백엔드 주소를 직접 넣으면 된다.
  *
+ * 라우팅 주의:
+ *   api/[...path].ts 는 Vercel 이 catch-all 로 인식하지 않아 /api/a/b 같은
+ *   다단계 경로가 404 였다. 그래서 vercel.json 의 rewrite 로
+ *   /api/:path*  ->  /api/proxy?__path=:path*  를 명시하고,
+ *   원래 경로를 __path 쿼리에서 되살린다.
+ *
  * 시그니처 주의:
  *   Vercel 의 Node 런타임은 Web Request 가 아니라 Node 의 (req, res) 를 넘긴다.
  *   req.url 도 절대 URL 이 아니라 경로만 온다.
@@ -67,11 +73,12 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
   const host = req.headers.host ?? 'localhost'
   const incoming = new URL(req.url ?? '/', `https://${host}`)
 
-  // 파일명이 [...path].ts 라서 Vercel 이 잡은 세그먼트를 "...path" 쿼리로 덧붙인다.
-  // 백엔드로 새어 나가면 안 되는 값이라 떼어낸다.
-  incoming.searchParams.delete('...path')
+  // rewrite 가 원래 경로를 __path 로 넘겨준다. (/api/project/8/members -> "project/8/members")
+  const path = incoming.searchParams.get('__path') ?? ''
+  incoming.searchParams.delete('__path')
 
-  const target = new URL(incoming.pathname + incoming.search, origin)
+  const query = incoming.searchParams.toString()
+  const target = new URL(`/api/${path}${query ? `?${query}` : ''}`, origin)
 
   const headers: Record<string, string> = {}
   for (const [key, value] of Object.entries(req.headers)) {
