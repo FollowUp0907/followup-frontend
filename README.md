@@ -63,9 +63,18 @@ npm run lint
 | 환경 | 프록시 설정 위치 |
 | --- | --- |
 | 로컬 개발 | `vite.config.ts` 의 `server.proxy` |
-| Vercel 배포 | `vercel.json` 의 `rewrites` |
+| Vercel 배포 | `api/proxy.ts` (Vercel Function) + `vercel.json` 의 rewrite |
 
-두 곳 모두 대상 주소가 한 군데씩만 적혀 있으니, 백엔드 주소가 바뀌면 그 두 값만 고치면 됩니다.
+로컬은 `.env` 의 `VITE_DEV_PROXY_TARGET`, 배포는 Vercel 환경변수 `BACKEND_ORIGIN` 을 봅니다.
+**백엔드 주소는 저장소에 두지 않습니다.** 주소가 바뀌면 배포는 Vercel 환경변수만 고치고 재배포하면 되고,
+코드 변경은 필요 없습니다.
+
+> `vercel.json` 의 rewrite destination 은 환경변수 보간을 지원하지 않습니다.
+> 그래서 rewrite 로 주소를 직접 적는 대신, 런타임에 `process.env.BACKEND_ORIGIN` 을 읽는
+> 프록시 함수(`api/proxy.ts`)를 두었습니다.
+
+프록시가 `Origin` / `Referer` 를 떼어내는 것도 중요합니다. 서버 대 서버 호출에는 CORS 가 의미 없는데,
+브라우저가 붙인 `Origin` 을 그대로 넘기면 백엔드 CORS 필터가 `403 Invalid CORS request` 로 막습니다.
 
 ### 환경변수
 
@@ -93,36 +102,41 @@ echo "VITE_DEV_PROXY_TARGET=http://localhost:8080" >> .env
 
 ## 3. Vercel 배포
 
-### 3-1. GitHub 연동으로 배포 (권장)
+### 현재 배포 상태
 
-1. 이 폴더를 GitHub 저장소에 올립니다.
-2. Vercel → **Add New… → Project** → 저장소 선택.
-3. 설정은 그대로 두면 됩니다. Vercel 이 Vite 를 자동 인식합니다.
-   - Framework Preset: `Vite`
-   - Build Command: `npm run build`
-   - Output Directory: `dist`
-4. **Environment Variables 는 설정하지 않아도 됩니다.** (`VITE_API_BASE_URL` 은 비워 두는 것이 정상 동작입니다)
-5. Deploy.
+| 항목 | 값 |
+| --- | --- |
+| 배포 주소 | https://followup-frontend-pied.vercel.app |
+| GitHub | `FollowUp0907/followup-frontend` (public) |
+| Vercel | 팀 `FollowUp` / 프로젝트 `followup-frontend` |
+| 배포 기준 브랜치 | `main` |
 
-`vercel.json` 이 두 가지를 처리합니다.
+`main` 에 push 하면 **Production 자동 배포**, 그 외 브랜치·PR 은 **Preview 자동 배포**입니다.
 
-- `/api/*` → 백엔드로 프록시
-- 그 외 모든 경로 → `index.html` (SPA 새로고침 404 방지)
+> 주의: `followup-frontend.vercel.app` 은 **다른 사람의 프로젝트**입니다. 위 `-pied` 주소를 쓰세요.
+> `-follow-up7` 이 붙은 주소는 팀 보호(Vercel Authentication)가 걸려 외부에서 열리지 않습니다.
 
-### 3-2. CLI 로 배포
+### 환경변수 (Vercel)
+
+| 이름 | 값 | 비고 |
+| --- | --- | --- |
+| `BACKEND_ORIGIN` | 백엔드 오리진 (예: `http://1.2.3.4:8080`) | **필수.** 프록시 함수가 읽습니다. `VITE_` 접두사가 없어 번들에 포함되지 않습니다 |
+| `VITE_API_BASE_URL` | (비워 둠) | 채우면 프록시를 타지 않아 CORS·mixed content 에 막힙니다 |
+| `VITE_GOOGLE_CLIENT_ID` | (선택) | 비우면 구글 로그인 버튼이 표시되지 않습니다 |
+
+백엔드 IP 가 바뀌면 **`BACKEND_ORIGIN` 만 수정하고 재배포**하면 됩니다. 코드 변경은 필요 없습니다.
+(환경변수 변경은 재배포 시점에 반영됩니다. 재배포조차 없애려면 EC2 에 Elastic IP 를 붙이거나 도메인을 두세요.)
+
+### 수동 배포 (CLI)
 
 ```bash
-npx vercel
+npx vercel --prod --scope follow-up7
 ```
 
-```bash
-npx vercel --prod
-```
-
-### 3-3. 배포 후 확인
+### 배포 후 확인
 
 - EC2/RDS 가 **켜져 있어야** 로그인이 됩니다. 꺼져 있으면 "서버에 연결할 수 없습니다" 가 표시됩니다.
-- 배포 도메인에서 `https://<도메인>/api/health` 를 열어 `{"status":"ok"}` 가 나오면 프록시가 정상입니다.
+- `https://<도메인>/api/health` 가 `{"status":"ok"}` 면 프록시가 정상입니다.
 
 ---
 
