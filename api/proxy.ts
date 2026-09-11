@@ -30,8 +30,20 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
  * VITE_DEV_PROXY_TARGET 으로 프록시한다. (vite.config.ts)
  */
 
-/** 홉 단위 헤더 — 그대로 넘기면 안 된다. */
+/**
+ * 백엔드로 넘기면 안 되는 요청 헤더.
+ *
+ * origin / referer 가 핵심이다. 이건 서버 대 서버 호출이라 CORS 가 의미 없는데,
+ * 브라우저가 붙인 Origin 을 그대로 넘기면 백엔드 CORS 필터가 허용 목록에 없다며
+ * 403 "Invalid CORS request" 로 막는다. (POST /api/project 가 이것 때문에 죽었다)
+ *
+ * content-length 는 fetch 가 본문 길이로 다시 계산하므로 원본 값을 넘기면 어긋난다.
+ * 나머지는 홉 단위 헤더라 프록시가 전달하면 안 되는 것들이다.
+ */
 const STRIP_REQUEST_HEADERS = new Set([
+  'origin',
+  'referer',
+  'content-length',
   'host',
   'connection',
   'keep-alive',
