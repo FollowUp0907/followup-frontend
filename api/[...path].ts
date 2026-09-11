@@ -43,7 +43,15 @@ export default async function handler(request: Request): Promise<Response> {
     )
   }
 
-  const incoming = new URL(request.url)
+  // 이 런타임의 request.url 은 절대 URL 이 아니라 경로만 온다. ("/api/health?...")
+  // host 를 base 로 줘서 절대/상대 양쪽 모두 파싱되게 한다.
+  const host = request.headers.get('host') ?? 'localhost'
+  const incoming = new URL(request.url, `https://${host}`)
+
+  // 파일명이 [...path].ts 라서 Vercel 이 잡은 세그먼트를 "...path" 쿼리로 덧붙인다.
+  // 백엔드로 넘기면 안 되는 값이므로 떼어낸다.
+  incoming.searchParams.delete('...path')
+
   const target = new URL(incoming.pathname + incoming.search, origin)
 
   const headers = new Headers(request.headers)
