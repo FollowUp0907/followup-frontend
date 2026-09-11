@@ -1,7 +1,6 @@
 import { Navigate, Outlet, useParams } from 'react-router-dom'
 import { Calendar, CheckSquare, LayoutDashboard, Settings, Users } from 'lucide-react'
 import { TopNav } from '@/components/layout/TopNav'
-import { Footer } from '@/components/layout/Footer'
 import { NavPillGroup } from '@/components/ui/NavPillGroup'
 import { EmptyState, Skeleton } from '@/components/ui/Card'
 import { ButtonLink } from '@/components/ui/Button'
@@ -63,7 +62,6 @@ export default function ProjectLayout() {
         </div>
       </main>
 
-      <Footer />
     </div>
   )
 }

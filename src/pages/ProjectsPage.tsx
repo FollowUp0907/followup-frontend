@@ -6,7 +6,6 @@ import { z } from 'zod'
 import { ChevronRight, Plus } from 'lucide-react'
 import { errorMessage } from '@/api/client'
 import { TopNav } from '@/components/layout/TopNav'
-import { Footer } from '@/components/layout/Footer'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
@@ -152,7 +151,6 @@ export default function ProjectsPage() {
         </div>
       </main>
 
-      <Footer />
     </div>
   )
 }

@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import { TopNav } from './TopNav'
-import { Footer } from './Footer'
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
@@ -9,7 +8,6 @@ export function AppShell({ children }: { children: ReactNode }) {
       <main className="flex-1">
         <div className="container-content py-xxl">{children}</div>
       </main>
-      <Footer />
     </div>
   )
 }
