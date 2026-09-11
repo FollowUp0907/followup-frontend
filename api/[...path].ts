@@ -1,3 +1,5 @@
+import type { IncomingMessage, ServerResponse } from 'node:http'
+
 /**
  * 백엔드 프록시 (Vercel Function)
  *
@@ -14,69 +16,98 @@
  *   백엔드에 CORS 가 열리고 https 가 붙으면 이 함수를 지우고
  *   VITE_API_BASE_URL 에 백엔드 주소를 직접 넣으면 된다.
  *
+ * 시그니처 주의:
+ *   Vercel 의 Node 런타임은 Web Request 가 아니라 Node 의 (req, res) 를 넘긴다.
+ *   req.url 도 절대 URL 이 아니라 경로만 온다.
+ *
  * 로컬 개발은 이 함수를 타지 않는다. vite dev server 가 /api 를
  * VITE_DEV_PROXY_TARGET 으로 프록시한다. (vite.config.ts)
  */
 
 /** 홉 단위 헤더 — 그대로 넘기면 안 된다. */
-const STRIP_REQUEST_HEADERS = ['host', 'connection', 'keep-alive', 'transfer-encoding', 'upgrade']
+const STRIP_REQUEST_HEADERS = new Set([
+  'host',
+  'connection',
+  'keep-alive',
+  'transfer-encoding',
+  'upgrade',
+  'proxy-authorization',
+  'te',
+  'trailer',
+])
 
 /**
  * fetch 가 응답 본문을 이미 풀어서 주기 때문에, 원본의 인코딩/길이 헤더를
  * 그대로 넘기면 브라우저가 깨진 본문으로 읽는다.
  */
-const STRIP_RESPONSE_HEADERS = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
+const STRIP_RESPONSE_HEADERS = new Set([
+  'content-encoding',
+  'content-length',
+  'transfer-encoding',
+  'connection',
+  'keep-alive',
+])
 
-function json(body: unknown, status: number) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { 'content-type': 'application/json; charset=utf-8' },
-  })
+function sendJson(res: ServerResponse, status: number, body: unknown) {
+  res.statusCode = status
+  res.setHeader('content-type', 'application/json; charset=utf-8')
+  res.end(JSON.stringify(body))
 }
 
-export default async function handler(request: Request): Promise<Response> {
+export default async function handler(req: IncomingMessage, res: ServerResponse) {
   const origin = process.env.BACKEND_ORIGIN
   if (!origin) {
-    return json(
-      { code: 'BACKEND_ORIGIN_MISSING', message: '서버 설정이 올바르지 않습니다. (BACKEND_ORIGIN 미설정)' },
-      500,
-    )
+    sendJson(res, 500, {
+      code: 'BACKEND_ORIGIN_MISSING',
+      message: '서버 설정이 올바르지 않습니다. (BACKEND_ORIGIN 미설정)',
+    })
+    return
   }
 
-  // 이 런타임의 request.url 은 절대 URL 이 아니라 경로만 온다. ("/api/health?...")
-  // host 를 base 로 줘서 절대/상대 양쪽 모두 파싱되게 한다.
-  const host = request.headers.get('host') ?? 'localhost'
-  const incoming = new URL(request.url, `https://${host}`)
+  const host = req.headers.host ?? 'localhost'
+  const incoming = new URL(req.url ?? '/', `https://${host}`)
 
   // 파일명이 [...path].ts 라서 Vercel 이 잡은 세그먼트를 "...path" 쿼리로 덧붙인다.
-  // 백엔드로 넘기면 안 되는 값이므로 떼어낸다.
+  // 백엔드로 새어 나가면 안 되는 값이라 떼어낸다.
   incoming.searchParams.delete('...path')
 
   const target = new URL(incoming.pathname + incoming.search, origin)
 
-  const headers = new Headers(request.headers)
-  for (const h of STRIP_REQUEST_HEADERS) headers.delete(h)
+  const headers: Record<string, string> = {}
+  for (const [key, value] of Object.entries(req.headers)) {
+    if (STRIP_REQUEST_HEADERS.has(key.toLowerCase()) || value === undefined) continue
+    headers[key] = Array.isArray(value) ? value.join(', ') : value
+  }
 
-  const init: RequestInit = { method: request.method, headers, redirect: 'manual' }
-  if (request.method !== 'GET' && request.method !== 'HEAD') {
-    // 본문을 통째로 읽어 넘긴다. 회의록이 길어질 수 있어 스트리밍이 이상적이지만,
-    // 런타임에 따라 duplex 옵션이 필요해서 단순하게 간다.
-    init.body = await request.arrayBuffer()
+  let body: Buffer | undefined
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    const chunks: Buffer[] = []
+    for await (const chunk of req) chunks.push(chunk as Buffer)
+    body = Buffer.concat(chunks)
   }
 
   let upstream: Response
   try {
-    upstream = await fetch(target, init)
+    upstream = await fetch(target, { method: req.method, headers, body, redirect: 'manual' })
   } catch {
-    return json({ code: 'BACKEND_UNREACHABLE', message: '백엔드 서버에 연결할 수 없습니다.' }, 502)
+    sendJson(res, 502, {
+      code: 'BACKEND_UNREACHABLE',
+      message: '백엔드 서버에 연결할 수 없습니다.',
+    })
+    return
   }
 
-  const responseHeaders = new Headers(upstream.headers)
-  for (const h of STRIP_RESPONSE_HEADERS) responseHeaders.delete(h)
+  res.statusCode = upstream.status
 
-  return new Response(upstream.body, {
-    status: upstream.status,
-    statusText: upstream.statusText,
-    headers: responseHeaders,
+  // set-cookie 는 여러 개일 수 있어 따로 꺼낸다.
+  const setCookie = upstream.headers.getSetCookie?.() ?? []
+  if (setCookie.length) res.setHeader('set-cookie', setCookie)
+
+  upstream.headers.forEach((value, key) => {
+    const lower = key.toLowerCase()
+    if (STRIP_RESPONSE_HEADERS.has(lower) || lower === 'set-cookie') return
+    res.setHeader(key, value)
   })
+
+  res.end(Buffer.from(await upstream.arrayBuffer()))
 }
