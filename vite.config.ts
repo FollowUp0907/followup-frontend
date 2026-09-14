@@ -24,6 +24,16 @@ export default defineConfig(({ mode }) => {
           target,
           changeOrigin: true,
           secure: false,
+          configure: (proxy) => {
+            // 브라우저가 붙인 Origin/Referer 를 그대로 넘기면 백엔드 CORS 필터가
+            // 허용 목록에 없다며 403 "Invalid CORS request" 로 막는다.
+            // 여기는 서버 대 서버 호출이라 CORS 자체가 의미 없으므로 떼고 보낸다.
+            // (배포용 api/proxy.ts 도 같은 헤더를 떼고 있다 — 두 경로를 맞춘다)
+            proxy.on('proxyReq', (proxyReq) => {
+              proxyReq.removeHeader('origin')
+              proxyReq.removeHeader('referer')
+            })
+          },
         },
       },
     },
