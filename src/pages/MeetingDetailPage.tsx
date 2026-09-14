@@ -48,7 +48,7 @@ export default function MeetingDetailPage() {
 
   const base = `/projects/${projectId}`
   // 백엔드가 확정 후에도 status 를 DRAFT 로 남기므로 결정 사항 유무로 다시 판정한다.
-  const effectiveStatus = deriveMeetingStatus(meeting)
+  const effectiveStatus = deriveMeetingStatus(meeting, generatedItems.length > 0)
 
   if (isLoading) {
     return (

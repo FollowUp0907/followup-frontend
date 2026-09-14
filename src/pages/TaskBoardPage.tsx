@@ -317,10 +317,9 @@ export default function TaskBoardPage() {
                   if (item) void changeStatus(item, status)
                 }}
                 className={cn(
-                  'rounded-lg bg-surface-soft p-sm transition-[box-shadow,background-color] duration-150',
-                  isDropTarget
-                    ? 'bg-surface-card shadow-[inset_0_0_0_1.5px_theme(colors.ink)]'
-                    : 'shadow-[inset_0_0_0_1.5px_transparent]',
+                  // cn 은 단순 join 이라 상충하는 유틸을 같이 주면 안 된다. 배경은 한쪽에서만 지정.
+                  'rounded-lg p-sm transition-[background-color,box-shadow] duration-150',
+                  isDropTarget ? 'bg-surface-card ring-[1.5px] ring-inset ring-ink' : 'bg-surface-soft',
                 )}
               >
                 <div className="flex items-center gap-xs px-xs pb-md pt-xs">
