@@ -18,7 +18,7 @@ export const PRIORITY_ORDER: ActionItemPriority[] = ['HIGH', 'MEDIUM', 'LOW']
 
 export const MEETING_STATUS_LABEL: Record<MeetingStatus, string> = {
   DRAFT: '작성 중',
-  CONFIRMED: '분석 확정',
+  CONFIRMED: '분석 완료',
 }
 
 export const ROLE_LABEL: Record<ProjectRole, string> = {
@@ -35,7 +35,6 @@ export function avatarColor(seed: string | number) {
   for (let i = 0; i < s.length; i += 1) hash = (hash * 31 + s.charCodeAt(i)) >>> 0
   return AVATAR_COLORS[hash % AVATAR_COLORS.length]
 }
-
 
 /** 보드 컬럼 헤더의 상태 점 (시안 STATUS_META) */
 export const STATUS_DOT_COLOR: Record<ActionItemStatus, string> = {

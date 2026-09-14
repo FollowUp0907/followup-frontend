@@ -59,7 +59,7 @@ export function PriorityBadge({ priority }: { priority?: ActionItemPriority }) {
 }
 
 export function MeetingStatusBadge({ status }: { status: MeetingStatus }) {
-  return status === 'CONFIRMED' ? <Badge tone="ink">분석 확정</Badge> : <Badge tone="neutral">작성 중</Badge>
+  return status === 'CONFIRMED' ? <Badge tone="ink">분석 완료</Badge> : <Badge tone="neutral">작성 중</Badge>
 }
 
 /** 마감 임박 / 지연 뱃지. 완료 업무에는 붙지 않는다. */
@@ -72,20 +72,15 @@ export function DueBadge({ dueDate, status }: { dueDate?: string | null; status?
   return <Badge tone="neutral">{label}</Badge>
 }
 
-export function Avatar({
-  name,
-  size = 36,
-  className,
-}: {
-  name?: string | null
-  size?: number
-  className?: string
-}) {
+export function Avatar({ name, size = 36, className }: { name?: string | null; size?: number; className?: string }) {
   const label = (name ?? '?').trim()
   const initials = label ? label.slice(0, 2) : '?'
   return (
     <span
-      className={cn('inline-flex shrink-0 items-center justify-center rounded-pill font-semibold text-white', className)}
+      className={cn(
+        'inline-flex shrink-0 items-center justify-center rounded-pill font-semibold text-white',
+        className,
+      )}
       style={{
         width: size,
         height: size,

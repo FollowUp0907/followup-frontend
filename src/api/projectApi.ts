@@ -13,14 +13,12 @@ export const listProjects = () => api.get<ProjectResDto[]>('/api/projects').then
 export const createProject = (data: ProjectCreateReqDto) =>
   api.post<ProjectResDto>('/api/project', data).then((r) => r.data)
 
-export const getProject = (projectId: number) =>
-  api.get<ProjectResDto>(`/api/project/${projectId}`).then((r) => r.data)
+export const getProject = (projectId: number) => api.get<ProjectResDto>(`/api/project/${projectId}`).then((r) => r.data)
 
 export const updateProject = (projectId: number, data: ProjectUpdateReqDto) =>
   api.patch<ProjectResDto>(`/api/project/${projectId}`, data).then((r) => r.data)
 
-export const deleteProject = (projectId: number) =>
-  api.delete<void>(`/api/project/${projectId}`).then((r) => r.data)
+export const deleteProject = (projectId: number) => api.delete<void>(`/api/project/${projectId}`).then((r) => r.data)
 
 /* ---------- 멤버 ---------- */
 export const listMembers = (projectId: number) =>

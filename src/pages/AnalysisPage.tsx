@@ -1,18 +1,20 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { RefreshCw } from 'lucide-react'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageWidth } from '@/components/layout/PageWidth'
-import { Badge } from '@/components/ui/Badge'
+import { Avatar, Badge } from '@/components/ui/Badge'
 import { Button, ButtonLink, Spinner } from '@/components/ui/Button'
 import { EmptyState, SurfaceCard } from '@/components/ui/Card'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { FormRow, Input, Select, Textarea } from '@/components/ui/Field'
+import { Dropdown } from '@/components/ui/Dropdown'
+import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { useToast } from '@/components/ui/Toast'
 import { useAnalysis, useConfirmAnalysis, useRequestAnalysis } from '@/features/analysis/queries'
 import { useMeeting } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
-import { PRIORITY_LABEL, PRIORITY_ORDER } from '@/lib/constants'
+import { PRIORITY_ICON_COLOR, PRIORITY_LABEL, PRIORITY_ORDER } from '@/lib/constants'
 import { formatDateTime, formatServerDateTime, toDateInput } from '@/lib/date'
 import type { ActionItemPriority, AnalysisResDto } from '@/types/api'
 
@@ -245,8 +247,22 @@ export default function AnalysisPage() {
   const isConfirmed = analysis.status === 'CONFIRMED'
 
   return (
-    <PageWidth size={720}>
+    <PageWidth size={960}>
       {header}
+
+      {/* 분석 메타 — 사이드 패널을 없애고 한 줄로 압축 */}
+      <div className="mb-lg flex flex-wrap items-center gap-x-lg gap-y-xs border-b border-hairline-soft pb-md text-caption font-normal text-muted">
+        <StatusChip analysis={analysis} />
+        <span>
+          모델 <span className="text-ink">{analysis.modelName || '—'}</span>
+        </span>
+        <span>
+          프롬프트 <span className="text-ink">{analysis.promptVersion || '—'}</span>
+        </span>
+        <span>
+          분석 시각 <span className="text-ink">{formatServerDateTime(analysis.createdAt)}</span>
+        </span>
+      </div>
 
       {isConfirmed && (
         <div className="mb-lg flex flex-wrap items-center justify-between gap-md rounded-lg border border-hairline bg-surface-soft px-lg py-md">
@@ -273,245 +289,229 @@ export default function AnalysisPage() {
         </div>
       )}
 
-      <div className="grid gap-lg lg:grid-cols-12">
-        <div className="space-y-lg lg:col-span-8">
-          {/* 결정 사항 */}
-          <SurfaceCard className="p-xl">
-            <div className="mb-md flex items-center justify-between gap-md">
-              <h2 className="text-title-md text-ink">결정 사항</h2>
-              {!isConfirmed && (
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  onClick={() => setDecisions((prev) => [...prev, { key: nextKey(), content: '' }])}
-                >
-                  항목 추가
-                </Button>
-              )}
-            </div>
-
-            {decisions.length === 0 ? (
-              <p className="rounded-md bg-surface-soft px-md py-lg text-center text-body-sm text-muted">
-                추출된 결정 사항이 없습니다.
-              </p>
-            ) : (
-              <ul className="space-y-sm">
-                {decisions.map((d, index) => (
-                  <li key={d.key} className="flex items-start gap-sm">
-                    <span className="mt-sm text-caption font-normal tabular-nums text-muted-soft">{index + 1}</span>
-                    {isConfirmed ? (
-                      <p className="flex-1 rounded-md bg-surface-card px-md py-sm text-body-md text-ink">{d.content}</p>
-                    ) : (
-                      <>
-                        <Textarea
-                          className="min-h-[56px] flex-1"
-                          value={d.content}
-                          placeholder="결정된 내용을 적어 주세요."
-                          onChange={(e) =>
-                            setDecisions((prev) =>
-                              prev.map((item) => (item.key === d.key ? { ...item, content: e.target.value } : item)),
-                            )
-                          }
-                        />
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="mt-xxs"
-                          onClick={() => setDecisions((prev) => prev.filter((item) => item.key !== d.key))}
-                        >
-                          삭제
-                        </Button>
-                      </>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </SurfaceCard>
-
-          {/* 후속 업무 */}
-          <SurfaceCard className="p-xl">
-            <div className="mb-md flex items-center justify-between gap-md">
-              <h2 className="text-title-md text-ink">후속 업무</h2>
-              {!isConfirmed && (
-                <Button size="sm" variant="secondary" onClick={addRow}>
-                  업무 추가
-                </Button>
-              )}
-            </div>
-
-            {rows.length === 0 ? (
-              <p className="rounded-md bg-surface-soft px-md py-lg text-center text-body-sm text-muted">
-                추출된 후속 업무가 없습니다. {!isConfirmed && '필요하면 직접 추가할 수 있습니다.'}
-              </p>
-            ) : (
-              <ul className="space-y-md">
-                {rows.map((row, index) => (
-                  <li key={row.key} className="rounded-lg border border-hairline p-lg">
-                    <div className="mb-md flex items-center justify-between gap-sm">
-                      <span className="text-caption font-normal text-muted-soft">후속 업무 {index + 1}</span>
-                      {!isConfirmed && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => setRows((prev) => prev.filter((r) => r.key !== row.key))}
-                        >
-                          삭제
-                        </Button>
-                      )}
-                    </div>
-
-                    <div className="space-y-md">
-                      <FormRow
-                        label="업무명"
-                        error={!row.title.trim() && !isConfirmed ? '업무명은 비워 둘 수 없습니다.' : undefined}
-                      >
-                        <Input
-                          value={row.title}
-                          disabled={isConfirmed}
-                          invalid={!row.title.trim()}
-                          onChange={(e) => patchRow(row.key, { title: e.target.value })}
-                        />
-                      </FormRow>
-
-                      <FormRow label="설명" hint="선택">
-                        <Textarea
-                          className="min-h-[72px]"
-                          value={row.description}
-                          disabled={isConfirmed}
-                          onChange={(e) => patchRow(row.key, { description: e.target.value })}
-                        />
-                      </FormRow>
-
-                      <div className="grid gap-md sm:grid-cols-3">
-                        <FormRow
-                          label="담당자"
-                          hint={!row.matched && row.aiAssigneeName ? `AI: ${row.aiAssigneeName}` : undefined}
-                        >
-                          <Select
-                            value={row.assigneeUserId ?? ''}
-                            disabled={isConfirmed}
-                            invalid={!row.assigneeUserId && !!row.aiAssigneeName}
-                            onChange={(e) =>
-                              patchRow(row.key, {
-                                assigneeUserId: e.target.value ? Number(e.target.value) : null,
-                                matched: true,
-                              })
-                            }
-                          >
-                            <option value="">미지정</option>
-                            {members.map((m) => (
-                              <option key={m.userId} value={m.userId}>
-                                {m.name}
-                              </option>
-                            ))}
-                          </Select>
-                        </FormRow>
-
-                        <FormRow label="마감일">
-                          <Input
-                            type="date"
-                            value={row.dueDate}
-                            disabled={isConfirmed}
-                            onChange={(e) => patchRow(row.key, { dueDate: e.target.value })}
-                          />
-                        </FormRow>
-
-                        <FormRow label="우선순위">
-                          <Select
-                            value={row.priority}
-                            disabled={isConfirmed}
-                            onChange={(e) =>
-                              patchRow(row.key, {
-                                priority: e.target.value as ActionItemPriority | '',
-                              })
-                            }
-                          >
-                            <option value="">미지정</option>
-                            {PRIORITY_ORDER.map((p) => (
-                              <option key={p} value={p}>
-                                {PRIORITY_LABEL[p]}
-                              </option>
-                            ))}
-                          </Select>
-                        </FormRow>
-                      </div>
-
-                      <FormRow label="AI 추천 이유" hint="수정 가능">
-                        <Input
-                          value={row.priorityReason}
-                          disabled={isConfirmed}
-                          placeholder="예) 배포 전에 해결해야 하는 오류"
-                          onChange={(e) =>
-                            patchRow(row.key, {
-                              priorityReason: e.target.value,
-                            })
-                          }
-                        />
-                      </FormRow>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </SurfaceCard>
-        </div>
-
-        {/* 사이드 — 확정 패널 */}
-        <div className="lg:col-span-4">
-          <div className="space-y-lg lg:sticky lg:top-[88px]">
-            <SurfaceCard className="p-xl">
-              <h2 className="mb-md text-title-md text-ink">분석 정보</h2>
-              <dl className="space-y-sm text-body-sm">
-                <div className="flex justify-between gap-md">
-                  <dt className="text-muted">상태</dt>
-                  <dd>
-                    <StatusChip analysis={analysis} />
-                  </dd>
-                </div>
-                <div className="flex justify-between gap-md">
-                  <dt className="text-muted">모델</dt>
-                  <dd className="truncate text-ink">{analysis.modelName || '—'}</dd>
-                </div>
-                <div className="flex justify-between gap-md">
-                  <dt className="text-muted">프롬프트</dt>
-                  <dd className="text-ink">{analysis.promptVersion || '—'}</dd>
-                </div>
-                <div className="flex justify-between gap-md">
-                  <dt className="text-muted">분석 시각</dt>
-                  <dd className="text-ink">{formatServerDateTime(analysis.createdAt)}</dd>
-                </div>
-              </dl>
-            </SurfaceCard>
-
+      <div className="space-y-lg">
+        {/* 결정 사항 */}
+        <SurfaceCard className="p-xl">
+          <div className="mb-md flex items-center justify-between gap-md">
+            <h2 className="text-title-md text-ink">결정 사항</h2>
             {!isConfirmed && (
-              <SurfaceCard className="p-xl">
-                <h2 className="text-title-md text-ink">확정하기</h2>
-                <p className="mt-xs text-body-sm text-muted">
-                  확정하면 후속 업무 {rows.filter((r) => r.title.trim()).length}
-                  건과 결정 사항 {decisions.filter((d) => d.content.trim()).length}건이 저장됩니다.
-                </p>
-                {invalidRows > 0 && (
-                  <p className="mt-sm text-body-sm text-error">
-                    업무명이 비어 있는 항목 {invalidRows}건은 저장되지 않습니다.
-                  </p>
-                )}
-                <div className="mt-lg space-y-sm">
-                  <Button fullWidth size="lg" onClick={() => setConfirmOpen(true)}>
-                    확정하고 업무 생성
-                  </Button>
-                  <Button fullWidth variant="secondary" onClick={startAnalysis} loading={requestAnalysis.isPending}>
-                    다시 분석
-                  </Button>
-                  <p className="text-caption font-normal text-muted-soft">
-                    회의록을 고친 뒤 다시 분석하면 새 초안이 만들어집니다. 내용이 그대로면 기존 분석이 재사용됩니다.
-                  </p>
-                </div>
-              </SurfaceCard>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setDecisions((prev) => [...prev, { key: nextKey(), content: '' }])}
+              >
+                항목 추가
+              </Button>
             )}
           </div>
-        </div>
+
+          {decisions.length === 0 ? (
+            <p className="rounded-md bg-surface-soft px-md py-lg text-center text-body-sm text-muted">
+              추출된 결정 사항이 없습니다.
+            </p>
+          ) : (
+            <ul className="space-y-sm">
+              {decisions.map((d, index) => (
+                <li key={d.key} className="flex items-start gap-sm">
+                  <span className="mt-sm text-caption font-normal tabular-nums text-muted-soft">{index + 1}</span>
+                  {isConfirmed ? (
+                    <p className="flex-1 rounded-md bg-surface-card px-md py-sm text-body-md text-ink">{d.content}</p>
+                  ) : (
+                    <>
+                      <Textarea
+                        className="min-h-[56px] flex-1"
+                        value={d.content}
+                        placeholder="결정된 내용을 적어 주세요."
+                        onChange={(e) =>
+                          setDecisions((prev) =>
+                            prev.map((item) => (item.key === d.key ? { ...item, content: e.target.value } : item)),
+                          )
+                        }
+                      />
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="mt-xxs"
+                        onClick={() => setDecisions((prev) => prev.filter((item) => item.key !== d.key))}
+                      >
+                        삭제
+                      </Button>
+                    </>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </SurfaceCard>
+
+        {/* 후속 업무 */}
+        <SurfaceCard className="p-xl">
+          <div className="mb-md flex items-center justify-between gap-md">
+            <h2 className="text-title-md text-ink">후속 업무</h2>
+            {!isConfirmed && (
+              <Button size="sm" variant="secondary" onClick={addRow}>
+                업무 추가
+              </Button>
+            )}
+          </div>
+
+          {rows.length === 0 ? (
+            <p className="rounded-md bg-surface-soft px-md py-lg text-center text-body-sm text-muted">
+              추출된 후속 업무가 없습니다. {!isConfirmed && '필요하면 직접 추가할 수 있습니다.'}
+            </p>
+          ) : (
+            <ul className="space-y-md">
+              {rows.map((row, index) => (
+                <li key={row.key} className="rounded-lg border border-hairline p-lg">
+                  <div className="mb-md flex items-center justify-between gap-sm">
+                    <span className="text-caption font-normal text-muted-soft">후속 업무 {index + 1}</span>
+                    {!isConfirmed && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setRows((prev) => prev.filter((r) => r.key !== row.key))}
+                      >
+                        삭제
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className="space-y-md">
+                    <FormRow
+                      label="업무명"
+                      error={!row.title.trim() && !isConfirmed ? '업무명은 비워 둘 수 없습니다.' : undefined}
+                    >
+                      <Input
+                        value={row.title}
+                        disabled={isConfirmed}
+                        invalid={!row.title.trim()}
+                        onChange={(e) => patchRow(row.key, { title: e.target.value })}
+                      />
+                    </FormRow>
+
+                    <FormRow label="설명" hint="선택">
+                      <Textarea
+                        className="min-h-[72px]"
+                        value={row.description}
+                        disabled={isConfirmed}
+                        onChange={(e) => patchRow(row.key, { description: e.target.value })}
+                      />
+                    </FormRow>
+
+                    <div className="grid gap-md sm:grid-cols-[1fr_minmax(170px,1fr)_1fr]">
+                      <FormRow
+                        label="담당자"
+                        hint={!row.matched && row.aiAssigneeName ? `AI: ${row.aiAssigneeName}` : undefined}
+                      >
+                        <Dropdown
+                          ariaLabel="담당자"
+                          value={row.assigneeUserId ? String(row.assigneeUserId) : ''}
+                          disabled={isConfirmed}
+                          invalid={!row.assigneeUserId && !!row.aiAssigneeName}
+                          placeholder="미지정"
+                          onChange={(v) =>
+                            patchRow(row.key, {
+                              assigneeUserId: v ? Number(v) : null,
+                              matched: true,
+                            })
+                          }
+                          options={[
+                            { value: '', label: '미지정' },
+                            ...members.map((m) => ({
+                              value: String(m.userId),
+                              label: m.name,
+                              adornment: <Avatar name={m.name} size={20} />,
+                            })),
+                          ]}
+                        />
+                      </FormRow>
+
+                      <FormRow label="마감일">
+                        <Input
+                          type="date"
+                          className="min-w-0"
+                          value={row.dueDate}
+                          disabled={isConfirmed}
+                          onChange={(e) => patchRow(row.key, { dueDate: e.target.value })}
+                        />
+                      </FormRow>
+
+                      <FormRow label="우선순위">
+                        <Dropdown
+                          ariaLabel="우선순위"
+                          value={row.priority}
+                          disabled={isConfirmed}
+                          placeholder="미지정"
+                          onChange={(v) => patchRow(row.key, { priority: v as ActionItemPriority | '' })}
+                          options={[
+                            { value: '', label: '미지정' },
+                            ...PRIORITY_ORDER.map((pr) => ({
+                              value: pr,
+                              label: PRIORITY_LABEL[pr],
+                              adornment: (
+                                <span
+                                  className="h-2 w-2 rounded-pill"
+                                  style={{ background: PRIORITY_ICON_COLOR[pr] }}
+                                  aria-hidden
+                                />
+                              ),
+                            })),
+                          ]}
+                        />
+                      </FormRow>
+                    </div>
+
+                    <FormRow label="AI 추천 이유" hint="수정 가능">
+                      <Input
+                        value={row.priorityReason}
+                        disabled={isConfirmed}
+                        placeholder="예) 배포 전에 해결해야 하는 오류"
+                        onChange={(e) =>
+                          patchRow(row.key, {
+                            priorityReason: e.target.value,
+                          })
+                        }
+                      />
+                    </FormRow>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </SurfaceCard>
       </div>
+
+      {/* 확정 액션 — 시안의 사이드 패널을 걷어내고 하단 고정 바로 옮겼다.
+          본문이 넓어지고, 스크롤 어디에서든 확정 버튼에 닿는다. */}
+      {!isConfirmed && (
+        <div className="sticky bottom-0 z-30 -mx-lg mt-lg border-t border-hairline bg-canvas/95 px-lg py-md backdrop-blur">
+          <div className="flex flex-wrap items-center justify-between gap-md">
+            <div className="min-w-0">
+              <p className="text-body-sm text-body">
+                확정하면 후속 업무 <strong className="text-ink">{rows.filter((r) => r.title.trim()).length}</strong>건과
+                결정 사항 <strong className="text-ink">{decisions.filter((d) => d.content.trim()).length}</strong>건이
+                저장됩니다.
+              </p>
+              {invalidRows > 0 && (
+                <p className="mt-xxs text-caption font-normal text-error">
+                  업무명이 비어 있는 항목 {invalidRows}건은 저장되지 않습니다.
+                </p>
+              )}
+            </div>
+            <div className="flex shrink-0 items-center gap-sm">
+              <Button variant="secondary" onClick={startAnalysis} loading={requestAnalysis.isPending}>
+                <RefreshCw size={15} /> 다시 분석
+              </Button>
+              <Button size="lg" onClick={() => setConfirmOpen(true)}>
+                확정하고 업무 생성
+              </Button>
+            </div>
+          </div>
+          <p className="mt-xs text-caption font-normal text-muted-soft">
+            회의록을 고친 뒤 다시 분석하면 새 초안이 만들어집니다. 내용이 그대로면 기존 분석이 재사용됩니다.
+          </p>
+        </div>
+      )}
 
       <ConfirmDialog
         open={confirmOpen}

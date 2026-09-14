@@ -61,7 +61,6 @@ export default function ProjectLayout() {
           )}
         </div>
       </main>
-
     </div>
   )
 }

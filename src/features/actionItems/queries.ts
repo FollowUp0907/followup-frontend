@@ -57,9 +57,7 @@ export function useUpdateActionItem(projectId: number) {
                   ...(data.priority ? { priority: data.priority } : {}),
                   ...(data.title ? { title: data.title } : {}),
                   ...(data.dueDate !== undefined ? { dueDate: data.dueDate ?? undefined } : {}),
-                  ...(data.assigneeUserId !== undefined
-                    ? { assigneeUserId: data.assigneeUserId ?? undefined }
-                    : {}),
+                  ...(data.assigneeUserId !== undefined ? { assigneeUserId: data.assigneeUserId ?? undefined } : {}),
                 }
               : item,
           ),

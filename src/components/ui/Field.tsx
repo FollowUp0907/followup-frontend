@@ -61,7 +61,12 @@ export const Textarea = forwardRef<
   return (
     <textarea
       ref={ref}
-      className={cn(CONTROL, 'min-h-[160px] resize-y px-sm py-sm leading-relaxed', invalid && 'border-error', className)}
+      className={cn(
+        CONTROL,
+        'min-h-[160px] resize-y px-sm py-sm leading-relaxed',
+        invalid && 'border-error',
+        className,
+      )}
       {...rest}
     />
   )
@@ -74,7 +79,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
         ref={ref}
         className={cn(
           CONTROL,
-          'h-10 appearance-none bg-[url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 20 20\' fill=\'%236b7280\'%3E%3Cpath d=\'M5.5 7.5L10 12l4.5-4.5\' stroke=\'%236b7280\' stroke-width=\'1.5\' fill=\'none\' stroke-linecap=\'round\'/%3E%3C/svg%3E")] bg-[length:20px_20px] bg-[right_8px_center] bg-no-repeat pl-sm pr-xl',
+          "h-10 appearance-none bg-[url(\"data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%236b7280'%3E%3Cpath d='M5.5 7.5L10 12l4.5-4.5' stroke='%236b7280' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E\")] bg-[length:20px_20px] bg-[right_8px_center] bg-no-repeat pl-sm pr-xl",
           invalid && 'border-error',
           className,
         )}

@@ -150,7 +150,6 @@ export default function ProjectsPage() {
           </Modal>
         </div>
       </main>
-
     </div>
   )
 }

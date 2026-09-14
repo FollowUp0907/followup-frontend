@@ -3,11 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ApiError, errorMessage } from '@/api/client'
 import { Spinner } from '@/components/ui/Button'
 import { useAuth } from '@/features/auth/AuthContext'
-import {
-  GOOGLE_CLIENT_ID,
-  isGoogleLoginEnabled,
-  loadGoogleIdentity,
-} from '@/lib/googleAuth'
+import { GOOGLE_CLIENT_ID, isGoogleLoginEnabled, loadGoogleIdentity } from '@/lib/googleAuth'
 import type { GoogleCredentialResponse } from '@/lib/googleAuth'
 
 /**
@@ -96,11 +92,7 @@ export function GoogleLoginButton({ redirectTo = '/projects' }: { redirectTo?: s
 
       <div className="relative">
         {/* 구글 버튼 자리 — 로드 전에는 같은 높이의 플레이스홀더를 둬서 레이아웃이 튀지 않게 한다 */}
-        <div
-          ref={containerRef}
-          className="overflow-hidden rounded-md [color-scheme:light]"
-          style={{ minHeight: 40 }}
-        />
+        <div ref={containerRef} className="overflow-hidden rounded-md [color-scheme:light]" style={{ minHeight: 40 }} />
         {!ready && !error && (
           <div className="absolute inset-0 flex h-10 items-center justify-center rounded-md border border-hairline bg-canvas">
             <Spinner className="h-4 w-4 text-muted" />

@@ -7,6 +7,7 @@ import { Button, ButtonLink } from '@/components/ui/Button'
 import { EmptyState, SectionTitle, Skeleton, SurfaceCard } from '@/components/ui/Card'
 import { OnboardingEmptyState } from '@/components/ui/OnboardingEmptyState'
 import { useDashboard } from '@/features/dashboard/queries'
+import { useMeetingStatuses } from '@/features/meetings/useMeetingStatuses'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { formatDate, formatDateTime, progressPercent } from '@/lib/date'
 
@@ -24,6 +25,7 @@ function StatTile({ label, value, to }: { label: string; value: number; to: stri
 export default function DashboardPage() {
   const { projectId, project } = useProjectContext()
   const { data, isLoading, isError, error, refetch, isFetching } = useDashboard(projectId)
+  const { statusById } = useMeetingStatuses(projectId)
 
   const base = `/projects/${projectId}`
 
@@ -176,7 +178,7 @@ export default function DashboardPage() {
                         <p className="text-caption font-normal text-muted">{formatDateTime(m.scheduledAt)}</p>
                       </div>
                     </div>
-                    <MeetingStatusBadge status={m.status} />
+                    <MeetingStatusBadge status={statusById.get(m.meetingId) ?? m.status} />
                   </Link>
                 </li>
               ))}

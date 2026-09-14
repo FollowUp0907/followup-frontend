@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageWidth } from '@/components/layout/PageWidth'
@@ -22,6 +22,7 @@ export default function TaskDetailPage() {
   const params = useParams()
   const actionItemId = Number(params.actionItemId)
   const navigate = useNavigate()
+  const location = useLocation()
   const toast = useToast()
 
   const { data: item, isLoading, isError, error } = useActionItem(actionItemId)
@@ -47,6 +48,8 @@ export default function TaskDetailPage() {
   }, [item])
 
   const base = `/projects/${projectId}`
+  // 목록에서 들어왔다면 그때의 필터·뷰까지 그대로 살려서 돌아간다.
+  const backTo = (location.state as { from?: string } | null)?.from ?? `${base}/tasks`
 
   if (isLoading) {
     return (
@@ -63,7 +66,7 @@ export default function TaskDetailPage() {
         title="업무를 불러오지 못했습니다"
         description={errorMessage(error)}
         action={
-          <ButtonLink to={`${base}/tasks`} variant="secondary">
+          <ButtonLink to={backTo} variant="secondary">
             업무 보드로
           </ButtonLink>
         }
@@ -118,7 +121,7 @@ export default function TaskDetailPage() {
     try {
       await deleteItem.mutateAsync(item.id)
       toast.success('업무를 삭제했습니다.')
-      navigate(`${base}/tasks`, { replace: true })
+      navigate(backTo, { replace: true })
     } catch (e) {
       toast.error(errorMessage(e))
     }
@@ -129,7 +132,7 @@ export default function TaskDetailPage() {
       <PageHeader
         title={item.title}
         breadcrumb={
-          <Link to={`${base}/tasks`} className="text-nav-link text-muted">
+          <Link to={backTo} className="text-nav-link text-muted transition-colors hover:text-ink">
             ← 후속 업무
           </Link>
         }

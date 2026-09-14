@@ -7,6 +7,7 @@ import { MeetingStatusBadge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
 import { useMeetings } from '@/features/meetings/queries'
+import { useMeetingStatuses } from '@/features/meetings/useMeetingStatuses'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { formatDateTime } from '@/lib/date'
 import { dayjs } from '@/lib/date'
@@ -14,6 +15,8 @@ import { dayjs } from '@/lib/date'
 export default function MeetingListPage() {
   const { projectId } = useProjectContext()
   const { data, isLoading, isError, error, refetch } = useMeetings(projectId)
+  // 백엔드가 확정 후에도 status 를 DRAFT 로 두기 때문에 화면에서 다시 판정한다.
+  const { statusById } = useMeetingStatuses(projectId)
   const base = `/projects/${projectId}`
 
   // 백엔드 정렬을 신뢰하지 않고 최신순으로 한 번 더 정렬한다.
@@ -70,7 +73,7 @@ export default function MeetingListPage() {
                 <div className="min-w-0">
                   <div className="flex items-center gap-sm">
                     <h2 className="truncate text-title-md text-ink">{m.title}</h2>
-                    <MeetingStatusBadge status={m.status} />
+                    <MeetingStatusBadge status={statusById.get(m.id) ?? m.status} />
                   </div>
                   <p className="mt-xxs text-body-sm text-muted">{formatDateTime(m.scheduledAt)}</p>
                 </div>

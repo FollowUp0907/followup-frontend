@@ -46,7 +46,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             role="status"
             className={cn(
               'pointer-events-auto animate-fade-in rounded-md px-md py-sm text-body-sm shadow-card',
-              t.tone === 'error' ? 'bg-error text-white' : t.tone === 'success' ? 'bg-ink text-white' : 'bg-ink text-white',
+              t.tone === 'error'
+                ? 'bg-error text-white'
+                : t.tone === 'success'
+                  ? 'bg-ink text-white'
+                  : 'bg-ink text-white',
             )}
           >
             {t.message}

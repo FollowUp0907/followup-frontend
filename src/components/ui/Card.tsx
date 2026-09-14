@@ -53,7 +53,12 @@ export function EmptyState({
   className?: string
 }) {
   return (
-    <div className={cn('rounded-lg border border-dashed border-hairline bg-surface-soft px-lg py-xxl text-center', className)}>
+    <div
+      className={cn(
+        'rounded-lg border border-dashed border-hairline bg-surface-soft px-lg py-xxl text-center',
+        className,
+      )}
+    >
       <p className="text-title-sm text-ink">{title}</p>
       {description && <p className="mx-auto mt-xs max-w-md text-body-sm text-muted">{description}</p>}
       {action && <div className="mt-lg flex justify-center">{action}</div>}

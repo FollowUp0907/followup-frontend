@@ -58,9 +58,7 @@ api.interceptors.response.use(
       return Promise.reject(new ApiError('요청 시간이 초과되었습니다.', 0))
     }
     if (!error.response) {
-      return Promise.reject(
-        new ApiError('서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해 주세요.', 0),
-      )
+      return Promise.reject(new ApiError('서버에 연결할 수 없습니다. 백엔드 서버가 실행 중인지 확인해 주세요.', 0))
     }
 
     const { status, data } = error.response

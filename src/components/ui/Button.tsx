@@ -60,14 +60,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   )
 })
 
-export function ButtonLink({
-  to,
-  variant,
-  size,
-  fullWidth,
-  className,
-  children,
-}: BaseProps & { to: string }) {
+export function ButtonLink({ to, variant, size, fullWidth, className, children }: BaseProps & { to: string }) {
   return (
     <Link to={to} className={classes({ variant, size, fullWidth, className })}>
       {children}
@@ -85,11 +78,7 @@ export function Spinner({ className }: { className?: string }) {
 }
 
 /** 36 x 36 원형 아이콘 버튼 */
-export function IconButton({
-  className,
-  children,
-  ...rest
-}: ButtonHTMLAttributes<HTMLButtonElement>) {
+export function IconButton({ className, children, ...rest }: ButtonHTMLAttributes<HTMLButtonElement>) {
   return (
     <button
       className={cn(

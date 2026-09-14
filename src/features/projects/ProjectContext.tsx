@@ -18,13 +18,7 @@ interface ProjectContextValue {
 
 const ProjectContext = createContext<ProjectContextValue | null>(null)
 
-export function ProjectProvider({
-  project,
-  children,
-}: {
-  project: ProjectResDto
-  children: ReactNode
-}) {
+export function ProjectProvider({ project, children }: { project: ProjectResDto; children: ReactNode }) {
   const projectId = project.id
   const { user, syncName } = useAuth()
   const { data: members, isLoading } = useMembers(projectId)

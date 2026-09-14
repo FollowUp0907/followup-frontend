@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useId, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { CalendarClock, CheckSquare, ChevronDown, ChevronsUp, Equal, GripVertical, Plus } from 'lucide-react'
 import { errorMessage } from '@/api/client'
@@ -6,11 +6,14 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar, DueBadge, PriorityBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
+import { Dropdown } from '@/components/ui/Dropdown'
 import { FormRow, Input, Select, Textarea } from '@/components/ui/Field'
 import { Modal } from '@/components/ui/Modal'
 import { SegmentedControl } from '@/components/ui/NavPillGroup'
 import { useToast } from '@/components/ui/Toast'
 import { useActionItems, useCreateActionItem, useUpdateActionItem } from '@/features/actionItems/queries'
+import { useActionItemOrigins } from '@/features/actionItems/useActionItemOrigins'
+import { useMeetings } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import {
   PRIORITY_ICON_COLOR,
@@ -22,7 +25,7 @@ import {
   taskKey,
 } from '@/lib/constants'
 import { cn } from '@/lib/cn'
-import { dayjs, formatDate, isDueSoon, isOverdue } from '@/lib/date'
+import { dayjs, formatDate, formatDateTime, isDueSoon, isOverdue } from '@/lib/date'
 import type { ActionItemListResDto, ActionItemPriority, ActionItemStatus } from '@/types/api'
 
 type ViewMode = 'board' | 'list'
@@ -31,12 +34,15 @@ export default function TaskBoardPage() {
   const { projectId, members, memberName } = useProjectContext()
   const [searchParams, setSearchParams] = useSearchParams()
   const toast = useToast()
+  // 상세로 들어갔다가 돌아올 때 지금 보고 있던 필터·뷰를 그대로 복원하기 위해 넘긴다.
+  const listUrl = `/projects/${projectId}/tasks${searchParams.toString() ? `?${searchParams}` : ''}`
 
   const view = (searchParams.get('view') as ViewMode) || 'board'
   const statusFilter = searchParams.get('status') as ActionItemStatus | null
   const priorityFilter = searchParams.get('priority') as ActionItemPriority | null
   const assigneeFilter = searchParams.get('assigneeId')
   const dueFilter = searchParams.get('due')
+  const meetingFilter = searchParams.get('meetingId')
 
   // 서버 필터는 담당자/우선순위만 사용하고, 상태·마감 조건은 보드에서 화면 단위로 거른다.
   const serverFilters = {
@@ -44,12 +50,25 @@ export default function TaskBoardPage() {
     priority: priorityFilter ?? undefined,
   }
   const { data, isLoading, isError, error, refetch } = useActionItems(projectId, serverFilters)
+  const { data: meetings } = useMeetings(projectId)
+  // 회의별 필터는 항목마다 상세를 조회해야 해서(목록 DTO 에 originMeetingId 없음)
+  // 실제로 필터를 걸었을 때만 켠다.
+  const { originByItemId, isLoading: originsLoading } = useActionItemOrigins(projectId, !!meetingFilter)
   const updateItem = useUpdateActionItem(projectId)
   const createItem = useCreateActionItem(projectId)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [dragOverColumn, setDragOverColumn] = useState<ActionItemStatus | null>(null)
   const [draggingId, setDraggingId] = useState<number | null>(null)
+  // dragenter/dragleave 는 자식 위를 지날 때마다 번갈아 발생해서 그대로 쓰면 깜빡인다.
+  // 컬럼별로 enter 횟수를 세서 0 이 될 때만 해제한다.
+  const dragDepth = useRef(new Map<ActionItemStatus, number>())
+
+  const endDrag = () => {
+    setDraggingId(null)
+    setDragOverColumn(null)
+    dragDepth.current.clear()
+  }
 
   const setParam = (key: string, value: string | null) => {
     const next = new URLSearchParams(searchParams)
@@ -63,6 +82,10 @@ export default function TaskBoardPage() {
     if (dueFilter === 'overdue') items = items.filter((i) => isOverdue(i.dueDate, i.status))
     if (dueFilter === 'soon') items = items.filter((i) => isDueSoon(i.dueDate, i.status))
     if (view === 'list' && statusFilter) items = items.filter((i) => i.status === statusFilter)
+    if (meetingFilter) {
+      const target = Number(meetingFilter)
+      items = items.filter((i) => originByItemId.get(i.id) === target)
+    }
     return [...items].sort((a, b) => {
       // 마감일이 있는 항목 먼저, 그다음 마감일 순
       if (!a.dueDate && !b.dueDate) return a.id - b.id
@@ -70,7 +93,7 @@ export default function TaskBoardPage() {
       if (!b.dueDate) return -1
       return dayjs(a.dueDate).valueOf() - dayjs(b.dueDate).valueOf()
     })
-  }, [data, dueFilter, statusFilter, view])
+  }, [data, dueFilter, statusFilter, view, meetingFilter, originByItemId])
 
   const byStatus = (status: ActionItemStatus) => filtered.filter((i) => i.status === status)
 
@@ -83,7 +106,7 @@ export default function TaskBoardPage() {
     }
   }
 
-  const hasActiveFilter = !!(statusFilter || priorityFilter || assigneeFilter || dueFilter)
+  const hasActiveFilter = !!(statusFilter || priorityFilter || assigneeFilter || dueFilter || meetingFilter)
 
   return (
     <>
@@ -107,61 +130,125 @@ export default function TaskBoardPage() {
         }
       />
 
-      {/* 필터 바 */}
+      {/* 필터 바 — 칸 너비를 그리드로 통일해 길이가 어긋나지 않게 한다 */}
       <SurfaceCard className="mb-lg p-lg">
-        <div className="flex flex-wrap items-end gap-md">
-          <FormRow label="담당자" className="min-w-[160px] flex-1">
-            <Select value={assigneeFilter ?? ''} onChange={(e) => setParam('assigneeId', e.target.value || null)}>
-              <option value="">전체</option>
-              {members.map((m) => (
-                <option key={m.userId} value={m.userId}>
-                  {m.name}
-                </option>
-              ))}
-            </Select>
-          </FormRow>
-          <FormRow label="우선순위" className="min-w-[140px] flex-1">
-            <Select value={priorityFilter ?? ''} onChange={(e) => setParam('priority', e.target.value || null)}>
-              <option value="">전체</option>
-              {PRIORITY_ORDER.map((p) => (
-                <option key={p} value={p}>
-                  {PRIORITY_LABEL[p]}
-                </option>
-              ))}
-            </Select>
-          </FormRow>
-          <FormRow label="마감" className="min-w-[140px] flex-1">
-            <Select value={dueFilter ?? ''} onChange={(e) => setParam('due', e.target.value || null)}>
-              <option value="">전체</option>
-              <option value="soon">마감 임박</option>
-              <option value="overdue">지연</option>
-            </Select>
-          </FormRow>
+        <div className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-4">
+          <FilterField label="담당자">
+            {(id) => (
+              <Dropdown
+                ariaLabelledBy={id}
+                value={assigneeFilter ?? ''}
+                onChange={(v) => setParam('assigneeId', v || null)}
+                options={[
+                  { value: '', label: '전체' },
+                  ...members.map((m) => ({
+                    value: String(m.userId),
+                    label: m.name,
+                    adornment: <Avatar name={m.name} size={20} />,
+                  })),
+                ]}
+              />
+            )}
+          </FilterField>
+
+          <FilterField label="회의">
+            {(id) => (
+              <Dropdown
+                ariaLabelledBy={id}
+                value={meetingFilter ?? ''}
+                onChange={(v) => setParam('meetingId', v || null)}
+                options={[
+                  { value: '', label: '전체' },
+                  ...(meetings ?? []).map((m) => ({
+                    value: String(m.id),
+                    label: m.title,
+                    description: formatDateTime(m.scheduledAt),
+                  })),
+                ]}
+              />
+            )}
+          </FilterField>
+
+          <FilterField label="우선순위">
+            {(id) => (
+              <Dropdown
+                ariaLabelledBy={id}
+                value={priorityFilter ?? ''}
+                onChange={(v) => setParam('priority', v || null)}
+                options={[
+                  { value: '', label: '전체' },
+                  ...PRIORITY_ORDER.map((pr) => ({
+                    value: pr,
+                    label: PRIORITY_LABEL[pr],
+                    adornment: (
+                      <span
+                        className="h-2 w-2 rounded-pill"
+                        style={{ background: PRIORITY_ICON_COLOR[pr] }}
+                        aria-hidden
+                      />
+                    ),
+                  })),
+                ]}
+              />
+            )}
+          </FilterField>
+
+          <FilterField label="마감">
+            {(id) => (
+              <Dropdown
+                ariaLabelledBy={id}
+                value={dueFilter ?? ''}
+                onChange={(v) => setParam('due', v || null)}
+                options={[
+                  { value: '', label: '전체' },
+                  { value: 'soon', label: '마감 임박' },
+                  { value: 'overdue', label: '지연' },
+                ]}
+              />
+            )}
+          </FilterField>
+
           {view === 'list' && (
-            <FormRow label="상태" className="min-w-[140px] flex-1">
-              <Select value={statusFilter ?? ''} onChange={(e) => setParam('status', e.target.value || null)}>
-                <option value="">전체</option>
-                {STATUS_ORDER.map((s) => (
-                  <option key={s} value={s}>
-                    {STATUS_LABEL[s]}
-                  </option>
-                ))}
-              </Select>
-            </FormRow>
+            <FilterField label="상태">
+              {(id) => (
+                <Dropdown
+                  ariaLabelledBy={id}
+                  value={statusFilter ?? ''}
+                  onChange={(v) => setParam('status', v || null)}
+                  options={[
+                    { value: '', label: '전체' },
+                    ...STATUS_ORDER.map((st) => ({
+                      value: st,
+                      label: STATUS_LABEL[st],
+                      adornment: (
+                        <span
+                          className="h-2 w-2 rounded-pill"
+                          style={{ background: STATUS_DOT_COLOR[st] }}
+                          aria-hidden
+                        />
+                      ),
+                    })),
+                  ]}
+                />
+              )}
+            </FilterField>
           )}
-          {hasActiveFilter && (
+        </div>
+
+        {hasActiveFilter && (
+          <div className="mt-md flex items-center gap-sm border-t border-hairline-soft pt-md">
             <Button
               variant="ghost"
-              onClick={() =>
-                setSearchParams(view === 'board' ? {} : { view }, {
-                  replace: true,
-                })
-              }
+              size="sm"
+              onClick={() => setSearchParams(view === 'board' ? {} : { view }, { replace: true })}
             >
               필터 초기화
             </Button>
-          )}
-        </div>
+            {meetingFilter && originsLoading && (
+              <span className="text-caption font-normal text-muted-soft">회의별 업무를 불러오는 중…</span>
+            )}
+          </div>
+        )}
       </SurfaceCard>
 
       {isLoading && (
@@ -200,25 +287,39 @@ export default function TaskBoardPage() {
         <div className="grid gap-lg md:grid-cols-3">
           {STATUS_ORDER.map((status) => {
             const items = byStatus(status)
+            const draggingItem = draggingId ? (data ?? []).find((i) => i.id === draggingId) : undefined
+            // 같은 컬럼 안으로 되돌리는 건 상태 변화가 없으므로 강조하지 않는다.
+            const isDropTarget = dragOverColumn === status && !!draggingItem && draggingItem.status !== status
             return (
               <section
                 key={status}
-                onDragOver={(e) => {
+                onDragEnter={(e) => {
                   e.preventDefault()
+                  const depth = (dragDepth.current.get(status) ?? 0) + 1
+                  dragDepth.current.set(status, depth)
                   setDragOverColumn(status)
                 }}
-                onDragLeave={() => setDragOverColumn((c) => (c === status ? null : c))}
+                onDragOver={(e) => {
+                  // preventDefault 를 해야 drop 이 허용된다. 커서도 move 로 고정.
+                  e.preventDefault()
+                  e.dataTransfer.dropEffect = 'move'
+                }}
+                onDragLeave={() => {
+                  const depth = (dragDepth.current.get(status) ?? 1) - 1
+                  dragDepth.current.set(status, depth)
+                  if (depth <= 0) setDragOverColumn((c) => (c === status ? null : c))
+                }}
                 onDrop={(e) => {
                   e.preventDefault()
-                  setDragOverColumn(null)
                   const id = Number(e.dataTransfer.getData('text/plain'))
                   const item = (data ?? []).find((i) => i.id === id)
+                  endDrag()
                   if (item) void changeStatus(item, status)
                 }}
                 className={cn(
-                  'rounded-lg bg-surface-soft p-sm transition-shadow',
-                  dragOverColumn === status
-                    ? 'shadow-[inset_0_0_0_1.5px_#3b82f6]'
+                  'rounded-lg bg-surface-soft p-sm transition-[box-shadow,background-color] duration-150',
+                  isDropTarget
+                    ? 'bg-surface-card shadow-[inset_0_0_0_1.5px_theme(colors.ink)]'
                     : 'shadow-[inset_0_0_0_1.5px_transparent]',
                 )}
               >
@@ -240,17 +341,21 @@ export default function TaskBoardPage() {
                       <TaskCard
                         item={item}
                         projectId={projectId}
+                        backTo={listUrl}
                         assigneeName={memberName(item.assigneeUserId)}
                         dragging={draggingId === item.id}
                         onDragStart={() => setDraggingId(item.id)}
-                        onDragEnd={() => {
-                          setDraggingId(null)
-                          setDragOverColumn(null)
-                        }}
+                        onDragEnd={endDrag}
                       />
                     </li>
                   ))}
-                  {items.length === 0 && (
+                  {isDropTarget && (
+                    <li
+                      aria-hidden
+                      className="h-[86px] animate-slot-in rounded-md border-[1.5px] border-dashed border-ink/40 bg-ink/[0.04]"
+                    />
+                  )}
+                  {items.length === 0 && !isDropTarget && (
                     <li className="rounded-md border border-dashed border-surface-strong px-sm py-lg text-center text-caption font-normal text-muted-soft">
                       업무 없음
                     </li>
@@ -341,9 +446,23 @@ export default function TaskBoardPage() {
   )
 }
 
+/** 라벨 + 커스텀 드롭다운을 aria-labelledby 로 묶는 필터 한 칸 */
+function FilterField({ label, children }: { label: string; children: (id: string) => React.ReactNode }) {
+  const id = useId()
+  return (
+    <div className="min-w-0">
+      <span id={id} className="mb-xs block text-caption text-body">
+        {label}
+      </span>
+      {children(id)}
+    </div>
+  )
+}
+
 function TaskCard({
   item,
   projectId,
+  backTo,
   assigneeName,
   onDragStart,
   onDragEnd,
@@ -351,6 +470,7 @@ function TaskCard({
 }: {
   item: ActionItemListResDto
   projectId: number
+  backTo: string
   assigneeName: string
   onDragStart: () => void
   onDragEnd: () => void
@@ -362,6 +482,7 @@ function TaskCard({
   return (
     <Link
       to={`/projects/${projectId}/tasks/${item.id}`}
+      state={{ from: backTo }}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData('text/plain', String(item.id))

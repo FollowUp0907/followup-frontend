@@ -13,5 +13,4 @@ export const getMeeting = (meetingId: number) =>
 export const updateMeeting = (meetingId: number, data: MeetingUpdateReqDto) =>
   api.patch<MeetingDetailResDto>(`/api/meeting/${meetingId}`, data).then((r) => r.data)
 
-export const deleteMeeting = (meetingId: number) =>
-  api.delete<void>(`/api/meeting/${meetingId}`).then((r) => r.data)
+export const deleteMeeting = (meetingId: number) => api.delete<void>(`/api/meeting/${meetingId}`).then((r) => r.data)

@@ -3,12 +3,13 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageWidth } from '@/components/layout/PageWidth'
-import { Avatar, Badge, DueBadge, MeetingStatusBadge, PriorityBadge, StatusBadge } from '@/components/ui/Badge'
+import { Avatar, DueBadge, MeetingStatusBadge, PriorityBadge, StatusBadge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
 import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { useToast } from '@/components/ui/Toast'
+import { deriveMeetingStatus } from '@/features/meetings/useMeetingStatuses'
 import { useMeetingActionItems } from '@/features/actionItems/useMeetingActionItems'
 import { useDeleteMeeting, useMeeting, useUpdateMeeting } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
@@ -46,6 +47,8 @@ export default function MeetingDetailPage() {
   }, [meeting])
 
   const base = `/projects/${projectId}`
+  // 백엔드가 확정 후에도 status 를 DRAFT 로 남기므로 결정 사항 유무로 다시 판정한다.
+  const effectiveStatus = deriveMeetingStatus(meeting)
 
   if (isLoading) {
     return (
@@ -108,12 +111,12 @@ export default function MeetingDetailPage() {
         }
         actions={
           <>
-            <MeetingStatusBadge status={meeting.status} />
+            <MeetingStatusBadge status={effectiveStatus} />
             <Button variant="secondary" onClick={() => setEditing((v) => !v)}>
               {editing ? '편집 취소' : '회의 수정'}
             </Button>
             <ButtonLink to={`${base}/meetings/${meetingId}/analysis`}>
-              {meeting.status === 'CONFIRMED' ? 'AI 분석 결과 보기' : 'AI 분석하기'}
+              {effectiveStatus === 'CONFIRMED' ? 'AI 분석 결과 보기' : 'AI 분석하기'}
             </ButtonLink>
           </>
         }
@@ -278,7 +281,7 @@ export default function MeetingDetailPage() {
               <div className="flex justify-between gap-md">
                 <dt className="text-muted">상태</dt>
                 <dd>
-                  <Badge tone={meeting.status === 'CONFIRMED' ? 'ink' : 'neutral'}>{meeting.status}</Badge>
+                  <MeetingStatusBadge status={effectiveStatus} />
                 </dd>
               </div>
               <div className="flex justify-between gap-md">

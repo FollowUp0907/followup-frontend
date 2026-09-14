@@ -49,3 +49,15 @@
 h1, h2, h3, p, li, dt, dd, button, a, span {
   word-break: keep-all;
 }
+
+/* 사용자가 모션 축소를 켜 두었으면 애니메이션·전환을 사실상 끈다. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

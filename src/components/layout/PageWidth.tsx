@@ -11,6 +11,7 @@ const WIDTH = {
   720: 'max-w-[720px]',
   800: 'max-w-[800px]',
   900: 'max-w-[900px]',
+  960: 'max-w-[960px]',
   1080: 'max-w-[1080px]',
 } as const
 
