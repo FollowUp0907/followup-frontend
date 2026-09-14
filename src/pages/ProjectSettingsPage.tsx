@@ -58,7 +58,7 @@ export default function ProjectSettingsPage() {
   }
 
   return (
-    <PageWidth size={600}>
+    <PageWidth size={800}>
       <PageHeader title="프로젝트 설정" description="프로젝트 기본 정보를 관리합니다." />
 
       <div className="grid gap-lg lg:grid-cols-12">

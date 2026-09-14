@@ -247,7 +247,7 @@ export default function AnalysisPage() {
   const isConfirmed = analysis.status === 'CONFIRMED'
 
   return (
-    <PageWidth size={960}>
+    <PageWidth size={1120}>
       {header}
 
       {/* 분석 메타 — 사이드 패널을 없애고 한 줄로 압축 */}

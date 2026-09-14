@@ -11,8 +11,11 @@ const WIDTH = {
   720: 'max-w-[720px]',
   800: 'max-w-[800px]',
   900: 'max-w-[900px]',
+  1040: 'max-w-[1040px]',
   960: 'max-w-[960px]',
   1080: 'max-w-[1080px]',
+  1120: 'max-w-[1120px]',
+  1200: 'max-w-[1200px]',
 } as const
 
 export function PageWidth({

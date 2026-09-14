@@ -45,9 +45,12 @@
   border-radius: 9999px;
 }
 
-/* 한국어 본문·제목은 어절 단위로 끊는다. 기본값(break-word)은 낱말 중간에서 잘린다. */
+/* 한국어 본문·제목은 어절 단위로 끊는다. 기본값(break-word)은 낱말 중간에서 잘린다.
+   다만 keep-all 만 주면 칸보다 긴 한 덩어리(긴 이메일·URL·공백 없는 제목)를
+   아예 못 끊어서 밖으로 삐져나온다. 그때만 강제로 자르도록 overflow-wrap 을 함께 준다. */
 h1, h2, h3, p, li, dt, dd, button, a, span {
   word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 /* 사용자가 모션 축소를 켜 두었으면 애니메이션·전환을 사실상 끈다. */

@@ -34,7 +34,7 @@ export default function ProjectLayout() {
       </TopNav>
 
       <main className="flex-1">
-        <div className="mx-auto w-full max-w-[1080px] px-lg py-xxl">
+        <div className="mx-auto w-full max-w-[1200px] px-lg py-xxl">
           {isLoading && (
             <div className="space-y-lg">
               <Skeleton className="h-10 w-64" />

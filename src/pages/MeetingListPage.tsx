@@ -23,7 +23,7 @@ export default function MeetingListPage() {
   const meetings = [...(data ?? [])].sort((a, b) => dayjs(b.scheduledAt).valueOf() - dayjs(a.scheduledAt).valueOf())
 
   return (
-    <PageWidth size={900}>
+    <PageWidth size={1040}>
       <PageHeader
         title="회의"
         description="회의록을 작성하고 과거 회의를 확인하세요."

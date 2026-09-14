@@ -128,7 +128,7 @@ export default function TaskDetailPage() {
   }
 
   return (
-    <PageWidth size={800}>
+    <PageWidth size={1040}>
       <PageHeader
         title={item.title}
         breadcrumb={

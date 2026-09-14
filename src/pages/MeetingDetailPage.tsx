@@ -100,7 +100,7 @@ export default function MeetingDetailPage() {
   }
 
   return (
-    <PageWidth size={800}>
+    <PageWidth size={1040}>
       <PageHeader
         title={meeting.title}
         description={formatDateTime(meeting.scheduledAt)}

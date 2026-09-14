@@ -76,7 +76,7 @@ export default function MeetingNewPage() {
   })
 
   return (
-    <PageWidth size={720}>
+    <PageWidth size={900}>
       <PageHeader
         title="새 회의"
         description="회의를 만들고 회의록을 작성하면 AI 분석으로 넘어갈 수 있습니다."
