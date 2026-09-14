@@ -64,7 +64,7 @@ export function PriorityBadge({ priority }: { priority?: ActionItemPriority }) {
 }
 
 export function MeetingStatusBadge({ status }: { status: MeetingStatus }) {
-  return status === 'CONFIRMED' ? <Badge tone="violet">분석 완료</Badge> : <Badge tone="neutral">작성 중</Badge>
+  return status === 'CONFIRMED' ? <Badge tone="ink">분석 완료</Badge> : <Badge tone="neutral">작성 중</Badge>
 }
 
 /** 마감 임박 / 지연 뱃지. 완료 업무에는 붙지 않는다. */

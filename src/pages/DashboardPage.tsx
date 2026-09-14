@@ -1,16 +1,5 @@
 import { Link } from 'react-router-dom'
-import {
-  CalendarClock,
-  CheckCircle2,
-  CircleDashed,
-  FileText,
-  ListTodo,
-  Loader,
-  Plus,
-  RefreshCw,
-  Users,
-} from 'lucide-react'
-import type { LucideIcon } from 'lucide-react'
+import { FileText, Plus, RefreshCw } from 'lucide-react'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar, DueBadge, MeetingStatusBadge, PriorityBadge } from '@/components/ui/Badge'
@@ -20,40 +9,18 @@ import { OnboardingEmptyState } from '@/components/ui/OnboardingEmptyState'
 import { useDashboard } from '@/features/dashboard/queries'
 import { useMeetingStatuses } from '@/features/meetings/useMeetingStatuses'
 import { useProjectContext } from '@/features/projects/ProjectContext'
-import { ACCENT, SUMMARY_ACCENT, avatarColor } from '@/lib/constants'
 import { formatDate, formatDateTime, progressPercent } from '@/lib/date'
 
-function StatTile({
-  label,
-  value,
-  to,
-  color,
-  icon: Icon,
-}: {
-  label: string
-  value: number
-  to: string
-  color: string
-  icon: LucideIcon
-}) {
+/**
+ * 지표 카드 — DESIGN.md 의 feature-card 규격을 따른다.
+ * surface-card(#f5f5f5) 배경 + rounded-lg. 색은 쓰지 않고 회색 면과 활자 위계로만 구분한다.
+ */
+function StatTile({ label, value, to }: { label: string; value: number; to: string }) {
   return (
-    <SurfaceCard className="shadow-none transition-shadow hover:shadow-card">
-      <Link to={to} className="block p-xl">
-        <span className="mb-md flex items-center justify-between">
-          <span className="text-caption font-normal text-muted">{label}</span>
-          <span
-            className="flex h-7 w-7 items-center justify-center rounded-md"
-            style={{ background: `${color}1f`, color }}
-            aria-hidden
-          >
-            <Icon size={15} />
-          </span>
-        </span>
-        <span className="block text-display-sm tabular-nums" style={{ color }}>
-          {value}
-        </span>
-      </Link>
-    </SurfaceCard>
+    <Link to={to} className="group block rounded-lg bg-surface-card p-xl transition-colors active:bg-surface-strong">
+      <span className="block text-caption font-normal text-muted">{label}</span>
+      <span className="mt-sm block text-display-sm tabular-nums text-ink">{value}</span>
+    </Link>
   )
 }
 
@@ -125,28 +92,10 @@ export default function DashboardPage() {
       {header}
 
       <div className="grid gap-lg sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="전체 업무" value={s.total} to={`${base}/tasks`} color={SUMMARY_ACCENT.total} icon={ListTodo} />
-        <StatTile
-          label="예정"
-          value={s.todo}
-          to={`${base}/tasks?status=TODO`}
-          color={SUMMARY_ACCENT.todo}
-          icon={CircleDashed}
-        />
-        <StatTile
-          label="진행 중"
-          value={s.inProgress}
-          to={`${base}/tasks?status=IN_PROGRESS`}
-          color={SUMMARY_ACCENT.inProgress}
-          icon={Loader}
-        />
-        <StatTile
-          label="완료"
-          value={s.done}
-          to={`${base}/tasks?status=DONE`}
-          color={SUMMARY_ACCENT.done}
-          icon={CheckCircle2}
-        />
+        <StatTile label="전체 업무" value={s.total} to={`${base}/tasks`} />
+        <StatTile label="예정" value={s.todo} to={`${base}/tasks?status=TODO`} />
+        <StatTile label="진행 중" value={s.inProgress} to={`${base}/tasks?status=IN_PROGRESS`} />
+        <StatTile label="완료" value={s.done} to={`${base}/tasks?status=DONE`} />
       </div>
 
       <div className="mt-lg grid gap-lg lg:grid-cols-[1.2fr_1fr]">
@@ -154,8 +103,6 @@ export default function DashboardPage() {
         <SurfaceCard className="p-xl">
           <SectionTitle
             title="마감 임박 업무"
-            icon={<CalendarClock size={14} />}
-            iconColor={ACCENT.orange}
             description={
               s.overdue > 0
                 ? `기한이 지난 업무가 ${s.overdue}건 있습니다.`
@@ -204,8 +151,6 @@ export default function DashboardPage() {
         <SurfaceCard className="p-xl">
           <SectionTitle
             title="최근 회의"
-            icon={<FileText size={14} />}
-            iconColor={ACCENT.violet}
             className="mb-md"
             action={
               <Link to={`${base}/meetings`} className="text-nav-link text-muted transition-colors hover:text-ink">
@@ -246,7 +191,7 @@ export default function DashboardPage() {
 
       {/* 담당자별 진행률 — 시안은 전폭 */}
       <SurfaceCard className="mt-lg p-xl">
-        <SectionTitle title="담당자별 진행률" className="mb-md" icon={<Users size={14} />} iconColor={ACCENT.emerald} />
+        <SectionTitle title="담당자별 진행률" className="mb-md" />
         {!data.memberProgress?.length ? (
           <p className="rounded-md bg-surface-soft px-md py-lg text-center text-body-sm text-muted">
             구성원 정보가 없습니다.
@@ -265,8 +210,8 @@ export default function DashboardPage() {
                     <span className="w-[80px] shrink-0 truncate text-body-sm text-ink">{m.name}</span>
                     <span className="h-2 flex-1 overflow-hidden rounded-pill bg-surface-strong">
                       <span
-                        className="block h-full rounded-pill transition-[width]"
-                        style={{ width: `${rate}%`, background: avatarColor(m.userId) }}
+                        className="block h-full rounded-pill bg-ink transition-[width]"
+                        style={{ width: `${rate}%` }}
                       />
                     </span>
                     <span className="w-[70px] shrink-0 text-right text-caption font-normal tabular-nums text-muted">

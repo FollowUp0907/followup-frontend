@@ -15,7 +15,7 @@ import { useAnalysis, useConfirmAnalysis, useRequestAnalysis } from '@/features/
 import { useMeeting } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { PRIORITY_ICON_COLOR, PRIORITY_LABEL, PRIORITY_ORDER } from '@/lib/constants'
-import { formatDateTime, formatServerDateTime, toDateInput } from '@/lib/date'
+import { formatDateTime, toDateInput } from '@/lib/date'
 import type { ActionItemPriority, AnalysisResDto } from '@/types/api'
 
 /** 화면에서 편집하는 초안 행 (AI 결과 + 사용자 수정본) */
@@ -250,25 +250,9 @@ export default function AnalysisPage() {
     <PageWidth size={1120}>
       {header}
 
-      {/* 분석 메타 — 사이드 패널을 없애고 한 줄로 압축 */}
-      <div className="mb-lg flex flex-wrap items-center gap-x-lg gap-y-xs border-b border-hairline-soft pb-md text-caption font-normal text-muted">
-        <StatusChip analysis={analysis} />
-        <span>
-          모델 <span className="text-ink">{analysis.modelName || '—'}</span>
-        </span>
-        <span>
-          프롬프트 <span className="text-ink">{analysis.promptVersion || '—'}</span>
-        </span>
-        <span>
-          분석 시각 <span className="text-ink">{formatServerDateTime(analysis.createdAt)}</span>
-        </span>
-      </div>
-
       {isConfirmed && (
         <div className="mb-lg flex flex-wrap items-center justify-between gap-md rounded-lg border border-hairline bg-surface-soft px-lg py-md">
-          <p className="text-body-sm text-body">
-            이 분석은 {formatServerDateTime(analysis.confirmedAt)}에 확정되어 후속 업무가 생성되었습니다.
-          </p>
+          <p className="text-body-sm text-body">이 분석은 확정되어 후속 업무가 생성되었습니다.</p>
           <ButtonLink to={`${base}/tasks`} size="sm">
             후속 업무 보기
           </ButtonLink>
