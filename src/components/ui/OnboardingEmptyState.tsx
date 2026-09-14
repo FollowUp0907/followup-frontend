@@ -2,11 +2,12 @@ import { Fragment } from 'react'
 import { CheckSquare, FileText, Plus, Sparkles } from 'lucide-react'
 import { ButtonLink } from '@/components/ui/Button'
 import { Logo } from '@/components/layout/Logo'
+import { ACCENT } from '@/lib/constants'
 
 const STEPS = [
-  { icon: FileText, label: '회의록 작성' },
-  { icon: Sparkles, label: 'AI 분석' },
-  { icon: CheckSquare, label: '후속 업무 확정' },
+  { icon: FileText, label: '회의록 작성', color: ACCENT.blue },
+  { icon: Sparkles, label: 'AI 분석', color: ACCENT.violet },
+  { icon: CheckSquare, label: '후속 업무 확정', color: ACCENT.emerald },
 ]
 
 /** 회의가 한 건도 없을 때 대시보드 자리를 채우는 온보딩 (시안 OnboardingEmptyState) */
@@ -28,7 +29,10 @@ export function OnboardingEmptyState({ newMeetingTo, membersTo }: { newMeetingTo
         {STEPS.map((s, i) => (
           <Fragment key={s.label}>
             <div className="flex w-[110px] flex-col items-center gap-xs">
-              <span className="flex h-10 w-10 items-center justify-center rounded-pill border-[1.5px] border-hairline bg-canvas text-ink">
+              <span
+                className="flex h-10 w-10 items-center justify-center rounded-pill border-[1.5px] bg-canvas"
+                style={{ borderColor: `${s.color}55`, color: s.color }}
+              >
                 <s.icon size={18} />
               </span>
               <span className="text-caption text-muted">{s.label}</span>

@@ -54,3 +54,25 @@ export const PRIORITY_ICON_COLOR: Record<ActionItemPriority, string> = {
 export function taskKey(id: number) {
   return `FU-${100 + id}`
 }
+
+/**
+ * DESIGN.md 의 badge 파스텔 4종.
+ * "tag pills and small accent moments" 에 쓰라고 정의된 색이다.
+ * 액션 레이어(주요 CTA)는 여전히 모노크롬으로 둔다 — 시스템이 명시적으로 금지한다.
+ */
+export const ACCENT = {
+  orange: '#fb923c',
+  pink: '#ec4899',
+  violet: '#8b5cf6',
+  emerald: '#34d399',
+  blue: '#3b82f6',
+} as const
+
+/** 대시보드 지표 카드의 강조색 — 상태 의미와 맞춘다 */
+export const SUMMARY_ACCENT = {
+  total: '#111111',
+  todo: '#898989',
+  inProgress: '#3b82f6',
+  done: '#10b981',
+  overdue: '#ef4444',
+} as const

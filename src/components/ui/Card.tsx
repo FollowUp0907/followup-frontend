@@ -24,16 +24,32 @@ export function SectionTitle({
   description,
   action,
   className,
+  icon,
+  iconColor,
 }: {
   title: string
   description?: string
   action?: ReactNode
   className?: string
+  /** 섹션을 구분해 주는 작은 색 아이콘 (DESIGN.md 의 "small accent moments") */
+  icon?: ReactNode
+  iconColor?: string
 }) {
   return (
     <div className={cn('mb-lg flex flex-wrap items-end justify-between gap-md', className)}>
       <div>
-        <h2 className="text-title-lg text-ink">{title}</h2>
+        <h2 className="flex items-center gap-xs text-title-lg text-ink">
+          {icon && (
+            <span
+              className="flex h-6 w-6 items-center justify-center rounded-sm"
+              style={iconColor ? { background: `${iconColor}1f`, color: iconColor } : undefined}
+              aria-hidden
+            >
+              {icon}
+            </span>
+          )}
+          {title}
+        </h2>
         {description && <p className="mt-xxs text-body-sm text-muted">{description}</p>}
       </div>
       {action}

@@ -4,7 +4,7 @@ import { PRIORITY_LABEL, STATUS_LABEL, avatarColor } from '@/lib/constants'
 import type { ActionItemPriority, ActionItemStatus, MeetingStatus } from '@/types/api'
 import { dDayLabel, isDueSoon, isOverdue } from '@/lib/date'
 
-type Tone = 'neutral' | 'ink' | 'success' | 'warning' | 'error' | 'info'
+type Tone = 'neutral' | 'ink' | 'success' | 'warning' | 'error' | 'info' | 'violet' | 'orange' | 'pink' | 'emerald'
 
 const TONE: Record<Tone, string> = {
   neutral: 'bg-surface-card text-body',
@@ -13,6 +13,11 @@ const TONE: Record<Tone, string> = {
   warning: 'bg-warning/10 text-[#b45309]',
   error: 'bg-error/10 text-error',
   info: 'bg-brand-accent/10 text-brand-accent',
+  // DESIGN.md 의 파스텔 — 태그 pill 용
+  violet: 'bg-badge-violet/12 text-[#6d28d9]',
+  orange: 'bg-badge-orange/15 text-[#c2410c]',
+  pink: 'bg-badge-pink/12 text-[#be185d]',
+  emerald: 'bg-badge-emerald/15 text-[#047857]',
 }
 
 export function Badge({
@@ -59,7 +64,7 @@ export function PriorityBadge({ priority }: { priority?: ActionItemPriority }) {
 }
 
 export function MeetingStatusBadge({ status }: { status: MeetingStatus }) {
-  return status === 'CONFIRMED' ? <Badge tone="ink">분석 완료</Badge> : <Badge tone="neutral">작성 중</Badge>
+  return status === 'CONFIRMED' ? <Badge tone="violet">분석 완료</Badge> : <Badge tone="neutral">작성 중</Badge>
 }
 
 /** 마감 임박 / 지연 뱃지. 완료 업무에는 붙지 않는다. */

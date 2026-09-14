@@ -9,42 +9,50 @@ import { ButtonLink } from '@/components/ui/Button'
 import { Card } from '@/components/ui/Card'
 import { useAuth } from '@/features/auth/AuthContext'
 import { cn } from '@/lib/cn'
+import { ACCENT } from '@/lib/constants'
 
-const STEPS: Array<{ icon: LucideIcon; title: string; desc: string }> = [
+const STEPS: Array<{ icon: LucideIcon; title: string; desc: string; color: string }> = [
   {
+    color: ACCENT.blue,
     icon: FileText,
     title: '회의록을 붙여넣어요',
     desc: '형식 걱정 없이 편하게 적은 회의 메모를 그대로 붙여넣으면 돼요.',
   },
   {
+    color: ACCENT.violet,
     icon: Sparkles,
     title: 'AI가 정리해요',
     desc: '결정 사항과 담당자별 후속 업무, 마감일을 자동으로 뽑아내요.',
   },
   {
+    color: ACCENT.emerald,
     icon: CheckSquare,
     title: '검토하고 확정해요',
     desc: '필요한 부분만 수정하면 실제 업무로 바로 반영돼요.',
   },
 ]
 
-const FEATURES: Array<{ icon: LucideIcon; title: string; desc: string }> = [
+const FEATURES: Array<{ icon: LucideIcon; title: string; desc: string; color: string }> = [
   {
+    color: ACCENT.violet,
     icon: Sparkles,
     title: '회의록에서 결정 사항만 골라내요',
     desc: '길게 늘어진 회의 메모에서 실제로 결정된 내용과 다음 행동을 구분해서 정리해요.',
   },
   {
+    color: ACCENT.emerald,
     icon: CheckSquare,
     title: '후속 업무가 자동으로 만들어져요',
     desc: '담당자, 마감일, 우선순위까지 AI가 초안을 잡고, 사람이 검토만 하면 돼요.',
   },
   {
+    color: ACCENT.orange,
     icon: Users,
     title: '담당자별 진행 상황이 보여요',
     desc: '누가 무엇을 맡았고 얼마나 끝냈는지 대시보드에서 한눈에 확인해요.',
   },
   {
+    color: ACCENT.pink,
     icon: RefreshCw,
     title: '다음 회의로 자연스럽게 이어져요',
     desc: '지난 회의에서 끝내지 못한 업무가 다음 회의 작성 화면에 그대로 노출돼요.',
@@ -251,7 +259,10 @@ export default function LandingPage() {
           <div className="grid gap-xl sm:grid-cols-3">
             {STEPS.map((s) => (
               <div key={s.title} className="text-center">
-                <span className="mx-auto mb-md flex h-11 w-11 items-center justify-center rounded-pill border-[1.5px] border-hairline text-ink">
+                <span
+                  className="mx-auto mb-md flex h-11 w-11 items-center justify-center rounded-pill border-[1.5px]"
+                  style={{ borderColor: `${s.color}55`, color: s.color }}
+                >
                   <s.icon size={19} />
                 </span>
                 <div className="text-title-md text-ink">{s.title}</div>
@@ -270,7 +281,10 @@ export default function LandingPage() {
           <div className="mb-xxl grid gap-lg sm:grid-cols-2">
             {FEATURES.map((f) => (
               <Card key={f.title} className="p-xl">
-                <span className="mb-lg flex h-9 w-9 items-center justify-center rounded-md border border-hairline bg-canvas text-ink">
+                <span
+                  className="mb-lg flex h-9 w-9 items-center justify-center rounded-md border border-hairline bg-canvas"
+                  style={{ color: f.color }}
+                >
                   <f.icon size={17} />
                 </span>
                 <div className="text-title-md text-ink">{f.title}</div>
