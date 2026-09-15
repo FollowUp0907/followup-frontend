@@ -132,25 +132,13 @@ export default function TaskBoardPage() {
 
       {/* 필터 바 — 칸 너비를 그리드로 통일해 길이가 어긋나지 않게 한다 */}
       <SurfaceCard className="mb-lg p-lg">
-        <div className="grid grid-cols-1 gap-md sm:grid-cols-2 lg:grid-cols-4">
-          <FilterField label="담당자">
-            {(id) => (
-              <Dropdown
-                ariaLabelledBy={id}
-                value={assigneeFilter ?? ''}
-                onChange={(v) => setParam('assigneeId', v || null)}
-                options={[
-                  { value: '', label: '전체' },
-                  ...members.map((m) => ({
-                    value: String(m.userId),
-                    label: m.name,
-                    adornment: <Avatar name={m.name} size={20} />,
-                  })),
-                ]}
-              />
-            )}
-          </FilterField>
-
+        <div
+          className={cn(
+            'grid grid-cols-1 gap-md sm:grid-cols-2',
+            // 목록 뷰는 상태 필터가 하나 더 붙어서 5칸 — 한 줄에 들어가도록 칸을 좁힌다.
+            view === 'list' ? 'lg:grid-cols-5 lg:gap-sm' : 'lg:grid-cols-4',
+          )}
+        >
           <FilterField label="회의">
             {(id) => (
               <Dropdown
@@ -163,6 +151,24 @@ export default function TaskBoardPage() {
                     value: String(m.id),
                     label: m.title,
                     description: formatDateTime(m.scheduledAt),
+                  })),
+                ]}
+              />
+            )}
+          </FilterField>
+
+          <FilterField label="담당자">
+            {(id) => (
+              <Dropdown
+                ariaLabelledBy={id}
+                value={assigneeFilter ?? ''}
+                onChange={(v) => setParam('assigneeId', v || null)}
+                options={[
+                  { value: '', label: '전체' },
+                  ...members.map((m) => ({
+                    value: String(m.userId),
+                    label: m.name,
+                    adornment: <Avatar name={m.name} size={20} />,
                   })),
                 ]}
               />
@@ -385,6 +391,7 @@ export default function TaskBoardPage() {
                     <td className="px-lg py-sm">
                       <Link
                         to={`/projects/${projectId}/tasks/${item.id}`}
+                        state={{ from: listUrl }}
                         className="text-body-sm text-ink hover:underline"
                       >
                         {item.title}
