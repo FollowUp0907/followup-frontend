@@ -42,20 +42,16 @@ export function useCascadeDelete(projectId: number) {
   }
 
   /**
-   * 회의 삭제 — 그 회의에서 만들어진 후속 업무를 먼저 지운다.
-   * 목록 DTO 에 originMeetingId 가 없어 상세로 판별한다.
+   * 회의 삭제.
+   *
+   * 후속 업무는 건드리지 않는다. 업무는 회의보다 오래 살아야 한다 —
+   * 회의는 지나간 사건의 기록이고, 업무는 아직 진행 중인 일이다.
+   * 회의에 딸린 결정 사항·분석 이력을 지우는 건 백엔드 몫이다.
    */
   const deleteMeetingCascade = async (meetingId: number) => {
-    const list = await actionItemApi.listActionItems(projectId)
-    const details = await Promise.all(list.map((i) => actionItemApi.getActionItem(i.id).catch(() => null)))
-    const mine = details.filter((d) => d && d.originMeetingId === meetingId).map((d) => d!.id)
-
-    const failedItems = await deleteAll(mine, (id) => actionItemApi.deleteActionItem(id))
-
     try {
       await meetingApi.deleteMeeting(meetingId)
     } catch (e) {
-      invalidate()
       if (e instanceof ApiError && e.status === 409) {
         throw new ApiError(
           'AI 분석 이력이 남아 있어 이 회의는 삭제할 수 없습니다. (분석 기록은 백엔드에서만 지울 수 있습니다)',
@@ -64,9 +60,7 @@ export function useCascadeDelete(projectId: number) {
       }
       throw e
     }
-
     invalidate()
-    return { deletedActionItems: mine.length - failedItems.length, failedActionItems: failedItems.length }
   }
 
   /** 프로젝트 삭제 — 후속 업무 → 회의 → 프로젝트 순으로 지운다. */

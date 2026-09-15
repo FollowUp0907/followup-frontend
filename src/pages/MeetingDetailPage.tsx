@@ -94,13 +94,9 @@ export default function MeetingDetailPage() {
   const onDelete = async () => {
     setDeleting(true)
     try {
-      // 이 회의에서 만들어진 후속 업무를 먼저 지우고 회의를 지운다.
-      const { deletedActionItems } = await deleteMeetingCascade(meetingId)
-      toast.success(
-        deletedActionItems > 0
-          ? `회의를 삭제했습니다. (후속 업무 ${deletedActionItems}건 함께 삭제)`
-          : '회의를 삭제했습니다.',
-      )
+      // 후속 업무는 지우지 않는다. 업무는 회의보다 오래 남아야 한다.
+      await deleteMeetingCascade(meetingId)
+      toast.success('회의를 삭제했습니다.')
       navigate(`${base}/meetings`, { replace: true })
     } catch (e) {
       toast.error(errorMessage(e))
@@ -319,7 +315,7 @@ export default function MeetingDetailPage() {
       <ConfirmDialog
         open={confirmDelete}
         title="회의를 삭제할까요?"
-        description="회의록·결정 사항과 이 회의에서 생성된 후속 업무가 함께 삭제됩니다. 되돌릴 수 없습니다."
+        description="회의록과 결정 사항이 삭제됩니다. 이 회의에서 만들어진 후속 업무는 그대로 남습니다.\n되돌릴 수 없습니다."
         loading={deleting}
         onConfirm={onDelete}
         onClose={() => setConfirmDelete(false)}
