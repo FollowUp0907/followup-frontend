@@ -165,6 +165,10 @@ export interface ActionItemDetailResDto {
   priority?: ActionItemPriority
   priorityReason?: string
   originMeetingId?: number
+  /** 원본 회의 제목. 회의가 삭제돼도 남는다. (백엔드 2026-09-15 추가) */
+  originMeetingTitle?: string
+  /** 원본 회의가 소프트 삭제된 상태인지 */
+  originMeetingDeleted?: boolean
   createdAt: string
   updatedAt: string
   completedAt?: string

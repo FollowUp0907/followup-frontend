@@ -28,7 +28,10 @@ export default function TaskDetailPage() {
   const { data: item, isLoading, isError, error } = useActionItem(actionItemId)
   const updateItem = useUpdateActionItem(projectId)
   const deleteItem = useDeleteActionItem(projectId)
-  const { data: originMeeting } = useMeeting(item?.originMeetingId ?? 0)
+  // 백엔드가 originMeetingTitle 을 주면 추가 조회가 필요 없다.
+  // 아직 안 주는 버전이면 예전처럼 회의를 한 번 더 받아 온다. (배포되면 이 줄은 지운다)
+  const needsMeetingFetch = !!item?.originMeetingId && !item?.originMeetingTitle
+  const { data: originMeeting } = useMeeting(needsMeetingFetch ? (item?.originMeetingId ?? 0) : 0)
 
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState('')
@@ -50,6 +53,9 @@ export default function TaskDetailPage() {
   const base = `/projects/${projectId}`
   // 목록에서 들어왔다면 그때의 필터·뷰까지 그대로 살려서 돌아간다.
   const backTo = (location.state as { from?: string } | null)?.from ?? `${base}/tasks`
+  // 새 필드를 우선 쓰고, 없으면 따로 받아 온 회의로 메운다.
+  const originMeetingTitle = item?.originMeetingTitle ?? originMeeting?.title
+  const originMeetingDeleted = item?.originMeetingDeleted ?? false
 
   if (isLoading) {
     return (
@@ -276,19 +282,29 @@ export default function TaskDetailPage() {
           <SurfaceCard className="p-xl">
             <h2 className="mb-sm text-title-md text-ink">생성된 회의</h2>
             {item.originMeetingId ? (
-              <Link
-                to={`${base}/meetings/${item.originMeetingId}`}
-                className="block rounded-md border border-hairline p-sm transition-colors hover:bg-surface-card"
-              >
-                <p className="truncate text-body-sm text-ink">
-                  {originMeeting?.title ?? `회의 #${item.originMeetingId}`}
-                </p>
-                {originMeeting && (
-                  <p className="mt-xxs text-caption font-normal text-muted">
-                    {formatDateTime(originMeeting.scheduledAt)}
+              originMeetingDeleted ? (
+                // 삭제된 회의는 열 수 없으니 링크를 걸지 않는다.
+                <div className="rounded-md border border-hairline bg-surface-soft p-sm">
+                  <p className="truncate text-body-sm text-muted">
+                    {originMeetingTitle ?? `회의 #${item.originMeetingId}`}
                   </p>
-                )}
-              </Link>
+                  <p className="mt-xxs text-caption font-normal text-muted-soft">삭제된 회의입니다.</p>
+                </div>
+              ) : (
+                <Link
+                  to={`${base}/meetings/${item.originMeetingId}`}
+                  className="block rounded-md border border-hairline p-sm transition-colors hover:bg-surface-card"
+                >
+                  <p className="truncate text-body-sm text-ink">
+                    {originMeetingTitle ?? `회의 #${item.originMeetingId}`}
+                  </p>
+                  {originMeeting && (
+                    <p className="mt-xxs text-caption font-normal text-muted">
+                      {formatDateTime(originMeeting.scheduledAt)}
+                    </p>
+                  )}
+                </Link>
+              )
             ) : (
               <p className="text-body-sm text-muted">직접 추가한 업무입니다.</p>
             )}

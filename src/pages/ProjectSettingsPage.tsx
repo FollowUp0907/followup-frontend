@@ -52,15 +52,9 @@ export default function ProjectSettingsPage() {
   const remove = async () => {
     setDeleting(true)
     try {
-      // 백엔드가 연관 데이터가 남아 있으면 삭제를 거부해서, 후속 업무·회의를 먼저 지운다.
-      const { deletedActionItems, deletedMeetings } = await deleteProjectCascade()
-      const detail = [
-        deletedMeetings > 0 ? `회의 ${deletedMeetings}건` : null,
-        deletedActionItems > 0 ? `후속 업무 ${deletedActionItems}건` : null,
-      ]
-        .filter(Boolean)
-        .join(' · ')
-      toast.success(detail ? `프로젝트를 삭제했습니다. (${detail} 함께 삭제)` : '프로젝트를 삭제했습니다.')
+      // 백엔드가 하위 회의·결정사항·분석이력·업무까지 정리한다.
+      await deleteProjectCascade()
+      toast.success('프로젝트를 삭제했습니다.')
       navigate('/projects', { replace: true })
     } catch (e) {
       toast.error(errorMessage(e))

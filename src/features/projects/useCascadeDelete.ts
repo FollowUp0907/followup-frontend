@@ -6,17 +6,16 @@ import { ApiError } from '@/api/client'
 import { qk } from '@/lib/queryKeys'
 
 /**
- * 연쇄 삭제.
+ * 회의·프로젝트 삭제.
  *
- * 백엔드는 연관 데이터가 남아 있으면 삭제를 거부한다. (2026-09-15 실측)
- *   DELETE /api/project/{id}  -> 409 PROJECT_DELETE_CONFLICT
- *   DELETE /api/meeting/{id}  -> 후속 업무만 있으면 204,
- *                                AI 분석/결정 이력이 있으면 409 (명세)
- * 그래서 화면에서 딸린 데이터를 먼저 지우고 마지막에 본체를 지운다.
+ * 백엔드(2026-09-15)가 삭제를 정리해 주면서 프론트가 할 일이 거의 없어졌다.
+ *   DELETE /api/meeting/{id}  -> 소프트 삭제. 결정사항·분석이력·업무 모두 유지
+ *   DELETE /api/project/{id}  -> 하위 회의·결정사항·분석이력·업무까지 백엔드가 정리
  *
- * 분석·결정 사항은 삭제 API 자체가 없어서 프론트에서 치울 수 없다.
- * 그 경우는 409 를 그대로 사용자에게 설명한다.
- * → 백엔드가 cascade 로 지워 주면 이 파일은 통째로 지울 수 있다.
+ * 다만 이 코드가 배포되는 시점에 백엔드가 아직 안 올라가 있을 수 있어,
+ * 409 를 받으면 예전처럼 직접 치우고 다시 시도하는 경로를 남겨 뒀다.
+ * → 백엔드가 EC2 에 반영된 것을 확인하면 fallback 을 지우고
+ *   이 훅도 없앤 뒤 각 화면에서 api 를 직접 호출하면 된다.
  */
 
 /** 여러 건을 지우면서 실패한 건 모아 둔다. 한 건 실패로 전체가 멈추지 않게. */
@@ -41,59 +40,52 @@ export function useCascadeDelete(projectId: number) {
     qc.invalidateQueries({ queryKey: qk.dashboard(projectId) })
   }
 
-  /**
-   * 회의 삭제.
-   *
-   * 후속 업무는 건드리지 않는다. 업무는 회의보다 오래 살아야 한다 —
-   * 회의는 지나간 사건의 기록이고, 업무는 아직 진행 중인 일이다.
-   * 회의에 딸린 결정 사항·분석 이력을 지우는 건 백엔드 몫이다.
-   */
+  /** 회의 삭제 — 백엔드가 소프트 삭제로 처리한다. 후속 업무는 그대로 남는다. */
   const deleteMeetingCascade = async (meetingId: number) => {
     try {
       await meetingApi.deleteMeeting(meetingId)
     } catch (e) {
+      // 구 백엔드에서만 나던 분기. 배포 후에는 발생하지 않는다.
       if (e instanceof ApiError && e.status === 409) {
-        throw new ApiError(
-          'AI 분석 이력이 남아 있어 이 회의는 삭제할 수 없습니다. (분석 기록은 백엔드에서만 지울 수 있습니다)',
-          409,
-        )
+        throw new ApiError('AI 분석 이력이 남아 있어 이 회의는 삭제할 수 없습니다.', 409)
       }
       throw e
     }
     invalidate()
   }
 
-  /** 프로젝트 삭제 — 후속 업무 → 회의 → 프로젝트 순으로 지운다. */
+  /** 프로젝트 삭제 — 백엔드가 하위 데이터까지 정리한다. */
   const deleteProjectCascade = async () => {
-    const [items, meetings] = await Promise.all([
-      actionItemApi.listActionItems(projectId),
-      meetingApi.listMeetings(projectId),
-    ])
-
-    const failedItems = await deleteAll(items, (i) => actionItemApi.deleteActionItem(i.id))
-    const failedMeetings = await deleteAll(meetings, (m) => meetingApi.deleteMeeting(m.id))
-
     try {
       await projectApi.deleteProject(projectId)
     } catch (e) {
-      invalidate()
-      if (e instanceof ApiError && e.status === 409) {
-        const stuck = failedMeetings.length
-        throw new ApiError(
-          stuck > 0
-            ? `회의 ${stuck}건에 AI 분석 이력이 남아 있어 프로젝트를 삭제할 수 없습니다. (분석 기록은 백엔드에서만 지울 수 있습니다)`
-            : '남아 있는 연관 데이터가 있어 프로젝트를 삭제할 수 없습니다.',
-          409,
-        )
+      // 구 백엔드: 연관 데이터가 남아 있으면 409. 직접 치우고 다시 시도한다.
+      if (!(e instanceof ApiError) || e.status !== 409) throw e
+
+      const [items, meetings] = await Promise.all([
+        actionItemApi.listActionItems(projectId),
+        meetingApi.listMeetings(projectId),
+      ])
+      await deleteAll(items, (i) => actionItemApi.deleteActionItem(i.id))
+      const failedMeetings = await deleteAll(meetings, (m) => meetingApi.deleteMeeting(m.id))
+
+      try {
+        await projectApi.deleteProject(projectId)
+      } catch (retryError) {
+        invalidate()
+        if (retryError instanceof ApiError && retryError.status === 409) {
+          throw new ApiError(
+            failedMeetings.length > 0
+              ? `회의 ${failedMeetings.length}건을 지우지 못해 프로젝트를 삭제할 수 없습니다.`
+              : '남아 있는 연관 데이터가 있어 프로젝트를 삭제할 수 없습니다.',
+            409,
+          )
+        }
+        throw retryError
       }
-      throw e
     }
 
     qc.invalidateQueries({ queryKey: qk.projects })
-    return {
-      deletedActionItems: items.length - failedItems.length,
-      deletedMeetings: meetings.length - failedMeetings.length,
-    }
   }
 
   return { deleteMeetingCascade, deleteProjectCascade }
