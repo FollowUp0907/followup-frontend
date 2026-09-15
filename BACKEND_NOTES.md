@@ -265,3 +265,160 @@ https://<vercel-배포-도메인>
 
 - 같은 이메일이 **비밀번호 가입**과 **구글 가입** 양쪽에 있을 때 어떻게 처리할까요? (같은 계정으로 합치기 / 에러)
 - 구글로 가입한 계정은 `password` 컬럼을 어떻게 두실 건가요? (nullable, 또는 provider 컬럼 추가)
+
+---
+
+# 🔴 삭제 기능이 막혀 있습니다 — 회의·프로젝트 삭제 cascade 요청
+
+**날짜**: 2026-09-15 / **확인 환경**: 배포된 백엔드(EC2), 실제 호출로 전부 재현
+
+사용자가 **회의 삭제**·**프로젝트 삭제** 버튼을 눌러도 지워지지 않는 경우가 있습니다.
+프론트에서 우회할 수 있는 만큼은 이미 처리했지만, **분석 이력이 있는 회의는 프론트에서
+손댈 방법이 전혀 없습니다.** 백엔드 수정이 필요합니다.
+
+## 1. 문제 요약
+
+| 동작 | 지금 결과 |
+| --- | --- |
+| 후속 업무가 있는 프로젝트 삭제 | ❌ 409 `PROJECT_DELETE_CONFLICT` |
+| 후속 업무만 있는 회의 삭제 | ✅ 204 |
+| **AI 분석을 한 번이라도 돌린 회의 삭제** | ❌ **409 `MEETING_DELETE_CONFLICT`** |
+| 분석 삭제 | ❌ **API 자체가 없음** |
+
+핵심은 마지막 두 줄입니다. **삭제를 막는 데이터(분석·결정)를 치울 수단이 없어서
+막다른 길입니다.**
+
+## 2. 재현 절차 (그대로 따라 하면 재현됩니다)
+
+### 2-1. 프로젝트 삭제가 막히는 경우
+
+```bash
+# 후속 업무가 하나라도 있으면
+DELETE /api/project/{projectId}
+→ 409 {"code":"PROJECT_DELETE_CONFLICT",
+       "message":"Project has related data and cannot be deleted"}
+
+# 후속 업무를 전부 지운 뒤 다시 시도하면
+DELETE /api/action-item/{id}   → 204
+DELETE /api/project/{projectId} → 204   ✅ 성공
+```
+
+→ 이건 **프론트에서 우회 완료**했습니다. (아래 4번)
+
+### 2-2. 회의 삭제가 막히는 경우 (해결 불가)
+
+```bash
+# 1) 회의 생성
+POST /api/project/5/meeting
+  { "title":"테스트", "scheduledAt":"2026-09-19T10:00:00",
+    "content":"김하나가 로그인 버그를 9월 20일까지 수정하기로 했다." }
+→ 201, meetingId = 20
+
+# 2) AI 분석 실행 (확정도 하지 않았습니다. 그냥 돌리기만 함)
+POST /api/meeting/20/analysis
+→ 201, { "id":12, "status":"GENERATED" }
+
+# 3) 회의 삭제 시도
+DELETE /api/meeting/20
+→ 409 {"code":"MEETING_DELETE_CONFLICT",
+       "message":"AI 분석 또는 결정 이력이 존재하는 회의는 삭제할 수 없습니다."}
+```
+
+**확정(CONFIRMED)이 아니라 분석을 한 번 돌리기만 해도 영구히 삭제 불가가 됩니다.**
+사용자가 실수로 분석을 눌렀다가 회의를 지우고 싶어도 방법이 없습니다.
+
+### 2-3. 분석 삭제 API 부재 확인
+
+```bash
+DELETE /api/analysis/999999          → 500
+DELETE /api/decision/999999          → 500   ← 존재하지 않는 경로
+DELETE /api/meeting/999999/analysis  → 500
+GET    /api/analysis/999999          → 404   ← GET 은 핸들러가 있음
+```
+
+없는 경로와 응답이 같은 걸로 봐서 **DELETE 핸들러가 아예 없습니다.**
+
+> 곁다리로: 매핑되지 않은 경로/메서드가 **404·405 가 아니라 500** 으로 나옵니다.
+> 전역 예외 핸들러가 `NoHandlerFoundException` / `HttpRequestMethodNotSupportedException`
+> 까지 삼키고 있는 것 같습니다. 디버깅할 때 헷갈리니 함께 봐 주시면 좋겠습니다.
+
+## 3. 🙏 요청 — 둘 중 하나만 해주시면 됩니다
+
+### 옵션 A. 삭제 시 연관 데이터도 함께 삭제 (권장)
+
+가장 깔끔하고, 프론트 우회 코드를 전부 걷어낼 수 있습니다.
+
+```java
+// MeetingService
+@Transactional
+public void delete(Long meetingId, Long userId) {
+    Meeting meeting = ...;  // 권한 검사는 기존 그대로
+
+    // 지금: 분석/결정이 있으면 MEETING_DELETE_CONFLICT 를 던짐
+    // 변경: 함께 삭제
+    analysisRepository.deleteByMeetingId(meetingId);
+    decisionRepository.deleteByMeetingId(meetingId);
+    actionItemRepository.deleteByOriginMeetingId(meetingId);   // 정책에 따라 선택
+    meetingRepository.delete(meeting);
+}
+```
+
+JPA 연관관계를 쓰신다면 애너테이션만으로도 됩니다.
+
+```java
+@OneToMany(mappedBy = "meeting", cascade = CascadeType.ALL, orphanRemoval = true)
+private List<Analysis> analyses = new ArrayList<>();
+
+@OneToMany(mappedBy = "meeting", cascade = CascadeType.ALL, orphanRemoval = true)
+private List<Decision> decisions = new ArrayList<>();
+```
+
+프로젝트 삭제도 같은 방식으로 회의·후속 업무까지 cascade 해주시면,
+프론트의 순차 삭제 로직을 통째로 지울 수 있습니다.
+
+**확인 부탁드릴 정책 하나**: 회의를 지울 때 그 회의에서 생성된 **후속 업무도 같이
+지울지**, 아니면 **업무는 남기고 회의 연결만 끊을지**(`originMeetingId = null`)
+정해 주세요. 지금 프론트는 **함께 삭제**로 구현해 뒀습니다.
+
+### 옵션 B. 분석 삭제 API 추가
+
+A가 부담되면 이것만이라도 괜찮습니다. 프론트에서 분석 → 회의 순으로 지우겠습니다.
+
+```
+DELETE /api/analysis/{analysisId}
+  204  삭제 성공
+  403  권한 없음
+  404  없는 분석
+  409  (선택) 이미 확정된 분석은 못 지우게 하려면
+```
+
+다만 이 경우 프론트가 회의의 분석 목록을 알아야 하는데 **조회 API도 없습니다.**
+(`GET /api/analysis/{id}` 는 id 를 알아야 하고, `POST /api/meeting/{id}/analysis` 는
+부작용이 있어 조회용으로 못 씁니다.) 그래서 `GET /api/meeting/{meetingId}/analysis`
+같은 조회 API도 함께 필요합니다. **결국 A가 훨씬 간단합니다.**
+
+## 4. 프론트에서 이미 해둔 것
+
+`src/features/projects/useCascadeDelete.ts`
+
+- **프로젝트 삭제**: 후속 업무 → 회의 → 프로젝트 순으로 지웁니다.
+- **회의 삭제**: 그 회의에서 생성된 후속 업무를 먼저 지우고 회의를 지웁니다.
+- 한 건 실패로 전체가 멈추지 않게 실패분을 모아 두고 계속 진행합니다.
+- 확정 대화상자에 무엇이 함께 지워지는지 명시하고, 완료 토스트에 건수를 보여줍니다.
+- 그래도 409 가 나면 `"AI 분석 이력이 남아 있어 이 회의는 삭제할 수 없습니다"` 로
+  풀어서 안내합니다.
+
+**백엔드가 A를 적용하면 이 파일은 통째로 삭제하고 `DELETE` 한 번으로 바꾸겠습니다.**
+
+## 5. ⚠️ 정리 부탁드릴 데이터
+
+위 2-2 를 확인하느라 만든 회의가 **프론트에서 지울 수 없어 남아 있습니다.**
+
+```
+프로젝트 5 / 회의 20  "[삭제요망] 테스트 회의 — 백엔드에서 삭제 필요"
+                분석 12 (GENERATED)
+```
+
+제목을 눈에 띄게 바꿔 두었습니다. DB 에서 직접 지워 주시거나, 옵션 A 적용 후
+프론트에서 지우겠습니다.
+
