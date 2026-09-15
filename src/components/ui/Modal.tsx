@@ -54,7 +54,7 @@ export function Modal({
         <div className="mb-lg flex items-start justify-between gap-md">
           <div>
             <h2 className="text-title-lg text-ink">{title}</h2>
-            {description && <p className="mt-xxs text-body-sm text-muted">{description}</p>}
+            {description && <p className="mt-xxs whitespace-pre-line text-body-sm text-muted">{description}</p>}
           </div>
           <IconButton onClick={onClose} aria-label="닫기" type="button">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>

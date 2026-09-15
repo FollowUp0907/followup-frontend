@@ -9,7 +9,8 @@ import { SurfaceCard } from '@/components/ui/Card'
 import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { useToast } from '@/components/ui/Toast'
 import { useProjectContext } from '@/features/projects/ProjectContext'
-import { useDeleteProject, useUpdateProject } from '@/features/projects/queries'
+import { useUpdateProject } from '@/features/projects/queries'
+import { useCascadeDelete } from '@/features/projects/useCascadeDelete'
 import { formatServerDateTime } from '@/lib/date'
 
 export default function ProjectSettingsPage() {
@@ -17,7 +18,8 @@ export default function ProjectSettingsPage() {
   const navigate = useNavigate()
   const toast = useToast()
   const updateProject = useUpdateProject(projectId)
-  const deleteProject = useDeleteProject()
+  const { deleteProjectCascade } = useCascadeDelete(projectId)
+  const [deleting, setDeleting] = useState(false)
 
   const [name, setName] = useState(project.name)
   const [description, setDescription] = useState(project.description ?? '')
@@ -48,12 +50,22 @@ export default function ProjectSettingsPage() {
   }
 
   const remove = async () => {
+    setDeleting(true)
     try {
-      await deleteProject.mutateAsync(projectId)
-      toast.success('프로젝트를 삭제했습니다.')
+      // 백엔드가 연관 데이터가 남아 있으면 삭제를 거부해서, 후속 업무·회의를 먼저 지운다.
+      const { deletedActionItems, deletedMeetings } = await deleteProjectCascade()
+      const detail = [
+        deletedMeetings > 0 ? `회의 ${deletedMeetings}건` : null,
+        deletedActionItems > 0 ? `후속 업무 ${deletedActionItems}건` : null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+      toast.success(detail ? `프로젝트를 삭제했습니다. (${detail} 함께 삭제)` : '프로젝트를 삭제했습니다.')
       navigate('/projects', { replace: true })
     } catch (e) {
       toast.error(errorMessage(e))
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -134,8 +146,8 @@ export default function ProjectSettingsPage() {
       <ConfirmDialog
         open={confirmDelete}
         title="프로젝트를 삭제할까요?"
-        description={`확인을 위해 프로젝트명 "${project.name}" 을 입력해 주세요.`}
-        loading={deleteProject.isPending}
+        description={`이 프로젝트의 회의와 후속 업무가 모두 함께 삭제됩니다. 되돌릴 수 없습니다.\n확인을 위해 프로젝트명 "${project.name}" 을 입력해 주세요.`}
+        loading={deleting}
         onConfirm={() => {
           if (confirmText !== project.name) {
             toast.error('프로젝트명이 일치하지 않습니다.')

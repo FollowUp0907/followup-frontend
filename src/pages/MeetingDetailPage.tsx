@@ -11,7 +11,8 @@ import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { useToast } from '@/components/ui/Toast'
 import { deriveMeetingStatus } from '@/features/meetings/useMeetingStatuses'
 import { useMeetingActionItems } from '@/features/actionItems/useMeetingActionItems'
-import { useDeleteMeeting, useMeeting, useUpdateMeeting } from '@/features/meetings/queries'
+import { useMeeting, useUpdateMeeting } from '@/features/meetings/queries'
+import { useCascadeDelete } from '@/features/projects/useCascadeDelete'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import {
   formatDate,
@@ -30,7 +31,8 @@ export default function MeetingDetailPage() {
 
   const { data: meeting, isLoading, isError, error } = useMeeting(meetingId)
   const updateMeeting = useUpdateMeeting(projectId, meetingId)
-  const deleteMeeting = useDeleteMeeting(projectId)
+  const { deleteMeetingCascade } = useCascadeDelete(projectId)
+  const [deleting, setDeleting] = useState(false)
   const { items: generatedItems, isLoading: generatedLoading } = useMeetingActionItems(projectId, meetingId)
 
   const [editing, setEditing] = useState(false)
@@ -90,12 +92,20 @@ export default function MeetingDetailPage() {
   }
 
   const onDelete = async () => {
+    setDeleting(true)
     try {
-      await deleteMeeting.mutateAsync(meetingId)
-      toast.success('회의를 삭제했습니다.')
+      // 이 회의에서 만들어진 후속 업무를 먼저 지우고 회의를 지운다.
+      const { deletedActionItems } = await deleteMeetingCascade(meetingId)
+      toast.success(
+        deletedActionItems > 0
+          ? `회의를 삭제했습니다. (후속 업무 ${deletedActionItems}건 함께 삭제)`
+          : '회의를 삭제했습니다.',
+      )
       navigate(`${base}/meetings`, { replace: true })
     } catch (e) {
       toast.error(errorMessage(e))
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -309,8 +319,8 @@ export default function MeetingDetailPage() {
       <ConfirmDialog
         open={confirmDelete}
         title="회의를 삭제할까요?"
-        description="회의록과 결정 사항이 함께 삭제됩니다. 되돌릴 수 없습니다."
-        loading={deleteMeeting.isPending}
+        description="회의록·결정 사항과 이 회의에서 생성된 후속 업무가 함께 삭제됩니다. 되돌릴 수 없습니다."
+        loading={deleting}
         onConfirm={onDelete}
         onClose={() => setConfirmDelete(false)}
       />
