@@ -2,7 +2,7 @@
 
 회의록을 넣으면 AI가 결정 사항과 후속 업무를 추출하고, 다음 회의까지 이어서 관리하는 서비스의 프론트엔드입니다.
 
-- **스택**: React 18 · TypeScript · Vite · Tailwind CSS · React Router · TanStack Query · React Hook Form · Zod · Axios · Recharts · dayjs
+- **스택**: React 18 · TypeScript · Vite · Tailwind CSS · React Router · TanStack Query · React Hook Form · Zod · Axios · lucide-react · dayjs
 - **디자인**: Cal.com 디자인 시스템 토큰 (`tailwind.config.js` 에 전부 정의)
 - **백엔드**: Spring Boot (AWS EC2 + RDS), OpenAPI 문서 `<백엔드 주소>/swagger-ui/index.html`
 
