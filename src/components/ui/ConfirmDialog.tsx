@@ -8,6 +8,8 @@ export function ConfirmDialog({
   description,
   confirmLabel = '삭제',
   cancelLabel = '취소',
+  /** 되돌릴 수 없는 작업이면 true. 생성·저장처럼 안전한 확인은 false. */
+  destructive = true,
   loading,
   onConfirm,
   onClose,
@@ -18,6 +20,7 @@ export function ConfirmDialog({
   description?: string
   confirmLabel?: string
   cancelLabel?: string
+  destructive?: boolean
   loading?: boolean
   onConfirm: () => void
   onClose: () => void
@@ -35,7 +38,7 @@ export function ConfirmDialog({
           <Button variant="secondary" onClick={onClose} type="button">
             {cancelLabel}
           </Button>
-          <Button variant="danger" onClick={onConfirm} loading={loading} type="button">
+          <Button variant={destructive ? 'danger' : 'primary'} onClick={onConfirm} loading={loading} type="button">
             {confirmLabel}
           </Button>
         </>

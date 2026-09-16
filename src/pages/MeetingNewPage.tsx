@@ -236,6 +236,7 @@ export default function MeetingNewPage() {
             : undefined
         }
         confirmLabel="회의 만들기"
+        destructive={false}
         loading={createMeeting.isPending}
         onConfirm={createNow}
         onClose={() => setConfirmOpen(false)}
