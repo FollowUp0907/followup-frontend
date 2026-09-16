@@ -500,7 +500,7 @@ export default function AnalysisPage() {
       <ConfirmDialog
         open={confirmOpen}
         title="이 내용으로 확정할까요?"
-        description="확정하면 후속 업무가 생성되고 회의 상태가 CONFIRMED 로 바뀝니다."
+        description="확정하면 후속 업무가 생성되고 회의 상태가 분석 완료로 바뀝니다."
         confirmLabel="확정"
         loading={confirmAnalysis.isPending}
         onConfirm={onConfirm}
