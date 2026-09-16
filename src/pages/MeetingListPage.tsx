@@ -1,11 +1,13 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { errorMessage } from '@/api/client'
-import { Plus } from 'lucide-react'
+import { Plus, Search } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageWidth } from '@/components/layout/PageWidth'
 import { MeetingStatusBadge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Field'
 import { useMeetings } from '@/features/meetings/queries'
 import { useMeetingStatuses } from '@/features/meetings/useMeetingStatuses'
 import { useProjectContext } from '@/features/projects/ProjectContext'
@@ -15,12 +17,16 @@ import { dayjs } from '@/lib/date'
 export default function MeetingListPage() {
   const { projectId } = useProjectContext()
   const { data, isLoading, isError, error, refetch } = useMeetings(projectId)
+  const [query, setQuery] = useState('')
   // 백엔드가 확정 후에도 status 를 DRAFT 로 두기 때문에 화면에서 다시 판정한다.
   const { statusById } = useMeetingStatuses(projectId)
   const base = `/projects/${projectId}`
 
   // 백엔드 정렬을 신뢰하지 않고 최신순으로 한 번 더 정렬한다.
-  const meetings = [...(data ?? [])].sort((a, b) => dayjs(b.scheduledAt).valueOf() - dayjs(a.scheduledAt).valueOf())
+  const keyword = query.trim().toLowerCase()
+  const meetings = [...(data ?? [])]
+    .filter((m) => !keyword || m.title.toLowerCase().includes(keyword))
+    .sort((a, b) => dayjs(b.scheduledAt).valueOf() - dayjs(a.scheduledAt).valueOf())
 
   return (
     <PageWidth size={1120}>
@@ -33,6 +39,19 @@ export default function MeetingListPage() {
           </ButtonLink>
         }
       />
+
+      {/* 회의 제목 검색 — 백엔드에 검색 파라미터가 없어 받아 온 목록에서 거른다 */}
+      <div className="relative mb-lg">
+        <Search size={16} className="pointer-events-none absolute left-sm top-1/2 -translate-y-1/2 text-muted" />
+        <Input
+          type="search"
+          className="pl-xl"
+          placeholder="회의 제목 검색"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          aria-label="회의 제목 검색"
+        />
+      </div>
 
       {isLoading && (
         <div className="space-y-sm">
@@ -56,9 +75,17 @@ export default function MeetingListPage() {
 
       {!isLoading && !isError && meetings.length === 0 && (
         <EmptyState
-          title="아직 기록된 회의가 없어요"
-          description="첫 회의를 만들어 회의록을 남겨보세요."
-          action={<ButtonLink to={`${base}/meetings/new`}>새 회의 만들기</ButtonLink>}
+          title={keyword ? '검색 결과가 없습니다' : '아직 기록된 회의가 없어요'}
+          description={keyword ? `"${query}" 와 일치하는 회의가 없습니다.` : '첫 회의를 만들어 회의록을 남겨보세요.'}
+          action={
+            keyword ? (
+              <Button variant="secondary" onClick={() => setQuery('')}>
+                검색 지우기
+              </Button>
+            ) : (
+              <ButtonLink to={`${base}/meetings/new`}>새 회의 만들기</ButtonLink>
+            )
+          }
         />
       )}
 

@@ -26,8 +26,11 @@ export const ROLE_LABEL: Record<ProjectRole, string> = {
   MEMBER: '멤버',
 }
 
-/** 아바타 파스텔 채움 — 디자인 시스템에서 파스텔이 허용되는 유일한 자리 */
-export const AVATAR_COLORS = ['#fb923c', '#ec4899', '#8b5cf6', '#34d399', '#3b82f6'] as const
+/**
+ * 아바타 채움 — 디자인 시스템에서 파스텔이 허용되는 유일한 자리.
+ * 원색은 이름 글자를 눌러서, 채도를 낮춘 "물빠진" 톤으로 쓴다.
+ */
+export const AVATAR_COLORS = ['#fdba74', '#f9a8d4', '#c4b5fd', '#86efac', '#93c5fd'] as const
 
 export function avatarColor(seed: string | number) {
   const s = String(seed)

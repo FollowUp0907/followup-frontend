@@ -7,6 +7,7 @@ import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageWidth } from '@/components/layout/PageWidth'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { Pager, usePager } from '@/components/ui/Pager'
 import { Avatar, DueBadge, PriorityBadge, StatusBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { SurfaceCard } from '@/components/ui/Card'
@@ -39,6 +40,8 @@ export default function MeetingNewPage() {
   const { data: allItems } = useActionItems(projectId)
 
   const openItems = useMemo(() => (allItems ?? []).filter((i) => i.status !== 'DONE'), [allItems])
+  // 목록이 길어지면 스크롤 대신 페이지로 넘긴다.
+  const carryOverPage = usePager(openItems, 5)
 
   const [participantIds, setParticipantIds] = useState<number[]>(() => (user ? [user.userId] : []))
   const [carryOverIds, setCarryOverIds] = useState<number[]>([])
@@ -49,6 +52,7 @@ export default function MeetingNewPage() {
     register,
     handleSubmit,
     setValue,
+    setFocus,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
@@ -63,6 +67,11 @@ export default function MeetingNewPage() {
     setList(list.includes(id) ? list.filter((v) => v !== id) : [...list, id])
 
   const onSubmit = handleSubmit(async (values) => {
+    if (!values.content?.trim()) {
+      toast.error('회의록 내용을 채워 주세요. 내용이 있어야 AI 분석을 할 수 있습니다.')
+      setFocus('content')
+      return
+    }
     setPendingValues(values)
     setConfirmOpen(true)
   })
@@ -200,7 +209,7 @@ export default function MeetingNewPage() {
                   </Button>
                 </div>
                 <ul className="space-y-xxs">
-                  {openItems.map((item) => (
+                  {carryOverPage.visible.map((item) => (
                     <li key={item.id}>
                       <label className="flex cursor-pointer items-start gap-sm rounded-md border border-hairline px-sm py-sm transition-colors hover:bg-surface-card">
                         <input
@@ -221,6 +230,7 @@ export default function MeetingNewPage() {
                     </li>
                   ))}
                 </ul>
+                <Pager page={carryOverPage.page} pageCount={carryOverPage.pageCount} onChange={carryOverPage.setPage} />
               </>
             )}
           </SurfaceCard>

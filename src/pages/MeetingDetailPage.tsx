@@ -40,6 +40,7 @@ export default function MeetingDetailPage() {
   const [scheduledAt, setScheduledAt] = useState('')
   const [content, setContent] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [reanalyzeOpen, setReanalyzeOpen] = useState(false)
 
   useEffect(() => {
     if (!meeting) return
@@ -78,14 +79,20 @@ export default function MeetingDetailPage() {
   const hasContent = !!meeting.content?.trim()
 
   const saveContent = async () => {
+    // 회의록 본문이 바뀌었고 이미 분석한 회의라면, 저장 후 재분석을 물어본다.
+    const contentChanged = content.trim() !== (meeting?.content ?? '').trim()
     try {
       await updateMeeting.mutateAsync({
         title,
         scheduledAt: fromDateTimeLocalInput(scheduledAt),
         content,
       })
-      toast.success('회의록을 저장했습니다.')
       setEditing(false)
+      if (contentChanged && effectiveStatus === 'CONFIRMED') {
+        setReanalyzeOpen(true)
+      } else {
+        toast.success('회의록을 저장했습니다.')
+      }
     } catch (e) {
       toast.error(errorMessage(e))
     }
@@ -311,6 +318,25 @@ export default function MeetingDetailPage() {
           </SurfaceCard>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={reanalyzeOpen}
+        title="회의록이 바뀌었습니다. 다시 분석할까요?"
+        description={
+          '바뀐 내용으로 새 초안을 만듭니다. 확정하기 전까지는 기존 후속 업무가 그대로 유지됩니다.\n나중에 회의 상세에서 "AI 재분석하기" 로 다시 할 수도 있습니다.'
+        }
+        confirmLabel="다시 분석"
+        cancelLabel="나중에"
+        destructive={false}
+        onConfirm={() => {
+          setReanalyzeOpen(false)
+          navigate(`${base}/meetings/${meetingId}/analysis`)
+        }}
+        onClose={() => {
+          setReanalyzeOpen(false)
+          toast.success('회의록을 저장했습니다.')
+        }}
+      />
 
       <ConfirmDialog
         open={confirmDelete}

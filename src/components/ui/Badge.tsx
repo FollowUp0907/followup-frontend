@@ -82,14 +82,13 @@ export function Avatar({ name, size = 36, className }: { name?: string | null; s
   const initials = label ? label.slice(0, 2) : '?'
   return (
     <span
-      className={cn(
-        'inline-flex shrink-0 items-center justify-center rounded-pill font-semibold text-white',
-        className,
-      )}
+      className={cn('inline-flex shrink-0 items-center justify-center rounded-pill font-semibold', className)}
       style={{
         width: size,
         height: size,
+        // 물빠진 파스텔 위에 흰 글씨는 안 읽혀서 잉크색으로 둔다.
         background: name ? avatarColor(label) : '#e5e7eb',
+        color: name ? '#111111' : '#6b7280',
         fontSize: Math.max(11, Math.round(size * 0.36)),
       }}
       title={label}

@@ -1,6 +1,6 @@
 import { useId, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { CalendarClock, ChevronDown, ChevronsUp, Equal, GripVertical, Plus } from 'lucide-react'
+import { CalendarClock, ChevronDown, ChevronsUp, Equal, GripVertical, Plus, Search } from 'lucide-react'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar, DueBadge, PriorityBadge } from '@/components/ui/Badge'
@@ -59,6 +59,7 @@ export default function TaskBoardPage() {
   const [createOpen, setCreateOpen] = useState(false)
   const [dragOverColumn, setDragOverColumn] = useState<ActionItemStatus | null>(null)
   const [draggingId, setDraggingId] = useState<number | null>(null)
+  const [query, setQuery] = useState('')
   // dragenter/dragleave 는 자식 위를 지날 때마다 번갈아 발생해서 그대로 쓰면 깜빡인다.
   // 컬럼별로 enter 횟수를 세서 0 이 될 때만 해제한다.
   const dragDepth = useRef(new Map<ActionItemStatus, number>())
@@ -81,6 +82,8 @@ export default function TaskBoardPage() {
     if (dueFilter === 'overdue') items = items.filter((i) => isOverdue(i.dueDate, i.status))
     if (dueFilter === 'soon') items = items.filter((i) => isDueSoon(i.dueDate, i.status))
     if (view === 'list' && statusFilter) items = items.filter((i) => i.status === statusFilter)
+    const keyword = query.trim().toLowerCase()
+    if (keyword) items = items.filter((i) => i.title.toLowerCase().includes(keyword))
     if (meetingFilter) {
       const target = Number(meetingFilter)
       items = items.filter((i) => originByItemId.get(i.id) === target)
@@ -92,7 +95,7 @@ export default function TaskBoardPage() {
       if (!b.dueDate) return -1
       return dayjs(a.dueDate).valueOf() - dayjs(b.dueDate).valueOf()
     })
-  }, [data, dueFilter, statusFilter, view, meetingFilter, originByItemId])
+  }, [data, dueFilter, statusFilter, view, meetingFilter, originByItemId, query])
 
   const byStatus = (status: ActionItemStatus) => filtered.filter((i) => i.status === status)
 
@@ -105,7 +108,14 @@ export default function TaskBoardPage() {
     }
   }
 
-  const hasActiveFilter = !!(statusFilter || priorityFilter || assigneeFilter || dueFilter || meetingFilter)
+  const hasActiveFilter = !!(
+    statusFilter ||
+    priorityFilter ||
+    assigneeFilter ||
+    dueFilter ||
+    meetingFilter ||
+    query.trim()
+  )
 
   return (
     <>
@@ -128,6 +138,19 @@ export default function TaskBoardPage() {
           </>
         }
       />
+
+      {/* 업무명 검색 — 백엔드에 검색 파라미터가 없어 받아 온 목록에서 거른다 */}
+      <div className="relative mb-md">
+        <Search size={16} className="pointer-events-none absolute left-sm top-1/2 -translate-y-1/2 text-muted" />
+        <Input
+          type="search"
+          className="pl-xl"
+          placeholder="업무명 검색"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          aria-label="업무명 검색"
+        />
+      </div>
 
       {/* 필터 바 — 칸 너비를 그리드로 통일해 길이가 어긋나지 않게 한다 */}
       <SurfaceCard className="mb-lg p-lg">
@@ -515,7 +538,10 @@ function TaskCard({
         aria-label={STATUS_LABEL[item.status]}
       />
 
-      <p className="mb-sm pl-md pr-lg text-title-sm leading-snug text-ink">{item.title}</p>
+      <div className="mb-sm flex items-start justify-between gap-xs pl-md pr-lg">
+        <p className="min-w-0 text-title-sm leading-snug text-ink">{item.title}</p>
+        <DueBadge dueDate={item.dueDate} status={item.status} />
+      </div>
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-sm">
