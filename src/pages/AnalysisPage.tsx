@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { RefreshCw } from 'lucide-react'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageWidth } from '@/components/layout/PageWidth'
@@ -445,18 +444,14 @@ export default function AnalysisPage() {
                       </FormRow>
                     </div>
 
-                    <FormRow label="AI 추천 이유" hint="수정 가능">
-                      <Input
-                        value={row.priorityReason}
-                        disabled={isConfirmed}
-                        placeholder="예) 배포 전에 해결해야 하는 오류"
-                        onChange={(e) =>
-                          patchRow(row.key, {
-                            priorityReason: e.target.value,
-                          })
-                        }
-                      />
-                    </FormRow>
+                    {row.priorityReason && (
+                      <div>
+                        <span className="mb-xs block text-caption text-body">AI 추천 이유</span>
+                        <p className="rounded-md bg-surface-soft px-sm py-xs text-caption font-normal leading-relaxed text-muted">
+                          {row.priorityReason}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </li>
               ))}
@@ -483,16 +478,14 @@ export default function AnalysisPage() {
               )}
             </div>
             <div className="flex shrink-0 items-center gap-sm">
-              <Button variant="secondary" onClick={startAnalysis} loading={requestAnalysis.isPending}>
-                <RefreshCw size={15} /> 다시 분석
-              </Button>
               <Button size="lg" onClick={() => setConfirmOpen(true)}>
                 확정하고 업무 생성
               </Button>
             </div>
           </div>
           <p className="mt-xs text-caption font-normal text-muted-soft">
-            회의록을 고친 뒤 다시 분석하면 새 초안이 만들어집니다. 내용이 그대로면 기존 분석이 재사용됩니다.
+            다시 분석하려면 회의 상세에서 회의록을 고친 뒤 <strong className="text-muted">AI 재분석하기</strong> 를 눌러
+            주세요.
           </p>
         </div>
       )}

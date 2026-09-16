@@ -67,7 +67,7 @@ export default function MembersPage() {
   }
 
   return (
-    <PageWidth size={900}>
+    <PageWidth size={1120}>
       <PageHeader
         title="구성원"
         description="프로젝트를 만든 사람은 OWNER, 초대된 사람은 MEMBER 권한을 갖습니다."

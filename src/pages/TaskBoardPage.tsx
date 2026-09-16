@@ -1,6 +1,6 @@
 import { useId, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { CalendarClock, CheckSquare, ChevronDown, ChevronsUp, Equal, GripVertical, Plus } from 'lucide-react'
+import { CalendarClock, ChevronDown, ChevronsUp, Equal, GripVertical, Plus } from 'lucide-react'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar, DueBadge, PriorityBadge } from '@/components/ui/Badge'
@@ -22,7 +22,6 @@ import {
   STATUS_DOT_COLOR,
   STATUS_LABEL,
   STATUS_ORDER,
-  taskKey,
 } from '@/lib/constants'
 import { cn } from '@/lib/cn'
 import { dayjs, formatDate, formatDateTime, isDueSoon, isOverdue } from '@/lib/date'
@@ -509,24 +508,28 @@ function TaskCard({
         aria-hidden
       />
 
-      <div className="flex items-center gap-xxs">
-        <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-sm bg-brand-accent">
-          <CheckSquare size={11} className="text-white" />
-        </span>
-        <span className="font-mono text-[11px] tracking-[0.02em] text-muted-soft">{taskKey(item.id)}</span>
-      </div>
+      {/* 좌측 상단 상태 인디케이터 — 예정 회색 / 진행 중 파랑 / 완료 초록 */}
+      <span
+        className="absolute left-md top-md h-2.5 w-2.5 rounded-pill"
+        style={{ background: STATUS_DOT_COLOR[item.status] }}
+        aria-label={STATUS_LABEL[item.status]}
+      />
 
-      <p className="mb-sm mt-xs pr-lg text-title-sm leading-snug text-ink">{item.title}</p>
+      <p className="mb-sm pl-md pr-lg text-title-sm leading-snug text-ink">{item.title}</p>
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-sm">
           {item.priority && (
-            <PriorityIcon
-              size={14}
-              strokeWidth={2.5}
-              style={{ color: PRIORITY_ICON_COLOR[item.priority] }}
-              aria-label={PRIORITY_LABEL[item.priority]}
-            />
+            <span
+              className="inline-flex items-center gap-xxs rounded-pill px-xs py-[2px] text-caption font-semibold"
+              style={{
+                color: PRIORITY_ICON_COLOR[item.priority],
+                background: `${PRIORITY_ICON_COLOR[item.priority]}1a`,
+              }}
+            >
+              <PriorityIcon size={14} strokeWidth={2.75} />
+              {PRIORITY_LABEL[item.priority]}
+            </span>
           )}
           <span
             className={cn('flex items-center gap-xxs text-caption font-normal', overdue ? 'text-error' : 'text-muted')}
@@ -535,7 +538,9 @@ function TaskCard({
             {item.dueDate ? item.dueDate.slice(5) : '미정'}
           </span>
         </div>
-        <Avatar name={item.assigneeUserId ? assigneeName : undefined} size={24} />
+        <span title={item.assigneeUserId ? assigneeName : '담당자 미지정'} className="shrink-0">
+          <Avatar name={item.assigneeUserId ? assigneeName : undefined} size={24} />
+        </span>
       </div>
     </Link>
   )

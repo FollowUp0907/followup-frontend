@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageWidth } from '@/components/layout/PageWidth'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Avatar, DueBadge, PriorityBadge, StatusBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { SurfaceCard } from '@/components/ui/Card'
@@ -41,6 +42,8 @@ export default function MeetingNewPage() {
 
   const [participantIds, setParticipantIds] = useState<number[]>(() => (user ? [user.userId] : []))
   const [carryOverIds, setCarryOverIds] = useState<number[]>([])
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [pendingValues, setPendingValues] = useState<FormValues | null>(null)
 
   const {
     register,
@@ -60,6 +63,13 @@ export default function MeetingNewPage() {
     setList(list.includes(id) ? list.filter((v) => v !== id) : [...list, id])
 
   const onSubmit = handleSubmit(async (values) => {
+    setPendingValues(values)
+    setConfirmOpen(true)
+  })
+
+  const createNow = async () => {
+    const values = pendingValues
+    if (!values) return
     try {
       const created = await createMeeting.mutateAsync({
         title: values.title,
@@ -69,14 +79,15 @@ export default function MeetingNewPage() {
         carryOverActionItemIds: carryOverIds.length ? carryOverIds : undefined,
       })
       toast.success('회의를 만들었습니다.')
+      setConfirmOpen(false)
       navigate(`/projects/${projectId}/meetings/${created.id}`)
     } catch (e) {
       toast.error(errorMessage(e))
     }
-  })
+  }
 
   return (
-    <PageWidth size={900}>
+    <PageWidth size={1120}>
       <PageHeader
         title="새 회의"
         description="회의를 만들고 회의록을 작성하면 AI 분석으로 넘어갈 수 있습니다."
@@ -85,9 +96,19 @@ export default function MeetingNewPage() {
             ← 회의 목록
           </Link>
         }
+        actions={
+          <>
+            <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
+              취소
+            </Button>
+            <Button type="submit" form="meeting-create-form" loading={createMeeting.isPending}>
+              회의 만들기
+            </Button>
+          </>
+        }
       />
 
-      <form onSubmit={onSubmit} noValidate className="grid gap-lg lg:grid-cols-12">
+      <form id="meeting-create-form" onSubmit={onSubmit} noValidate className="grid gap-lg lg:grid-cols-12">
         <div className="space-y-lg lg:col-span-7">
           <SurfaceCard className="p-xl">
             <h2 className="mb-lg text-title-md text-ink">기본 정보</h2>
@@ -203,17 +224,22 @@ export default function MeetingNewPage() {
               </>
             )}
           </SurfaceCard>
-
-          <div className="flex justify-end gap-sm">
-            <Button type="button" variant="secondary" onClick={() => navigate(-1)}>
-              취소
-            </Button>
-            <Button type="submit" loading={createMeeting.isPending}>
-              회의 만들기
-            </Button>
-          </div>
         </div>
       </form>
+
+      <ConfirmDialog
+        open={confirmOpen}
+        title="이 내용으로 회의를 만들까요?"
+        description={
+          pendingValues
+            ? `"${pendingValues.title}" 회의가 만들어집니다. 만든 뒤에도 회의록은 수정할 수 있습니다.`
+            : undefined
+        }
+        confirmLabel="회의 만들기"
+        loading={createMeeting.isPending}
+        onConfirm={createNow}
+        onClose={() => setConfirmOpen(false)}
+      />
     </PageWidth>
   )
 }

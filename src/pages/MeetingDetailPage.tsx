@@ -106,7 +106,7 @@ export default function MeetingDetailPage() {
   }
 
   return (
-    <PageWidth size={1040}>
+    <PageWidth size={1120}>
       <PageHeader
         title={meeting.title}
         description={formatDateTime(meeting.scheduledAt)}
@@ -122,7 +122,7 @@ export default function MeetingDetailPage() {
               {editing ? '편집 취소' : '회의 수정'}
             </Button>
             <ButtonLink to={`${base}/meetings/${meetingId}/analysis`}>
-              {effectiveStatus === 'CONFIRMED' ? 'AI 분석 결과 보기' : 'AI 분석하기'}
+              {effectiveStatus === 'CONFIRMED' ? 'AI 재분석하기' : 'AI 분석하기'}
             </ButtonLink>
           </>
         }

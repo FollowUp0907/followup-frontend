@@ -9,16 +9,31 @@ import { OnboardingEmptyState } from '@/components/ui/OnboardingEmptyState'
 import { useDashboard } from '@/features/dashboard/queries'
 import { useMeetingStatuses } from '@/features/meetings/useMeetingStatuses'
 import { useProjectContext } from '@/features/projects/ProjectContext'
-import { formatDate, formatDateTime, progressPercent } from '@/lib/date'
+import { STATUS_DOT_COLOR } from '@/lib/constants'
+import { formatDate, formatDateTime, isOverdue, progressPercent } from '@/lib/date'
 
 /**
  * 지표 카드 — DESIGN.md 의 feature-card 규격을 따른다.
  * surface-card(#f5f5f5) 배경 + rounded-lg. 색은 쓰지 않고 회색 면과 활자 위계로만 구분한다.
  */
-function StatTile({ label, value, to }: { label: string; value: number; to: string }) {
+function StatTile({
+  label,
+  value,
+  to,
+  dot,
+}: {
+  label: string
+  value: number
+  to: string
+  /** 상태 인디케이터 색. "전체 업무" 처럼 특정 상태가 아니면 생략한다. */
+  dot?: string
+}) {
   return (
-    <Link to={to} className="group block rounded-lg bg-surface-card p-xl transition-colors active:bg-surface-strong">
-      <span className="block text-caption font-normal text-muted">{label}</span>
+    <Link to={to} className="block rounded-lg bg-surface-card p-xl transition-colors active:bg-surface-strong">
+      <span className="flex items-center gap-xs text-caption font-normal text-muted">
+        {dot && <span className="h-2 w-2 shrink-0 rounded-pill" style={{ background: dot }} aria-hidden />}
+        {label}
+      </span>
       <span className="mt-sm block text-display-sm tabular-nums text-ink">{value}</span>
     </Link>
   )
@@ -60,6 +75,7 @@ export default function DashboardPage() {
   }
 
   const s = data.actionItemSummary
+  const overdueItems = (data.dueSoonActionItems ?? []).filter((i) => isOverdue(i.dueDate, i.status))
   const header = (
     <PageHeader
       title="대시보드"
@@ -93,9 +109,14 @@ export default function DashboardPage() {
 
       <div className="grid gap-lg sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="전체 업무" value={s.total} to={`${base}/tasks`} />
-        <StatTile label="예정" value={s.todo} to={`${base}/tasks?status=TODO`} />
-        <StatTile label="진행 중" value={s.inProgress} to={`${base}/tasks?status=IN_PROGRESS`} />
-        <StatTile label="완료" value={s.done} to={`${base}/tasks?status=DONE`} />
+        <StatTile label="예정" value={s.todo} to={`${base}/tasks?status=TODO`} dot={STATUS_DOT_COLOR.TODO} />
+        <StatTile
+          label="진행 중"
+          value={s.inProgress}
+          to={`${base}/tasks?status=IN_PROGRESS`}
+          dot={STATUS_DOT_COLOR.IN_PROGRESS}
+        />
+        <StatTile label="완료" value={s.done} to={`${base}/tasks?status=DONE`} dot={STATUS_DOT_COLOR.DONE} />
       </div>
 
       <div className="mt-lg grid gap-lg lg:grid-cols-[1.2fr_1fr]">
@@ -189,41 +210,86 @@ export default function DashboardPage() {
         </SurfaceCard>
       </div>
 
-      {/* 담당자별 진행률 — 시안은 전폭 */}
-      <SurfaceCard className="mt-lg p-xl">
-        <SectionTitle title="담당자별 진행률" className="mb-md" />
-        {!data.memberProgress?.length ? (
-          <p className="rounded-md bg-surface-soft px-md py-lg text-center text-body-sm text-muted">
-            구성원 정보가 없습니다.
-          </p>
-        ) : (
-          <ul className="space-y-sm">
-            {data.memberProgress.map((m) => {
-              const rate = progressPercent(m.doneCount, m.totalCount, m.completionRate)
-              return (
-                <li key={m.userId}>
+      {/* 아래 행 — 왼쪽: 바로 손봐야 할 지연 업무 / 오른쪽: 담당자별 진행률 */}
+      <div className="mt-lg grid gap-lg lg:grid-cols-2">
+        <SurfaceCard className="p-xl">
+          <SectionTitle
+            title="지연된 업무"
+            description={s.overdue > 0 ? `기한이 지난 업무 ${s.overdue}건` : undefined}
+            className="mb-md"
+            action={
+              <Link
+                to={`${base}/tasks?due=overdue`}
+                className="text-nav-link text-muted transition-colors hover:text-ink"
+              >
+                전체 보기
+              </Link>
+            }
+          />
+          {!overdueItems.length ? (
+            <p className="rounded-md bg-surface-soft px-md py-lg text-center text-body-sm text-muted">
+              지연된 업무가 없습니다.
+            </p>
+          ) : (
+            <ul className="space-y-xxs">
+              {overdueItems.slice(0, 5).map((item) => (
+                <li key={item.actionItemId}>
                   <Link
-                    to={`${base}/tasks?assigneeId=${m.userId}`}
-                    className="flex items-center gap-md rounded-md px-xs py-xs transition-colors hover:bg-surface-soft"
+                    to={`${base}/tasks/${item.actionItemId}`}
+                    className="flex items-center justify-between gap-sm rounded-md px-xs py-xs transition-colors hover:bg-surface-soft"
                   >
-                    <Avatar name={m.name} size={32} />
-                    <span className="w-[80px] shrink-0 truncate text-body-sm text-ink">{m.name}</span>
-                    <span className="h-2 flex-1 overflow-hidden rounded-pill bg-surface-strong">
-                      <span
-                        className="block h-full rounded-pill bg-ink transition-[width]"
-                        style={{ width: `${rate}%` }}
-                      />
-                    </span>
-                    <span className="w-[70px] shrink-0 text-right text-caption font-normal tabular-nums text-muted">
-                      {m.doneCount}/{m.totalCount} · {rate}%
-                    </span>
+                    <div className="flex min-w-0 items-center gap-sm">
+                      <Avatar name={item.assigneeName ?? undefined} size={28} />
+                      <div className="min-w-0">
+                        <p className="truncate text-title-sm text-ink">{item.title}</p>
+                        <p className="text-caption font-normal text-muted">
+                          {item.assigneeName || '담당자 미지정'} · {formatDate(item.dueDate)}
+                        </p>
+                      </div>
+                    </div>
+                    <DueBadge dueDate={item.dueDate} status={item.status} />
                   </Link>
                 </li>
-              )
-            })}
-          </ul>
-        )}
-      </SurfaceCard>
+              ))}
+            </ul>
+          )}
+        </SurfaceCard>
+
+        <SurfaceCard className="p-xl">
+          <SectionTitle title="담당자별 진행률" className="mb-md" />
+          {!data.memberProgress?.length ? (
+            <p className="rounded-md bg-surface-soft px-md py-lg text-center text-body-sm text-muted">
+              구성원 정보가 없습니다.
+            </p>
+          ) : (
+            <ul className="space-y-sm">
+              {data.memberProgress.slice(0, 5).map((m) => {
+                const rate = progressPercent(m.doneCount, m.totalCount, m.completionRate)
+                return (
+                  <li key={m.userId}>
+                    <Link
+                      to={`${base}/tasks?assigneeId=${m.userId}`}
+                      className="flex items-center gap-sm rounded-md px-xs py-xs transition-colors hover:bg-surface-soft"
+                    >
+                      <Avatar name={m.name} size={24} />
+                      <span className="w-[64px] shrink-0 truncate text-caption text-ink">{m.name}</span>
+                      <span className="h-1.5 flex-1 overflow-hidden rounded-pill bg-surface-strong">
+                        <span
+                          className="block h-full rounded-pill bg-ink transition-[width]"
+                          style={{ width: `${rate}%` }}
+                        />
+                      </span>
+                      <span className="w-[56px] shrink-0 text-right text-caption font-normal tabular-nums text-muted">
+                        {rate}%
+                      </span>
+                    </Link>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </SurfaceCard>
+      </div>
     </>
   )
 }
