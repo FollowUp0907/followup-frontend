@@ -8,6 +8,8 @@ import { Button, ButtonLink } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
 import { FormRow, Input, Select, Textarea } from '@/components/ui/Field'
+import { useAuth } from '@/features/auth/AuthContext'
+import { useReminders } from '@/features/reminders/store'
 import { SegmentedControl } from '@/components/ui/NavPillGroup'
 import { useToast } from '@/components/ui/Toast'
 import { useActionItem, useDeleteActionItem, useUpdateActionItem } from '@/features/actionItems/queries'
@@ -23,6 +25,9 @@ export default function TaskDetailPage() {
   const actionItemId = Number(params.actionItemId)
   const navigate = useNavigate()
   const location = useLocation()
+  const { user } = useAuth()
+  const { upsert: upsertReminder, removeForTask, forTask } = useReminders(user?.userId)
+  const [remindAt, setRemindAt] = useState('')
   const toast = useToast()
 
   const { data: item, isLoading, isError, error } = useActionItem(actionItemId)
@@ -54,6 +59,7 @@ export default function TaskDetailPage() {
   // 목록에서 들어왔다면 그때의 필터·뷰까지 그대로 살려서 돌아간다.
   const backTo = (location.state as { from?: string } | null)?.from ?? `${base}/tasks`
   // 새 필드를 우선 쓰고, 없으면 따로 받아 온 회의로 메운다.
+  const existingReminder = item ? forTask(item.id) : undefined
   const originMeetingTitle = item?.originMeetingTitle ?? originMeeting?.title
   const originMeetingDeleted = item?.originMeetingDeleted ?? false
 
@@ -277,6 +283,60 @@ export default function TaskDetailPage() {
                 </div>
               )}
             </dl>
+          </SurfaceCard>
+
+          <SurfaceCard className="p-xl">
+            <h2 className="mb-xs text-title-md text-ink">알림</h2>
+            <p className="mb-md text-caption font-normal text-muted-soft">
+              이 브라우저에서 앱을 열어 둔 동안에만 알려 줍니다.
+            </p>
+            {existingReminder && (
+              <p className="mb-sm rounded-md bg-surface-soft px-sm py-xs text-caption font-normal text-body">
+                설정됨 · {formatDateTime(existingReminder.remindAt)}
+              </p>
+            )}
+            <FormRow label="알릴 시각">
+              <Input
+                type="datetime-local"
+                value={remindAt}
+                onChange={(e) => setRemindAt(e.target.value)}
+                aria-label="알릴 시각"
+              />
+            </FormRow>
+            <div className="mt-sm flex gap-xs">
+              <Button
+                size="sm"
+                fullWidth
+                disabled={!remindAt}
+                onClick={() => {
+                  if (!user || !remindAt) return
+                  upsertReminder({
+                    userId: user.userId,
+                    projectId,
+                    actionItemId: item.id,
+                    taskTitle: item.title,
+                    remindAt: new Date(remindAt).toISOString(),
+                  })
+                  toast.success('알림을 설정했습니다.')
+                }}
+              >
+                알림 설정
+              </Button>
+              {existingReminder && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => {
+                    if (!user) return
+                    removeForTask(user.userId, item.id)
+                    setRemindAt('')
+                    toast.success('알림을 해제했습니다.')
+                  }}
+                >
+                  해제
+                </Button>
+              )}
+            </div>
           </SurfaceCard>
 
           <SurfaceCard className="p-xl">

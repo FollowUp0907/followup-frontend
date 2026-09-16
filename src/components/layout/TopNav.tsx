@@ -6,6 +6,7 @@ import { Avatar } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { cn } from '@/lib/cn'
 import { Logo } from './Logo'
+import { NotificationBell } from './NotificationBell'
 
 const MARKETING_LINKS = [
   { label: '기능', href: '#features' },
@@ -79,6 +80,7 @@ export function TopNav({
         {children && <div className="thin-scroll min-w-0 flex-1 overflow-x-auto">{children}</div>}
 
         <div className={cn('flex items-center gap-sm', !children && 'ml-auto')}>
+          {isAuthenticated && <NotificationBell />}
           {isAuthenticated ? (
             <div className="relative" ref={menuRef}>
               <button
