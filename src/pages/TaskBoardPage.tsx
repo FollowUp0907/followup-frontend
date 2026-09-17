@@ -396,7 +396,7 @@ export default function TaskBoardPage() {
                   <th className="px-lg py-sm font-medium">우선순위</th>
                   <th className="px-lg py-sm font-medium">상태</th>
                   <th className="w-[52px] px-lg py-sm font-medium">
-                    <span className="sr-only">설정</span>
+                    <span className="sr-only">메뉴</span>
                   </th>
                 </tr>
               </thead>
@@ -405,7 +405,7 @@ export default function TaskBoardPage() {
                   <tr
                     key={item.id}
                     onClick={() => setPreviewId(item.id)}
-                    className="cursor-pointer border-b border-hairline-soft transition-colors last:border-0 hover:bg-surface-card"
+                    className="group cursor-pointer border-b border-hairline-soft transition-colors last:border-0 hover:bg-surface-card"
                   >
                     <td className="px-lg py-sm">
                       {/* 행 전체가 눌리지만, 키보드로도 열 수 있게 제목은 버튼으로 둔다 */}
@@ -451,7 +451,7 @@ export default function TaskBoardPage() {
                     </td>
                     <td className="px-lg py-sm">
                       <div className="flex justify-end">
-                        <RowMenu items={menuItems(item)} label={`${item.title} 설정`} />
+                        <RowMenu items={menuItems(item)} label={`${item.title} 메뉴`} />
                       </div>
                     </td>
                   </tr>
@@ -675,7 +675,7 @@ function TaskCard({
       <div className="flex items-start justify-between gap-xs pl-md">
         {/* 한 줄로 자르고, 카드에 올리면 제목 전체가 말풍선으로 뜬다 */}
         <p className="min-w-0 flex-1 truncate pt-[1px] text-title-sm leading-snug text-ink">{item.title}</p>
-        <RowMenu items={menuItems} label={`${item.title} 설정`} />
+        <RowMenu items={menuItems} label={`${item.title} 메뉴`} />
       </div>
 
       <div className="flex items-center justify-between gap-xs">

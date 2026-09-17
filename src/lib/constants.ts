@@ -28,10 +28,24 @@ export const ROLE_LABEL: Record<ProjectRole, string> = {
 
 /**
  * 아바타 채움.
- * DESIGN.md 의 badge 파스텔(orange/pink/violet/emerald + brand blue)을
- * 흰색에 크게 섞어 아주 흐리게 쓴다. 바탕이 밝아서 이름 글자는 잉크색.
+ * DESIGN.md 의 badge 파스텔을 흰색에 크게 섞어 아주 흐리게 쓴다.
+ * 바탕이 밝아서 이름 글자는 잉크색으로 얹는다.
+ *
+ * 이름으로 하나를 골라 주고, 구성원 페이지에서 직접 바꿀 수도 있다.
+ * (features/members/avatarColor.ts)
  */
-export const AVATAR_COLORS = ['#fde8d4', '#fbdaea', '#e4dcfd', '#d6f5e7', '#dbe8fe'] as const
+export const AVATAR_COLORS = [
+  '#fde8d4', // 살구
+  '#fbdaea', // 분홍
+  '#e4dcfd', // 보라
+  '#d6f5e7', // 민트
+  '#dbe8fe', // 하늘
+  '#fdf0c4', // 버터
+  '#fbd9d9', // 장미
+  '#d3eff8', // 물빛
+  '#e8efd6', // 세이지
+  '#e6e4e0', // 모래
+] as const
 
 export function avatarColor(seed: string | number) {
   const s = String(seed)

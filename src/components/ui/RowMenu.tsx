@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { Settings } from 'lucide-react'
+import { MoreHorizontal } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
 export interface RowMenuItem {
@@ -12,13 +12,17 @@ export interface RowMenuItem {
 }
 
 /**
- * 카드·목록 행 오른쪽의 톱니 버튼과 그 메뉴.
+ * 카드·목록 행 오른쪽의 점 세 개 버튼과 그 메뉴.
+ *
+ * 평소에는 숨어 있다가 카드/행에 마우스를 올리면 나타난다. 그래서 바깥에
+ * group 클래스가 필요하다. 키보드로 포커스하거나 메뉴가 열려 있는 동안에는
+ * 마우스가 없어도 계속 보인다 — 안 그러면 탭으로 옮겨 다닐 때 버튼이 사라진다.
  *
  * 카드 전체가 눌리면 상세 패널이 열리므로, 여기서 일어나는 클릭은
  * 전부 바깥으로 새어 나가지 않게 막는다. (stopPropagation)
  * 위치는 열 때 재 보고 아래 공간이 모자라면 위로 펼친다.
  */
-export function RowMenu({ items, label = '업무 설정' }: { items: RowMenuItem[]; label?: string }) {
+export function RowMenu({ items, label = '업무 메뉴' }: { items: RowMenuItem[]; label?: string }) {
   const [open, setOpen] = useState(false)
   const [dropUp, setDropUp] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
@@ -71,12 +75,14 @@ export function RowMenu({ items, label = '업무 설정' }: { items: RowMenuItem
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          'inline-flex h-7 w-7 items-center justify-center rounded-sm text-muted transition-colors',
-          'hover:bg-surface-card hover:text-ink',
-          open && 'bg-surface-card text-ink',
+          'inline-flex h-7 w-7 items-center justify-center rounded-sm text-muted',
+          'transition-[opacity,background-color,color] hover:bg-surface-card hover:text-ink',
+          'focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-[1.5px] focus-visible:ring-ink',
+          // 마우스를 올렸을 때만 보인다. 열려 있으면 계속.
+          open ? 'bg-surface-card text-ink opacity-100' : 'opacity-0 group-hover:opacity-100',
         )}
       >
-        <Settings size={15} />
+        <MoreHorizontal size={16} />
       </button>
 
       {open && (

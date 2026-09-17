@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 import { PRIORITY_LABEL, STATUS_LABEL, avatarColor } from '@/lib/constants'
+import { useAvatarColors } from '@/features/members/avatarColor'
 import type { ActionItemPriority, ActionItemStatus, MeetingStatus } from '@/types/api'
 import { dDayLabel } from '@/lib/date'
 
@@ -98,8 +99,11 @@ export function DueBadge({ dueDate, status }: { dueDate?: string | null; status?
 }
 
 export function Avatar({ name, size = 36, className }: { name?: string | null; size?: number; className?: string }) {
+  const overrides = useAvatarColors()
   const label = (name ?? '?').trim()
   const initials = label ? label.slice(0, 2) : '?'
+  // 구성원 페이지에서 고른 색이 있으면 그걸, 없으면 이름으로 고른 기본색을 쓴다.
+  const background = name ? (overrides[label] ?? avatarColor(label)) : '#e5e7eb'
   return (
     <span
       className={cn('inline-flex shrink-0 items-center justify-center rounded-pill font-semibold', className)}
@@ -107,7 +111,7 @@ export function Avatar({ name, size = 36, className }: { name?: string | null; s
         width: size,
         height: size,
         // 아바타 바탕이 아주 흐려서 이름 글자는 잉크색으로 얹는다.
-        background: name ? avatarColor(label) : '#e5e7eb',
+        background,
         color: name ? '#111111' : '#6b7280',
         fontSize: Math.max(11, Math.round(size * 0.36)),
       }}

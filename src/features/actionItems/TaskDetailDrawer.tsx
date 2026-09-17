@@ -1,23 +1,32 @@
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, Pencil } from 'lucide-react'
 import { errorMessage } from '@/api/client'
 import { Avatar, DueBadge, PriorityBadge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
+import { Dropdown } from '@/components/ui/Dropdown'
+import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { Skeleton } from '@/components/ui/Card'
 import { SegmentedControl } from '@/components/ui/NavPillGroup'
 import { useToast } from '@/components/ui/Toast'
 import { useActionItem, useUpdateActionItem } from '@/features/actionItems/queries'
-import { STATUS_LABEL, STATUS_ORDER } from '@/lib/constants'
-import { formatDate, formatServerDateTime } from '@/lib/date'
-import type { ActionItemStatus } from '@/types/api'
+import { useProjectContext } from '@/features/projects/ProjectContext'
+import {
+  PRIORITY_ICON_COLOR,
+  PRIORITY_LABEL,
+  PRIORITY_ORDER,
+  STATUS_LABEL,
+  STATUS_ORDER,
+} from '@/lib/constants'
+import { formatDate, formatServerDateTime, toDateInput } from '@/lib/date'
+import type { ActionItemPriority, ActionItemStatus } from '@/types/api'
 
 /**
- * 오른쪽에서 열리는 후속 업무 미리보기.
+ * 오른쪽에서 열리는 후속 업무 패널.
  *
- * 목록을 떠나지 않고 내용을 확인하고 상태만 바로 바꿀 수 있다.
- * 제목·설명·담당자 같은 걸 고치려면 아래 "전체 화면에서 열기" 로 넘어간다.
- * (톱니 메뉴의 "후속 업무 창 열기" 와 같은 곳이다)
+ * 목록을 떠나지 않고 내용을 보고, 상태를 바꾸고, 수정까지 할 수 있다.
+ * 전체 화면은 아래 "전체 화면에서 열기" — 점 메뉴의 "후속 업무 창 열기" 와 같은 곳이다.
  */
 export function TaskDetailDrawer({
   actionItemId,
@@ -32,14 +41,67 @@ export function TaskDetailDrawer({
   onClose: () => void
 }) {
   const open = actionItemId !== null
-  const { data: item, isLoading, isError, error } = useActionItem(actionItemId ?? 0)
+  // 닫히는 동안에도 내용이 그대로 보이도록 마지막으로 열었던 업무를 붙들고 있는다.
+  const [heldId, setHeldId] = useState<number | null>(actionItemId)
+  useEffect(() => {
+    if (actionItemId !== null) setHeldId(actionItemId)
+  }, [actionItemId])
+
+  const { members } = useProjectContext()
+  const { data: item, isLoading, isError, error } = useActionItem(heldId ?? 0)
   const updateItem = useUpdateActionItem(projectId)
   const toast = useToast()
+
+  const [editing, setEditing] = useState(false)
+  const [title, setTitle] = useState('')
+  const [description, setDescription] = useState('')
+  const [assigneeUserId, setAssigneeUserId] = useState('')
+  const [dueDate, setDueDate] = useState('')
+  const [priority, setPriority] = useState<ActionItemPriority | ''>('')
+
+  // 다른 업무를 열면 수정 중이던 건 접는다.
+  useEffect(() => {
+    setEditing(false)
+  }, [heldId, open])
+
+  const startEdit = () => {
+    if (!item) return
+    setTitle(item.title)
+    setDescription(item.description ?? '')
+    setAssigneeUserId(item.assignee?.userId ? String(item.assignee.userId) : '')
+    setDueDate(toDateInput(item.dueDate))
+    setPriority(item.priority ?? '')
+    setEditing(true)
+  }
 
   const changeStatus = async (status: ActionItemStatus) => {
     if (!item || item.status === status) return
     try {
       await updateItem.mutateAsync({ id: item.id, data: { status } })
+    } catch (e) {
+      toast.error(errorMessage(e))
+    }
+  }
+
+  const save = async () => {
+    if (!item) return
+    if (!title.trim()) {
+      toast.error('업무명을 입력해 주세요.')
+      return
+    }
+    try {
+      await updateItem.mutateAsync({
+        id: item.id,
+        data: {
+          title: title.trim(),
+          description: description.trim() || undefined,
+          assigneeUserId: assigneeUserId ? Number(assigneeUserId) : null,
+          dueDate: dueDate || null,
+          priority: priority || undefined,
+        },
+      })
+      toast.success('업무를 수정했습니다.')
+      setEditing(false)
     } catch (e) {
       toast.error(errorMessage(e))
     }
@@ -51,8 +113,21 @@ export function TaskDetailDrawer({
       onClose={onClose}
       title={item?.title ?? '후속 업무'}
       footer={
-        item && (
+        item &&
+        (editing ? (
           <>
+            <Button size="sm" fullWidth className="min-w-0" onClick={save} loading={updateItem.isPending}>
+              저장
+            </Button>
+            <Button size="sm" variant="secondary" className="shrink-0 whitespace-nowrap" onClick={() => setEditing(false)}>
+              취소
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button size="sm" variant="secondary" className="shrink-0 whitespace-nowrap" onClick={startEdit}>
+              <Pencil size={14} /> 수정
+            </Button>
             <ButtonLink
               to={`/projects/${projectId}/tasks/${item.id}`}
               state={{ from: backTo }}
@@ -62,11 +137,8 @@ export function TaskDetailDrawer({
             >
               <ExternalLink size={14} /> 전체 화면에서 열기
             </ButtonLink>
-            <Button size="sm" variant="secondary" className="shrink-0" onClick={onClose}>
-              닫기
-            </Button>
           </>
-        )
+        ))
       }
     >
       {isLoading && (
@@ -79,7 +151,57 @@ export function TaskDetailDrawer({
 
       {isError && <p className="text-body-sm text-error">{errorMessage(error)}</p>}
 
-      {item && (
+      {item && editing && (
+        <div className="space-y-md">
+          <FormRow label="업무명">
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} invalid={!title.trim()} />
+          </FormRow>
+          <FormRow label="설명" hint="선택">
+            <Textarea
+              className="min-h-[120px]"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+          </FormRow>
+          <FormRow label="담당자">
+            <Dropdown
+              ariaLabel="담당자"
+              value={assigneeUserId}
+              onChange={setAssigneeUserId}
+              options={[
+                { value: '', label: '미지정' },
+                ...members.map((m) => ({
+                  value: String(m.userId),
+                  label: m.name,
+                  adornment: <Avatar name={m.name} size={20} />,
+                })),
+              ]}
+            />
+          </FormRow>
+          <FormRow label="마감일">
+            <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          </FormRow>
+          <FormRow label="우선순위">
+            <Dropdown
+              ariaLabel="우선순위"
+              value={priority}
+              onChange={(v) => setPriority(v as ActionItemPriority | '')}
+              options={[
+                { value: '', label: '미지정' },
+                ...PRIORITY_ORDER.map((p) => ({
+                  value: p,
+                  label: PRIORITY_LABEL[p],
+                  adornment: (
+                    <span className="h-2 w-2 rounded-pill" style={{ background: PRIORITY_ICON_COLOR[p] }} aria-hidden />
+                  ),
+                })),
+              ]}
+            />
+          </FormRow>
+        </div>
+      )}
+
+      {item && !editing && (
         <div className="space-y-lg">
           <div>
             <p className="mb-xs text-caption text-body">상태</p>

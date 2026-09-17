@@ -110,9 +110,17 @@ export default {
           from: { transform: 'translateX(100%)' },
           to: { transform: 'translateX(0)' },
         },
+        'slide-out-right': {
+          from: { transform: 'translateX(0)' },
+          to: { transform: 'translateX(100%)' },
+        },
         'veil-in': {
           from: { opacity: '0' },
           to: { opacity: '1' },
+        },
+        'veil-out': {
+          from: { opacity: '1' },
+          to: { opacity: '0' },
         },
       },
       animation: {
@@ -120,8 +128,11 @@ export default {
         'scale-in': 'scale-in 140ms ease-out',
         'slot-in': 'slot-in 120ms ease-out',
         'page-in': 'page-in 180ms ease-out',
-        'slide-in-right': 'slide-in-right 220ms cubic-bezier(0.32, 0.72, 0, 1)',
-        'veil-in': 'veil-in 180ms ease-out',
+        // 들어올 때는 감속, 나갈 때는 가속 — 미는 손을 놓은 것처럼 느껴진다.
+        'slide-in-right': 'slide-in-right 260ms cubic-bezier(0.32, 0.72, 0, 1) both',
+        'slide-out-right': 'slide-out-right 200ms cubic-bezier(0.4, 0, 1, 1) both',
+        'veil-in': 'veil-in 260ms ease-out both',
+        'veil-out': 'veil-out 200ms ease-in both',
       },
     },
   },

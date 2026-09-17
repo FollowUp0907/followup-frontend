@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageWidth } from '@/components/layout/PageWidth'
-import { Avatar, Badge } from '@/components/ui/Badge'
+import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
@@ -10,6 +10,7 @@ import { FormRow, Input } from '@/components/ui/Field'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
 import { useAuth } from '@/features/auth/AuthContext'
+import { AvatarColorPicker } from '@/features/members/AvatarColorPicker'
 import { useAddMember, useRemoveMember } from '@/features/members/queries'
 import { useActionItems } from '@/features/actionItems/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
@@ -94,7 +95,7 @@ export default function MembersPage() {
               return (
                 <li key={m.userId} className="flex flex-wrap items-center justify-between gap-md p-lg">
                   <div className="flex min-w-0 items-center gap-sm">
-                    <Avatar name={m.name} size={40} />
+                    <AvatarColorPicker name={m.name} size={40} />
                     <div className="min-w-0">
                       <p className="flex items-center gap-xs truncate text-title-sm text-ink">
                         {m.name}
