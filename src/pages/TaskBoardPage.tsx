@@ -725,28 +725,43 @@ function CreateTaskModal({
           <Textarea className="min-h-[90px]" value={description} onChange={(e) => setDescription(e.target.value)} />
         </FormRow>
         <div className="grid gap-md sm:grid-cols-3">
+          {/* 위쪽 필터와 같은 드롭다운으로 맞춘다. 업무 상세의 수정 폼도 같다. */}
           <FormRow label="담당자">
-            <Select value={assigneeUserId} onChange={(e) => setAssigneeUserId(e.target.value)}>
-              <option value="">미지정</option>
-              {members.map((m) => (
-                <option key={m.userId} value={m.userId}>
-                  {m.name}
-                </option>
-              ))}
-            </Select>
+            <Dropdown
+              ariaLabel="담당자"
+              value={assigneeUserId}
+              onChange={setAssigneeUserId}
+              placeholder="미지정"
+              options={[
+                { value: '', label: '미지정' },
+                ...members.map((m) => ({
+                  value: String(m.userId),
+                  label: m.name,
+                  adornment: <Avatar name={m.name} size={20} />,
+                })),
+              ]}
+            />
           </FormRow>
           <FormRow label="마감일">
             <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
           </FormRow>
           <FormRow label="우선순위">
-            <Select value={priority} onChange={(e) => setPriority(e.target.value as ActionItemPriority | '')}>
-              <option value="">미지정</option>
-              {PRIORITY_ORDER.map((p) => (
-                <option key={p} value={p}>
-                  {PRIORITY_LABEL[p]}
-                </option>
-              ))}
-            </Select>
+            <Dropdown
+              ariaLabel="우선순위"
+              value={priority}
+              onChange={(v) => setPriority(v as ActionItemPriority | '')}
+              placeholder="미지정"
+              options={[
+                { value: '', label: '미지정' },
+                ...PRIORITY_ORDER.map((p) => ({
+                  value: p,
+                  label: PRIORITY_LABEL[p],
+                  adornment: (
+                    <span className="h-2 w-2 rounded-pill" style={{ background: PRIORITY_ICON_COLOR[p] }} aria-hidden />
+                  ),
+                })),
+              ]}
+            />
           </FormRow>
         </div>
       </div>

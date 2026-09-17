@@ -118,6 +118,9 @@ export function Dropdown<T extends string>({
     switch (e.key) {
       case 'Escape':
         e.preventDefault()
+        // 모달 안에서 열렸을 때 Esc 가 모달까지 닫아 버리지 않도록 여기서 끊는다.
+        // (Modal 은 document 에 keydown 을 걸어 둔다)
+        e.stopPropagation()
         close()
         break
       case 'Tab':

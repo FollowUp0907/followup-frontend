@@ -7,13 +7,14 @@ import { Avatar, DueBadge, PriorityBadge, StatusBadge } from '@/components/ui/Ba
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
-import { FormRow, Input, Select, Textarea } from '@/components/ui/Field'
+import { Dropdown } from '@/components/ui/Dropdown'
+import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { SegmentedControl } from '@/components/ui/NavPillGroup'
 import { useToast } from '@/components/ui/Toast'
 import { useActionItem, useDeleteActionItem, useUpdateActionItem } from '@/features/actionItems/queries'
 import { useMeeting } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
-import { PRIORITY_LABEL, PRIORITY_ORDER, STATUS_LABEL, STATUS_ORDER } from '@/lib/constants'
+import { PRIORITY_ICON_COLOR, PRIORITY_LABEL, PRIORITY_ORDER, STATUS_LABEL, STATUS_ORDER } from '@/lib/constants'
 import { formatDate, formatDateTime, formatServerDateTime, toDateInput } from '@/lib/date'
 import type { ActionItemPriority, ActionItemStatus } from '@/types/api'
 
@@ -173,28 +174,48 @@ export default function TaskDetailPage() {
                   />
                 </FormRow>
                 <div className="grid gap-md sm:grid-cols-3">
+                  {/* 보드 필터와 같은 드롭다운 — 아바타·우선순위 점까지 그대로 보인다. */}
                   <FormRow label="담당자">
-                    <Select value={assigneeUserId} onChange={(e) => setAssigneeUserId(e.target.value)}>
-                      <option value="">미지정</option>
-                      {members.map((m) => (
-                        <option key={m.userId} value={m.userId}>
-                          {m.name}
-                        </option>
-                      ))}
-                    </Select>
+                    <Dropdown
+                      ariaLabel="담당자"
+                      value={assigneeUserId}
+                      onChange={setAssigneeUserId}
+                      placeholder="미지정"
+                      options={[
+                        { value: '', label: '미지정' },
+                        ...members.map((m) => ({
+                          value: String(m.userId),
+                          label: m.name,
+                          adornment: <Avatar name={m.name} size={20} />,
+                          description: m.email,
+                        })),
+                      ]}
+                    />
                   </FormRow>
                   <FormRow label="마감일">
                     <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
                   </FormRow>
                   <FormRow label="우선순위">
-                    <Select value={priority} onChange={(e) => setPriority(e.target.value as ActionItemPriority | '')}>
-                      <option value="">미지정</option>
-                      {PRIORITY_ORDER.map((p) => (
-                        <option key={p} value={p}>
-                          {PRIORITY_LABEL[p]}
-                        </option>
-                      ))}
-                    </Select>
+                    <Dropdown
+                      ariaLabel="우선순위"
+                      value={priority}
+                      onChange={(v) => setPriority(v as ActionItemPriority | '')}
+                      placeholder="미지정"
+                      options={[
+                        { value: '', label: '미지정' },
+                        ...PRIORITY_ORDER.map((p) => ({
+                          value: p,
+                          label: PRIORITY_LABEL[p],
+                          adornment: (
+                            <span
+                              className="h-2 w-2 rounded-pill"
+                              style={{ background: PRIORITY_ICON_COLOR[p] }}
+                              aria-hidden
+                            />
+                          ),
+                        })),
+                      ]}
+                    />
                   </FormRow>
                 </div>
               </div>
