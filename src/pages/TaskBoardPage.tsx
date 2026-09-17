@@ -503,7 +503,7 @@ function BoardColumn({
         </span>
       </div>
 
-      <ul className="flex-1 space-y-sm" {...pager.swipe}>
+      <ul key={pager.page} className="flex-1 animate-page-in space-y-sm" {...pager.swipe}>
         {pager.visible.map((item) => (
           <li key={item.id}>
             <TaskCard
@@ -567,7 +567,8 @@ function TaskCard({
       }}
       onDragEnd={onDragEnd}
       className={cn(
-        'group relative block cursor-grab rounded-md border bg-canvas px-md py-sm shadow-soft',
+        // 제목이 한 줄이라 높이가 같지만, 배지 유무로 어긋나지 않게 최소 높이를 고정한다.
+        'group relative flex h-[86px] flex-col justify-between cursor-grab rounded-md border bg-canvas px-md py-sm shadow-soft',
         'transition-[box-shadow,opacity,transform] hover:shadow-card active:cursor-grabbing',
         overdue ? 'border-error/40' : 'border-hairline',
         dragging && 'rotate-[-2deg] scale-[0.98] opacity-35',
@@ -586,8 +587,11 @@ function TaskCard({
         aria-label={STATUS_LABEL[item.status]}
       />
 
-      <div className="mb-sm flex items-start justify-between gap-xs pl-md pr-lg">
-        <p className="min-w-0 text-title-sm leading-snug text-ink">{item.title}</p>
+      <div className="mb-sm flex items-center justify-between gap-xs pl-md pr-lg">
+        {/* 한 줄로 자르고, 잘린 제목은 올리면 전체가 보인다 */}
+        <p className="min-w-0 truncate text-title-sm leading-snug text-ink" title={item.title}>
+          {item.title}
+        </p>
         <DueBadge dueDate={item.dueDate} status={item.status} />
       </div>
 

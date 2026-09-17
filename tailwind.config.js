@@ -97,6 +97,10 @@ export default {
           from: { opacity: '0', transform: 'scale(0.97)' },
           to: { opacity: '1', transform: 'scale(1)' },
         },
+        'page-in': {
+          from: { opacity: '0', transform: 'translateX(10px)' },
+          to: { opacity: '1', transform: 'translateX(0)' },
+        },
         'slot-in': {
           from: { opacity: '0', transform: 'scaleY(0.6)' },
           to: { opacity: '1', transform: 'scaleY(1)' },
@@ -106,6 +110,7 @@ export default {
         'fade-in': 'fade-in 160ms ease-out',
         'scale-in': 'scale-in 140ms ease-out',
         'slot-in': 'slot-in 120ms ease-out',
+        'page-in': 'page-in 180ms ease-out',
       },
     },
   },

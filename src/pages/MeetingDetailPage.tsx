@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageWidth } from '@/components/layout/PageWidth'
+import { Pager, usePager } from '@/components/ui/Pager'
 import { Avatar, DueBadge, MeetingStatusBadge, PriorityBadge, StatusBadge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -52,6 +53,8 @@ export default function MeetingDetailPage() {
   const base = `/projects/${projectId}`
   // 백엔드가 확정 후에도 status 를 DRAFT 로 남기므로 결정 사항 유무로 다시 판정한다.
   const effectiveStatus = deriveMeetingStatus(meeting, generatedItems.length > 0)
+  // 연결된 이전 업무가 많아지면 스크롤 대신 5개씩 페이지로 넘긴다.
+  const carryOverPage = usePager(meeting?.carryOverActionItems ?? [], 5)
 
   if (isLoading) {
     return (
@@ -198,6 +201,7 @@ export default function MeetingDetailPage() {
                 ))}
               </ul>
             )}
+            <Pager page={carryOverPage.page} pageCount={carryOverPage.pageCount} onChange={carryOverPage.setPage} />
           </SurfaceCard>
 
           <SurfaceCard className="p-xl">
@@ -265,8 +269,8 @@ export default function MeetingDetailPage() {
                 연결된 이전 업무가 없습니다.
               </p>
             ) : (
-              <ul className="space-y-xs">
-                {meeting.carryOverActionItems.map((item) => (
+              <ul key={carryOverPage.page} className="animate-page-in space-y-xs" {...carryOverPage.swipe}>
+                {carryOverPage.visible.map((item) => (
                   <li key={item.actionItemId}>
                     <Link
                       to={`${base}/tasks/${item.actionItemId}`}

@@ -53,9 +53,9 @@ export const STATUS_DOT_COLOR: Record<ActionItemStatus, string> = {
  * 보라 계열로 잡는다. 같은 카드에서 "보통"과 "마감 임박"이 같은 색이던 문제 해결.
  */
 export const PRIORITY_ICON_COLOR: Record<ActionItemPriority, string> = {
-  HIGH: '#7c3aed',
-  MEDIUM: '#8b5cf6',
-  LOW: '#94a3b8',
+  HIGH: '#7c3aed', // 보라
+  MEDIUM: '#0891b2', // 청록
+  LOW: '#94a3b8', // 회청
 }
 
 /** 업무 키 표기 (시안의 FU-101 형태) */

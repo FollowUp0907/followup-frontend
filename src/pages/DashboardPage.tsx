@@ -6,6 +6,7 @@ import { Avatar, DueBadge, MeetingStatusBadge, PriorityBadge } from '@/component
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { EmptyState, SectionTitle, Skeleton, SurfaceCard } from '@/components/ui/Card'
 import { OnboardingEmptyState } from '@/components/ui/OnboardingEmptyState'
+import { useActionItems } from '@/features/actionItems/queries'
 import { useDashboard } from '@/features/dashboard/queries'
 import { useMeetingStatuses } from '@/features/meetings/useMeetingStatuses'
 import { useProjectContext } from '@/features/projects/ProjectContext'
@@ -40,9 +41,12 @@ function StatTile({
 }
 
 export default function DashboardPage() {
-  const { projectId, project } = useProjectContext()
+  const { projectId, project, memberName } = useProjectContext()
   const { data, isLoading, isError, error, refetch, isFetching } = useDashboard(projectId)
   const { statusById } = useMeetingStatuses(projectId)
+  // dueSoonActionItems 에는 기한이 지난 업무가 빠져 있어서(2026-09-17 실측)
+  // 지연 목록은 업무 목록에서 직접 고른다.
+  const { data: allItems } = useActionItems(projectId)
 
   const base = `/projects/${projectId}`
 
@@ -75,7 +79,9 @@ export default function DashboardPage() {
   }
 
   const s = data.actionItemSummary
-  const overdueItems = (data.dueSoonActionItems ?? []).filter((i) => isOverdue(i.dueDate, i.status))
+  const overdueItems = (allItems ?? [])
+    .filter((i) => isOverdue(i.dueDate, i.status))
+    .sort((a, b) => (a.dueDate ?? '').localeCompare(b.dueDate ?? ''))
   const header = (
     <PageHeader
       title="대시보드"
@@ -233,17 +239,20 @@ export default function DashboardPage() {
           ) : (
             <ul className="thin-scroll max-h-[260px] space-y-xxs overflow-y-auto pr-xxs">
               {overdueItems.map((item) => (
-                <li key={item.actionItemId}>
+                <li key={item.id}>
                   <Link
-                    to={`${base}/tasks/${item.actionItemId}`}
+                    to={`${base}/tasks/${item.id}`}
                     className="flex items-center justify-between gap-sm rounded-md px-xs py-xs transition-colors hover:bg-surface-soft"
                   >
                     <div className="flex min-w-0 items-center gap-sm">
-                      <Avatar name={item.assigneeName ?? undefined} size={28} />
+                      <Avatar name={item.assigneeUserId ? memberName(item.assigneeUserId) : undefined} size={28} />
                       <div className="min-w-0">
-                        <p className="truncate text-title-sm text-ink">{item.title}</p>
+                        <p className="truncate text-title-sm text-ink" title={item.title}>
+                          {item.title}
+                        </p>
                         <p className="text-caption font-normal text-muted">
-                          {item.assigneeName || '담당자 미지정'} · {formatDate(item.dueDate)}
+                          {item.assigneeUserId ? memberName(item.assigneeUserId) : '담당자 미지정'} ·{' '}
+                          {formatDate(item.dueDate)}
                         </p>
                       </div>
                     </div>

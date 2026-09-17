@@ -13,6 +13,7 @@ type Tone =
   | 'info'
   | 'violet'
   | 'violet-strong'
+  | 'teal'
   | 'orange'
   | 'pink'
   | 'emerald'
@@ -27,6 +28,7 @@ const TONE: Record<Tone, string> = {
   // DESIGN.md 의 파스텔 — 태그 pill 용
   violet: 'bg-badge-violet/12 text-[#6d28d9]',
   'violet-strong': 'bg-badge-violet/25 text-[#4c1d95]',
+  teal: 'bg-[#0891b2]/12 text-[#0e7490]',
   orange: 'bg-badge-orange/15 text-[#c2410c]',
   pink: 'bg-badge-pink/12 text-[#be185d]',
   emerald: 'bg-badge-emerald/15 text-[#047857]',
@@ -65,9 +67,10 @@ export function StatusBadge({ status }: { status: ActionItemStatus }) {
 }
 
 // 마감 배지(빨강·주황)와 겹치지 않도록 우선순위는 보라 계열로 둔다.
+// 낮음·보통·높음이 서로 다르고, 마감 배지(빨강·주황)와도 겹치지 않게.
 const PRIORITY_TONE: Record<ActionItemPriority, Tone> = {
   HIGH: 'violet-strong',
-  MEDIUM: 'violet',
+  MEDIUM: 'teal',
   LOW: 'neutral',
 }
 
