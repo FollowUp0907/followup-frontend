@@ -28,10 +28,10 @@ export const ROLE_LABEL: Record<ProjectRole, string> = {
 
 /**
  * 아바타 채움.
- * 무채색 화면에 얹히는 색이라 채도가 낮되 바래지 않은 먼지 톤으로 잡는다.
- * 어두운 편이라 이름 글자는 흰색으로 얹는다.
+ * DESIGN.md 의 badge 파스텔(orange/pink/violet/emerald + brand blue)을
+ * 흰색에 크게 섞어 아주 흐리게 쓴다. 바탕이 밝아서 이름 글자는 잉크색.
  */
-export const AVATAR_COLORS = ['#64748b', '#7e6a8a', '#4f6d7a', '#6b7f6e', '#8a7060'] as const
+export const AVATAR_COLORS = ['#fde8d4', '#fbdaea', '#e4dcfd', '#d6f5e7', '#dbe8fe'] as const
 
 export function avatarColor(seed: string | number) {
   const s = String(seed)
@@ -61,7 +61,7 @@ export const STATUS_DOT_COLOR: Record<ActionItemStatus, string> = {
  * 마감 배지가 쓰는 빨강(지연)·주황(마감 임박)은 피한다.
  */
 export const PRIORITY_ICON_COLOR: Record<ActionItemPriority, string> = {
-  HIGH: '#4338ca', // 짙은 인디고
+  HIGH: '#ef4444', // 빨강 (디자인 시스템 error)
   MEDIUM: '#0f766e', // 짙은 청록
   LOW: '#64748b', // 슬레이트
 }

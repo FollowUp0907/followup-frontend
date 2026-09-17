@@ -69,7 +69,7 @@ export function StatusBadge({ status }: { status: ActionItemStatus }) {
 // 마감 배지(빨강·주황)와 겹치지 않도록 우선순위는 보라 계열로 둔다.
 // 낮음·보통·높음이 서로 다르고, 마감 배지(빨강·주황)와도 겹치지 않게.
 const PRIORITY_TONE: Record<ActionItemPriority, Tone> = {
-  HIGH: 'violet-strong',
+  HIGH: 'error',
   MEDIUM: 'teal',
   LOW: 'neutral',
 }
@@ -102,9 +102,9 @@ export function Avatar({ name, size = 36, className }: { name?: string | null; s
       style={{
         width: size,
         height: size,
-        // 아바타 바탕이 어두워서 이름 글자는 흰색으로 얹는다.
+        // 아바타 바탕이 아주 흐려서 이름 글자는 잉크색으로 얹는다.
         background: name ? avatarColor(label) : '#e5e7eb',
-        color: name ? '#ffffff' : '#6b7280',
+        color: name ? '#111111' : '#6b7280',
         fontSize: Math.max(11, Math.round(size * 0.36)),
       }}
       title={label}
