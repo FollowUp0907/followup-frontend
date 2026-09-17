@@ -301,13 +301,6 @@ export default function TaskDetailPage() {
           </SurfaceCard>
 
           <SurfaceCard className="p-xl">
-            <h2 className="mb-xs text-title-md text-ink">알림</h2>
-            <p className="text-caption font-normal text-muted-soft">
-              담당자에게 자동으로 갑니다. 배정·수정·완료 때 한 번씩, 마감일이 지나면 끝낼 때까지 계속 표시됩니다.
-            </p>
-          </SurfaceCard>
-
-          <SurfaceCard className="p-xl">
             <h2 className="mb-sm text-title-md text-ink">생성된 회의</h2>
             {item.originMeetingId ? (
               originMeetingDeleted ? (

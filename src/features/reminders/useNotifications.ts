@@ -91,10 +91,11 @@ const POLL_MS = 30_000
  * 남아 있을 수도 있다. 모르는 값은 UNKNOWN 으로 떨어뜨려 중립적으로 보여 준다.
  * ("설정한 알림" 같은 말을 붙이면 안 건 알림에 건 척을 하게 된다)
  */
+const SERVER_KINDS = ['DUE_SOON', 'OVERDUE', 'TASK_CREATED', 'TASK_UPDATED', 'TASK_COMPLETED'] as const
+
 function kindOf(n: NotificationResDto): NotificationKind {
   const t = (n as NotificationResDto & { type?: string }).type
-  if (t === 'TASK_CREATED' || t === 'TASK_UPDATED' || t === 'TASK_COMPLETED' || t === 'OVERDUE') return t
-  return 'UNKNOWN'
+  return (SERVER_KINDS as readonly string[]).includes(t ?? '') ? (t as NotificationKind) : 'UNKNOWN'
 }
 
 export function useNotifications(userId?: number) {
