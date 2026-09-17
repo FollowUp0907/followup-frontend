@@ -8,4 +8,5 @@ export const qk = {
   actionItem: (id: number) => ['action-item', id] as const,
   dashboard: (projectId: number) => ['project', projectId, 'dashboard'] as const,
   analysis: (id: number) => ['analysis', id] as const,
+  notifications: ['notifications'] as const,
 }

@@ -27,8 +27,8 @@ const TONE: Record<Tone, string> = {
   info: 'bg-brand-accent/10 text-brand-accent',
   // DESIGN.md 의 파스텔 — 태그 pill 용
   violet: 'bg-badge-violet/12 text-[#6d28d9]',
-  'violet-strong': 'bg-badge-violet/25 text-[#4c1d95]',
-  teal: 'bg-[#0891b2]/12 text-[#0e7490]',
+  'violet-strong': 'bg-badge-violet/15 text-[#7c3aed]',
+  teal: 'bg-[#0891b2]/10 text-[#0e9aa8]',
   orange: 'bg-badge-orange/15 text-[#c2410c]',
   pink: 'bg-badge-pink/12 text-[#be185d]',
   emerald: 'bg-badge-emerald/15 text-[#047857]',

@@ -30,7 +30,7 @@ export const ROLE_LABEL: Record<ProjectRole, string> = {
  * 아바타 채움 — 디자인 시스템에서 파스텔이 허용되는 유일한 자리.
  * 원색은 이름 글자를 눌러서, 채도를 낮춘 "물빠진" 톤으로 쓴다.
  */
-export const AVATAR_COLORS = ['#fdba74', '#f9a8d4', '#c4b5fd', '#86efac', '#93c5fd'] as const
+export const AVATAR_COLORS = ['#fed7aa', '#fbcfe8', '#ddd6fe', '#bbf7d0', '#bfdbfe'] as const
 
 export function avatarColor(seed: string | number) {
   const s = String(seed)
@@ -52,10 +52,11 @@ export const STATUS_DOT_COLOR: Record<ActionItemStatus, string> = {
  * 마감 배지가 빨강(지연)·주황(마감 임박)을 쓰기 때문에, 우선순위는 그 둘을 피해
  * 보라 계열로 잡는다. 같은 카드에서 "보통"과 "마감 임박"이 같은 색이던 문제 해결.
  */
+/** 채도를 낮춘 톤. 카드가 색으로 시끄러워지지 않게 한다. */
 export const PRIORITY_ICON_COLOR: Record<ActionItemPriority, string> = {
-  HIGH: '#7c3aed', // 보라
-  MEDIUM: '#0891b2', // 청록
-  LOW: '#94a3b8', // 회청
+  HIGH: '#a78bfa', // 흐린 보라
+  MEDIUM: '#7dd3dd', // 흐린 청록
+  LOW: '#cbd5e1', // 흐린 회청
 }
 
 /** 업무 키 표기 (시안의 FU-101 형태) */

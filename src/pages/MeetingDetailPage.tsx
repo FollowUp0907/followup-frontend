@@ -201,7 +201,6 @@ export default function MeetingDetailPage() {
                 ))}
               </ul>
             )}
-            <Pager page={carryOverPage.page} pageCount={carryOverPage.pageCount} onChange={carryOverPage.setPage} />
           </SurfaceCard>
 
           <SurfaceCard className="p-xl">
@@ -290,6 +289,7 @@ export default function MeetingDetailPage() {
                 ))}
               </ul>
             )}
+            <Pager page={carryOverPage.page} pageCount={carryOverPage.pageCount} onChange={carryOverPage.setPage} />
           </SurfaceCard>
 
           <SurfaceCard className="p-xl">

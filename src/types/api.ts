@@ -254,3 +254,18 @@ export interface DashboardResDto {
   recentMeetings?: RecentMeeting[]
   memberProgress?: MemberProgress[]
 }
+
+/* ---------- Notification ---------- */
+export interface NotificationResDto {
+  id: number
+  userId: number
+  projectId: number
+  actionItemId: number
+  /** 목록 표시용 업무 제목 스냅샷 */
+  taskTitle: string
+  /** 알릴 시각. 보낸 값이 그대로 돌아온다 (naive local) */
+  remindAt: string
+  createdAt: string
+  /** null 이면 안 읽음 */
+  readAt?: string | null
+}

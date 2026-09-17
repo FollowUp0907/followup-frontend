@@ -580,6 +580,14 @@ function TaskCard({
         aria-hidden
       />
 
+      {/* 카드 위에 올리면 잘린 제목 전체를 보여 준다 */}
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-[calc(100%+6px)] left-0 z-20 max-w-[280px] rounded-md bg-ink px-sm py-xs text-caption font-normal leading-snug text-on-dark opacity-0 shadow-card transition-opacity group-hover:opacity-100"
+      >
+        {item.title}
+      </span>
+
       {/* 좌측 상단 상태 인디케이터 — 예정 회색 / 진행 중 파랑 / 완료 초록 */}
       <span
         className="absolute left-md top-md h-2.5 w-2.5 rounded-pill"
@@ -588,10 +596,8 @@ function TaskCard({
       />
 
       <div className="mb-sm flex items-center justify-between gap-xs pl-md pr-lg">
-        {/* 한 줄로 자르고, 잘린 제목은 올리면 전체가 보인다 */}
-        <p className="min-w-0 truncate text-title-sm leading-snug text-ink" title={item.title}>
-          {item.title}
-        </p>
+        {/* 한 줄로 자르고, 카드에 올리면 제목 전체가 말풍선으로 뜬다 */}
+        <p className="min-w-0 truncate text-title-sm leading-snug text-ink">{item.title}</p>
         <DueBadge dueDate={item.dueDate} status={item.status} />
       </div>
 

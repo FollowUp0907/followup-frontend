@@ -26,7 +26,12 @@ export default function TaskDetailPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
-  const { upsert: upsertReminder, removeForTask, forTask } = useReminders(user?.userId)
+  const {
+    upsert: upsertReminder,
+    remove: removeReminder,
+    forTask,
+    isSaving: reminderSaving,
+  } = useReminders(user?.userId)
   const [remindAt, setRemindAt] = useState('')
   const toast = useToast()
 
@@ -308,16 +313,16 @@ export default function TaskDetailPage() {
                 size="sm"
                 fullWidth
                 disabled={!remindAt}
-                onClick={() => {
-                  if (!user || !remindAt) return
-                  upsertReminder({
-                    userId: user.userId,
-                    projectId,
-                    actionItemId: item.id,
-                    taskTitle: item.title,
-                    remindAt: new Date(remindAt).toISOString(),
-                  })
-                  toast.success('알림을 설정했습니다.')
+                loading={reminderSaving}
+                onClick={async () => {
+                  if (!remindAt) return
+                  try {
+                    // datetime-local 값을 그대로 보낸다. remindAt 은 보낸 값이 그대로 돌아온다.
+                    await upsertReminder(item.id, `${remindAt}:00`)
+                    toast.success('알림을 설정했습니다.')
+                  } catch (e) {
+                    toast.error(errorMessage(e))
+                  }
                 }}
               >
                 알림 설정
@@ -326,11 +331,15 @@ export default function TaskDetailPage() {
                 <Button
                   size="sm"
                   variant="secondary"
-                  onClick={() => {
-                    if (!user) return
-                    removeForTask(user.userId, item.id)
-                    setRemindAt('')
-                    toast.success('알림을 해제했습니다.')
+                  onClick={async () => {
+                    if (!existingReminder) return
+                    try {
+                      await removeReminder(existingReminder.id)
+                      setRemindAt('')
+                      toast.success('알림을 해제했습니다.')
+                    } catch (e) {
+                      toast.error(errorMessage(e))
+                    }
                   }}
                 >
                   해제
