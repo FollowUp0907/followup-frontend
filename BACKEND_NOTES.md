@@ -548,6 +548,9 @@ API 호출로 바꾸면 되고, 종·패널·업무 상세 화면은 **그대로
 
 # 🔔 알림 2차 요청 — 지연 상시 · 생성 시 · 수정 시 알림
 
+> ⚠️ **이 절은 아래 3차 요청으로 대체되었습니다.** 배경 설명으로만 읽어 주세요.
+> 달라진 점: 수동 예약(`REMINDER`)을 **없앴고**, `TASK_COMPLETED` 가 **추가**됐습니다.
+
 **날짜**: 2026-09-17
 1차 알림 API 배포 감사합니다. 프론트는 **그대로 붙여서 잘 돌아갑니다.**
 (설정 → 저장 → 배지 → 읽음 → 해제까지 실제 API 로 왕복 확인했습니다)
@@ -675,3 +678,282 @@ GET /api/notifications?due={boolean}&type={REMINDER|TASK_CREATED|TASK_UPDATED|OV
 4. **지연 업무 스케줄러** (하루 1회, 업무당 하루 1건)
 5. (선택) `GET /api/notifications?type=` 필터
 
+
+---
+
+# 🔔 알림 3차 (최종) 요청 — 알림을 전부 자동으로
+
+**날짜**: 2026-09-17
+**한 줄 요약**: 사용자가 알림을 **손으로 거는 기능을 없앴습니다.** 이제 알림은 전부 자동입니다.
+
+2차 요청에서 "예약 알림은 그대로 두고 자동 알림 3종을 추가하자" 고 했었는데,
+쓰다 보니 **예약 알림을 쓸 일이 없었습니다.** 담당자가 자기 업무를 직접 등록하고
+시각까지 고르는 건 일이 하나 더 늘어나는 것뿐이더군요.
+
+그래서 기획을 이렇게 정리했습니다.
+
+> **알림은 시스템이 만든다. 사용자는 받기만 한다.**
+
+프론트에서는 업무 상세의 "알림 설정" 카드를 **이미 제거**했고,
+`POST /api/action-item/{id}/notification` 은 **더 이상 호출하지 않습니다.**
+
+## 1. 만들어야 하는 알림 4종
+
+| type | 언제 | 받는 사람 | 반복 |
+| --- | --- | --- | --- |
+| `OVERDUE` | 마감일이 지났는데 아직 `DONE` 이 아님 | 그 업무의 담당자 | **끝날 때까지 계속** |
+| `TASK_CREATED` | 업무가 생기면서 담당자가 지정됨 | 새 담당자 | 1회 |
+| `TASK_UPDATED` | 담당 중인 업무의 내용이 바뀜 | 담당자 | 1회(변경마다) |
+| `TASK_COMPLETED` | 업무가 `DONE` 으로 바뀜 | **관련된 담당자 전원** | 1회 |
+
+## 2. type 별 상세
+
+### 2-1. `OVERDUE` — 지연 상시 알림
+
+**조건**: `dueDate < 오늘` AND `status != 'DONE'` AND `assigneeUserId != null`
+
+**"상시"의 뜻**: 화면에 **계속 떠 있어야** 합니다. 한 번 읽으면 사라지는 게 아니라,
+**업무를 끝내거나 마감일을 미루기 전까지** 종 안에 남아 있어야 합니다.
+
+구현 방법은 두 가지가 있는데, **B 를 권합니다.**
+
+**A. 스케줄러로 알림 row 를 만든다** (2차 요청에서 제안했던 방식)
+```java
+@Scheduled(cron = "0 0 9 * * *")  // 매일 09:00
+public void notifyOverdue() { ... }
+```
+- 문제: 업무가 완료되면 이미 만들어진 알림 row 를 **지워 줘야** 합니다.
+  안 지우면 "끝낸 업무가 지연됐다" 고 계속 뜹니다.
+- 하루 1건 중복 방지도 따로 해야 합니다.
+
+**B. 조회 시점에 계산해서 내려 준다** ← **권장**
+```java
+// GET /api/notifications 응답에 합쳐서 내려 주기
+List<ActionItem> overdue = actionItemRepository
+    .findByAssigneeUserIdAndDueDateBeforeAndStatusNot(userId, LocalDate.now(), DONE);
+```
+- 저장하지 않으니 **지울 일도 없습니다.** 업무가 끝나면 다음 조회부터 자동으로 빠집니다.
+- 읽음 처리도 필요 없습니다 (상시 알림이라 읽어도 남아야 하니까).
+- `id` 는 음수나 `"overdue-{actionItemId}"` 같은 가상 키를 주셔도 되고,
+  아예 별도 필드로 내려 주셔도 됩니다.
+
+> **프론트는 지금 B 를 자체적으로 하고 있습니다.**
+> 내 프로젝트들의 업무 목록을 받아서 `assigneeUserId == 나 && 지연` 을 직접 계산합니다.
+> (`src/features/reminders/useNotifications.ts`)
+> 그래서 **`OVERDUE` 는 백엔드가 안 해주셔도 지금 돌아갑니다.** 우선순위 낮습니다.
+> 다만 프로젝트가 많아지면 프론트가 목록을 여러 번 부르게 되니, 여유 되실 때
+> B 방식으로 서버에서 내려 주시면 프론트 계산을 걷어내겠습니다.
+
+### 2-2. `TASK_CREATED` — 나에게 업무가 배정됨
+
+**만드는 시점**
+- `POST /api/project/{id}/action-item` — `assigneeUserId` 가 있으면 1건
+- `POST /api/analysis/{id}/confirm` — 생성되는 업무마다 1건
+  (한 번에 5건 생기면 알림도 5건. 이건 그대로 5건이 맞다고 봅니다.
+   각각 다른 업무니까 사용자도 따로 보고 싶어 합니다)
+- `PATCH /api/action-item/{id}` 로 **담당자가 바뀐 경우도 포함**해 주세요.
+  → 새 담당자에게 `TASK_CREATED` (자기 입장에선 새로 배정된 것이니까)
+
+**만들지 않는 경우**
+- `assigneeUserId == null`
+- **행위자 == 담당자** (내가 나한테 배정한 업무)
+
+### 2-3. `TASK_UPDATED` — 담당 업무가 수정됨
+
+**만드는 시점**: `PATCH /api/action-item/{id}` 성공 시, 담당자에게 1건.
+
+**⚠️ 여기가 제일 시끄러워지기 쉬운 곳입니다.** 아래 두 가지를 꼭 걸러 주세요.
+
+1. **행위자 == 담당자면 만들지 않음**
+   내가 내 업무를 고치고 나한테 알림이 오면 안 됩니다.
+
+2. **`status` 만 바뀐 PATCH 는 만들지 않음**
+   칸반 보드에서 카드를 드래그하면 `PATCH { status }` 가 날아갑니다.
+   이걸 알림으로 만들면 카드 옮길 때마다 알림이 쌓입니다.
+   → `status` 변경은 `TASK_COMPLETED`(DONE 일 때)로만 처리하고,
+     `TASK_UPDATED` 는 **title / description / dueDate / priority / assigneeUserId**
+     중 하나라도 바뀌었을 때만 만들어 주세요.
+
+```java
+boolean contentChanged =
+    changed(req.getTitle(), item.getTitle())
+ || changed(req.getDescription(), item.getDescription())
+ || changed(req.getDueDate(), item.getDueDate())
+ || changed(req.getPriority(), item.getPriority());
+// 담당자 변경은 TASK_CREATED 로 따로 처리
+```
+
+3. (선택) 같은 업무에 대해 **짧은 시간 안의 연속 수정은 1건으로 묶기**.
+   없어도 됩니다. 시끄러우면 그때 넣죠.
+
+### 2-4. `TASK_COMPLETED` — 업무가 완료됨
+
+**만드는 시점**: `PATCH /api/action-item/{id}` 로 `status` 가 `DONE` 이 **된 순간**.
+(이미 `DONE` 인데 또 `DONE` 을 보내면 만들지 않음 — 상태가 **바뀔 때만**)
+
+**받는 사람 — 여기 정책 확인 부탁드립니다 🙏**
+
+요청은 **"완료되면 해당하는 담당자 모두에게"** 였는데,
+지금 스키마는 업무당 담당자가 **한 명**(`assigneeUserId`)뿐입니다.
+그래서 "모두" 를 이렇게 해석했습니다.
+
+| 대상 | 이유 |
+| --- | --- |
+| 업무 담당자 | 본인 업무니까 |
+| 업무를 만든 사람 (`createdBy`) | 시킨 사람이 결과를 알아야 하니까 |
+| 같은 회의(`originMeetingId`)에서 나온 업무들의 담당자 | 같은 안건을 나눠 맡은 사람들 |
+
+**세 번째는 과할 수도 있습니다.** 회의 하나에서 업무 10건이 나오면
+1건 완료할 때마다 10명에게 알림이 갑니다.
+→ **일단 1·2번(담당자 + 생성자)만 구현**해 주시고, 3번은 빼 주세요.
+   써 보고 부족하면 그때 요청드리겠습니다.
+
+**중복 제거**: 담당자와 생성자가 같은 사람이면 1건만.
+**행위자 제외 안 함**: 완료는 "내가 끝냈다" 는 기록이라 본인에게도 보이는 게 자연스럽습니다.
+(시끄러우면 행위자 제외로 바꿔 주셔도 됩니다)
+
+## 3. 스키마
+
+2차 요청에서 드린 것과 같습니다. `type` 에 `TASK_COMPLETED` 만 추가됐습니다.
+
+```jsonc
+{
+  "id": 1,
+  "userId": 5,                  // 받는 사람
+  "projectId": 13,
+  "actionItemId": 64,
+  "taskTitle": "백엔드 에러 메시지 포맷 통일 작업",
+  "type": "TASK_CREATED",       // OVERDUE | TASK_CREATED | TASK_UPDATED | TASK_COMPLETED
+  "remindAt": "2026-09-17T14:03:00",  // = 사건이 일어난 시각
+  "createdAt": "2026-09-17T14:03:00",
+  "readAt": null
+}
+```
+
+**필드 관련**
+- `remindAt` 은 이제 "예약 시각" 이 아니라 **"사건이 일어난 시각"** 입니다.
+  이름이 안 맞지만 **그대로 두셔도 됩니다.** 프론트는 이미 그렇게 읽고 있습니다.
+  (바꾸고 싶으시면 `occurredAt` 같은 이름으로 주시고 알려만 주세요)
+- **유니크 제약을 풀어 주세요.** 지금 `(userId, actionItemId)` 1건 제약이 걸려 있는데,
+  이제 한 업무에 생성·수정·완료 알림이 **여러 건 쌓여야** 합니다.
+- 기존 데이터는 `type = 'REMINDER'` 로 채우고 두시거나, 테스트 데이터면 지우셔도 됩니다.
+
+## 4. API 변경
+
+**없애도 되는 것**
+```
+POST /api/action-item/{id}/notification   ← 프론트에서 더 이상 호출 안 합니다
+```
+지우셔도 되고, 두셔도 상관없습니다.
+
+**그대로 쓰는 것**
+```
+GET    /api/notifications            내 알림 전체
+DELETE /api/notification/{id}        1건 삭제
+PATCH  /api/notification/{id}/read   1건 읽음
+PATCH  /api/notifications/read-all   전부 읽음
+```
+
+**하나만 부탁드립니다**: `GET /api/notifications` 응답을 **최신순**으로 주세요.
+지금은 프론트에서 정렬하고 있는데, 나중에 페이징이 필요해지면 서버 정렬이 있어야 합니다.
+
+## 5. 구현 가이드 (스프링 기준)
+
+이벤트를 쓰시면 서비스 코드가 알림을 몰라도 돼서 깔끔합니다.
+
+```java
+// 1) 업무 서비스는 "사건이 일어났다" 만 발행한다
+@Service
+@RequiredArgsConstructor
+public class ActionItemService {
+    private final ApplicationEventPublisher events;
+
+    @Transactional
+    public ActionItemResDto update(Long id, ActionItemPatchReq req, Long actorId) {
+        ActionItem item = find(id);
+        Long prevAssignee = item.getAssigneeUserId();
+        ActionItemStatus prevStatus = item.getStatus();
+        boolean contentChanged = applyPatch(item, req);   // 실제로 바뀐 게 있는지 반환
+
+        if (!Objects.equals(prevAssignee, item.getAssigneeUserId())) {
+            events.publishEvent(new TaskAssignedEvent(item, actorId));
+        } else if (contentChanged) {
+            events.publishEvent(new TaskUpdatedEvent(item, actorId));
+        }
+        if (prevStatus != DONE && item.getStatus() == DONE) {
+            events.publishEvent(new TaskCompletedEvent(item, actorId));
+        }
+        return toDto(item);
+    }
+}
+
+// 2) 알림은 한 곳에서만 만든다
+@Component
+@RequiredArgsConstructor
+public class NotificationListener {
+    private final NotificationRepository repo;
+
+    @TransactionalEventListener(phase = AFTER_COMMIT)   // ★ 커밋 후에만
+    public void on(TaskAssignedEvent e) {
+        if (e.item().getAssigneeUserId() == null) return;
+        if (e.item().getAssigneeUserId().equals(e.actorId())) return;   // 본인 제외
+        repo.save(Notification.of(e.item(), TASK_CREATED, e.item().getAssigneeUserId()));
+    }
+
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    public void on(TaskUpdatedEvent e) { /* 위와 동일, type 만 TASK_UPDATED */ }
+
+    @TransactionalEventListener(phase = AFTER_COMMIT)
+    public void on(TaskCompletedEvent e) {
+        Set<Long> targets = new LinkedHashSet<>();       // 중복 자동 제거
+        if (e.item().getAssigneeUserId() != null) targets.add(e.item().getAssigneeUserId());
+        targets.add(e.item().getCreatedBy());
+        targets.forEach(uid -> repo.save(Notification.of(e.item(), TASK_COMPLETED, uid)));
+    }
+}
+```
+
+**`AFTER_COMMIT` 이 중요합니다.** 업무 저장이 롤백됐는데 알림만 남으면 안 되니까요.
+
+## 6. 전달 방식 — 폴링 그대로 괜찮습니다
+
+프론트는 **30초마다 `GET /api/notifications`** 를 부르고 있습니다.
+SSE/웹소켓 없어도 됩니다. 지금 사용자 수에서는 폴링으로 충분합니다.
+
+## 7. 테스트 시나리오
+
+아래가 다 되면 완료입니다.
+
+```
+[TASK_CREATED]
+ A 가 B 를 담당자로 업무 생성          → B 에게 1건, A 에게 0건
+ A 가 A 를 담당자로 업무 생성          → 0건
+ 담당자를 B → C 로 변경                → C 에게 1건
+
+[TASK_UPDATED]
+ A 가 B 담당 업무의 제목 수정          → B 에게 1건
+ B 가 자기 업무의 제목 수정            → 0건
+ 보드에서 카드 드래그 (status 만 변경) → 0건  ← 꼭 확인
+
+[TASK_COMPLETED]
+ B 가 자기 업무를 DONE 으로            → B, 생성자 A 에게 각 1건
+ 이미 DONE 인 업무에 다시 DONE PATCH   → 0건
+
+[OVERDUE]  (서버에서 하실 경우)
+ 마감 지난 미완료 업무                 → 담당자에게 계속 보임
+ 그 업무를 DONE 으로 바꿈              → 다음 조회부터 안 보임
+ 마감일을 내일로 미룸                  → 다음 조회부터 안 보임
+```
+
+## 8. 정리 — 해주셔야 하는 것
+
+1. `notification.type` 컬럼 추가 (`OVERDUE`/`TASK_CREATED`/`TASK_UPDATED`/`TASK_COMPLETED`)
+2. `(userId, actionItemId)` **유니크 제약 제거**
+3. 업무 생성·담당자 변경 → `TASK_CREATED` (본인 제외, 담당자 없으면 제외)
+4. 업무 내용 수정 → `TASK_UPDATED` (**본인 제외, status 만 변경은 제외**)
+5. `DONE` 전환 → `TASK_COMPLETED` (담당자 + 생성자, 중복 제거)
+6. `GET /api/notifications` 최신순 정렬
+7. (여유 되시면) `OVERDUE` 를 조회 시점 계산으로 응답에 합쳐 주기 — **지금은 프론트가 함**
+
+`type` 이 안 내려와도 프론트는 안 깨집니다. 모르는 알림은 기본 모양으로 보여 줍니다.
+그러니 **한 번에 다 안 하셔도 되고, 3 → 5 → 4 순서로 하나씩 올려주셔도 됩니다.**
