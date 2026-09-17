@@ -27,8 +27,8 @@ const TONE: Record<Tone, string> = {
   info: 'bg-brand-accent/10 text-brand-accent',
   // DESIGN.md 의 파스텔 — 태그 pill 용
   violet: 'bg-badge-violet/12 text-[#6d28d9]',
-  'violet-strong': 'bg-badge-violet/15 text-[#7c3aed]',
-  teal: 'bg-[#0891b2]/10 text-[#0e9aa8]',
+  'violet-strong': 'bg-[#4338ca]/10 text-[#3730a3]',
+  teal: 'bg-[#0f766e]/10 text-[#115e59]',
   orange: 'bg-badge-orange/15 text-[#c2410c]',
   pink: 'bg-badge-pink/12 text-[#be185d]',
   emerald: 'bg-badge-emerald/15 text-[#047857]',
@@ -102,9 +102,9 @@ export function Avatar({ name, size = 36, className }: { name?: string | null; s
       style={{
         width: size,
         height: size,
-        // 물빠진 파스텔 위에 흰 글씨는 안 읽혀서 잉크색으로 둔다.
+        // 아바타 바탕이 어두워서 이름 글자는 흰색으로 얹는다.
         background: name ? avatarColor(label) : '#e5e7eb',
-        color: name ? '#111111' : '#6b7280',
+        color: name ? '#ffffff' : '#6b7280',
         fontSize: Math.max(11, Math.round(size * 0.36)),
       }}
       title={label}

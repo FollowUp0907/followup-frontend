@@ -27,10 +27,11 @@ export const ROLE_LABEL: Record<ProjectRole, string> = {
 }
 
 /**
- * 아바타 채움 — 디자인 시스템에서 파스텔이 허용되는 유일한 자리.
- * 원색은 이름 글자를 눌러서, 채도를 낮춘 "물빠진" 톤으로 쓴다.
+ * 아바타 채움.
+ * 무채색 화면에 얹히는 색이라 채도가 낮되 바래지 않은 먼지 톤으로 잡는다.
+ * 어두운 편이라 이름 글자는 흰색으로 얹는다.
  */
-export const AVATAR_COLORS = ['#fed7aa', '#fbcfe8', '#ddd6fe', '#bbf7d0', '#bfdbfe'] as const
+export const AVATAR_COLORS = ['#64748b', '#7e6a8a', '#4f6d7a', '#6b7f6e', '#8a7060'] as const
 
 export function avatarColor(seed: string | number) {
   const s = String(seed)
@@ -52,11 +53,17 @@ export const STATUS_DOT_COLOR: Record<ActionItemStatus, string> = {
  * 마감 배지가 빨강(지연)·주황(마감 임박)을 쓰기 때문에, 우선순위는 그 둘을 피해
  * 보라 계열로 잡는다. 같은 카드에서 "보통"과 "마감 임박"이 같은 색이던 문제 해결.
  */
-/** 채도를 낮춘 톤. 카드가 색으로 시끄러워지지 않게 한다. */
+/**
+ * 우선순위 색.
+ * 흑백·회색이 바탕인 화면이라 파스텔은 바래 보이고 원색은 튄다.
+ * 회색 기운이 섞인 깊은 톤으로 잡아, 무채색 옆에서 탁해 보이지 않으면서
+ * 높음 -> 낮음이 진하기로도 읽히게 한다.
+ * 마감 배지가 쓰는 빨강(지연)·주황(마감 임박)은 피한다.
+ */
 export const PRIORITY_ICON_COLOR: Record<ActionItemPriority, string> = {
-  HIGH: '#a78bfa', // 흐린 보라
-  MEDIUM: '#7dd3dd', // 흐린 청록
-  LOW: '#cbd5e1', // 흐린 회청
+  HIGH: '#4338ca', // 짙은 인디고
+  MEDIUM: '#0f766e', // 짙은 청록
+  LOW: '#64748b', // 슬레이트
 }
 
 /** 업무 키 표기 (시안의 FU-101 형태) */
