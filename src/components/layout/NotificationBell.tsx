@@ -1,28 +1,45 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, ArrowLeft, Bell, CheckCircle2, Clock, Pencil, Plus, X } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Bell, CalendarClock, CheckCircle2, Pencil, Plus, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/features/auth/AuthContext'
 import { KIND_LABEL, useNotifications } from '@/features/reminders/useNotifications'
 import type { AppNotification, NotificationKind } from '@/features/reminders/useNotifications'
 import { cn } from '@/lib/cn'
-import { dayjs, formatDate, formatDateTime } from '@/lib/date'
+import { dDayLabel, dayjs, formatDate, formatDateTime } from '@/lib/date'
 
 const KIND_ICON: Record<NotificationKind, LucideIcon> = {
+  DUE_SOON: CalendarClock,
   OVERDUE: AlertTriangle,
   TASK_CREATED: Plus,
   TASK_UPDATED: Pencil,
   TASK_COMPLETED: CheckCircle2,
-  REMINDER: Clock,
+  UNKNOWN: Bell,
 }
 
 const KIND_COLOR: Record<NotificationKind, string> = {
+  // 마감 임박 뱃지와 같은 주황 계열 — 지연(빨강)보다 한 단계 약하게
+  DUE_SOON: '#b45309',
   OVERDUE: '#ef4444',
   TASK_CREATED: '#0f766e',
   TASK_UPDATED: '#64748b',
   TASK_COMPLETED: '#10b981',
-  REMINDER: '#64748b',
+  UNKNOWN: '#64748b',
+}
+
+/** D-3 / D-day / D+2. 마감이 있는 알림에만 붙는다. */
+function DDay({ dueDate, kind }: { dueDate?: string; kind: NotificationKind }) {
+  const label = dDayLabel(dueDate)
+  if (!label) return null
+  return (
+    <span
+      className="shrink-0 rounded-pill px-xs py-[1px] text-[11px] font-semibold"
+      style={{ background: `${KIND_COLOR[kind]}1a`, color: KIND_COLOR[kind] }}
+    >
+      {label}
+    </span>
+  )
 }
 
 /**
@@ -66,7 +83,8 @@ export function NotificationBell() {
     if (!n.read) void markRead(n)
   }
 
-  const hasServerUnread = all.some((n) => n.serverId && !n.read)
+  // 지연은 읽음이 없으니 "모두 읽음" 대상에서 뺀다.
+  const hasServerUnread = all.some((n) => !n.read && n.kind !== 'OVERDUE')
 
   return (
     <div className="relative" ref={ref}>
@@ -157,12 +175,15 @@ export function NotificationBell() {
                         <Icon size={12} />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className={cn('block truncate text-body-sm', n.read ? 'text-body' : 'text-ink')}>
-                          {n.taskTitle}
+                        <span className="flex items-center gap-xs">
+                          <span className={cn('min-w-0 flex-1 truncate text-body-sm', n.read ? 'text-body' : 'text-ink')}>
+                            {n.taskTitle}
+                          </span>
+                          <DDay dueDate={n.dueDate} kind={n.kind} />
                         </span>
                         <span className="block truncate text-caption font-normal text-muted-soft">
                           {KIND_LABEL[n.kind]}
-                          {n.at ? ` · ${n.kind === 'OVERDUE' ? formatDate(n.at) : dayjs(n.at).fromNow()}` : ''}
+                          {n.at ? ` · ${n.dueDate ? formatDate(n.at) : dayjs(n.at).fromNow()}` : ''}
                         </span>
                       </span>
                       {!n.read && <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-pill bg-error" aria-hidden />}
@@ -190,18 +211,24 @@ function DetailView({
   const Icon = KIND_ICON[notification.kind]
   return (
     <div className="p-md">
-      <span
-        className="mb-sm inline-flex items-center gap-xxs rounded-pill px-xs py-[2px] text-caption font-semibold"
-        style={{ background: `${KIND_COLOR[notification.kind]}1a`, color: KIND_COLOR[notification.kind] }}
-      >
-        <Icon size={12} /> {KIND_LABEL[notification.kind]}
+      <span className="mb-sm flex flex-wrap items-center gap-xxs">
+        <span
+          className="inline-flex items-center gap-xxs rounded-pill px-xs py-[2px] text-caption font-semibold"
+          style={{ background: `${KIND_COLOR[notification.kind]}1a`, color: KIND_COLOR[notification.kind] }}
+        >
+          <Icon size={12} /> {KIND_LABEL[notification.kind]}
+        </span>
+        <DDay dueDate={notification.dueDate} kind={notification.kind} />
       </span>
       <p className="text-title-sm text-ink">{notification.taskTitle}</p>
       {notification.at && (
         <p className="mt-xxs text-caption font-normal text-muted">
-          {notification.kind === 'OVERDUE'
-            ? `마감일 ${formatDate(notification.at)}`
-            : formatDateTime(notification.at)}
+          {notification.dueDate ? `마감일 ${formatDate(notification.at)}` : formatDateTime(notification.at)}
+        </p>
+      )}
+      {notification.kind === 'DUE_SOON' && (
+        <p className="mt-xs text-caption font-normal text-muted-soft">
+          마감까지 하루에 한 번 알려 드립니다. 오늘은 읽으면 접히고, 내일 다시 뜹니다.
         </p>
       )}
       {notification.kind === 'OVERDUE' && (
