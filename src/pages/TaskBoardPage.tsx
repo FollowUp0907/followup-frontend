@@ -10,7 +10,7 @@ import { Dropdown } from '@/components/ui/Dropdown'
 import { Pager, usePager } from '@/components/ui/Pager'
 import { RowMenu } from '@/components/ui/RowMenu'
 import type { RowMenuItem } from '@/components/ui/RowMenu'
-import { FormRow, Input, Select, Textarea } from '@/components/ui/Field'
+import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Modal } from '@/components/ui/Modal'
 import { SegmentedControl } from '@/components/ui/NavPillGroup'
@@ -437,17 +437,24 @@ export default function TaskBoardPage() {
                     </td>
                     {/* 상태 변경은 행 클릭(패널 열기)과 겹치면 안 된다 */}
                     <td className="px-lg py-sm" onClick={(e) => e.stopPropagation()}>
-                      <Select
-                        className="h-8 w-[120px] text-body-sm"
+                      {/* 위 필터 바와 같은 드롭다운 — 상태 점까지 그대로 */}
+                      <Dropdown
+                        className="w-[132px]"
+                        ariaLabel={`${item.title} 상태`}
                         value={item.status}
-                        onChange={(e) => changeStatus(item, e.target.value as ActionItemStatus)}
-                      >
-                        {STATUS_ORDER.map((s) => (
-                          <option key={s} value={s}>
-                            {STATUS_LABEL[s]}
-                          </option>
-                        ))}
-                      </Select>
+                        onChange={(v) => void changeStatus(item, v as ActionItemStatus)}
+                        options={STATUS_ORDER.map((st) => ({
+                          value: st,
+                          label: STATUS_LABEL[st],
+                          adornment: (
+                            <span
+                              className="h-2 w-2 rounded-pill"
+                              style={{ background: STATUS_DOT_COLOR[st] }}
+                              aria-hidden
+                            />
+                          ),
+                        }))}
+                      />
                     </td>
                     <td className="px-lg py-sm">
                       <div className="flex justify-end">

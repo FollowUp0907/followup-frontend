@@ -1,4 +1,5 @@
-import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { ReactNode } from 'react'
 import { Check, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/cn'
@@ -9,6 +10,10 @@ import { cn } from '@/lib/cn'
  * 네이티브 <select> 는 OS 마다 생김새가 달라서 디자인 시스템을 벗어난다.
  * 트리거는 text-input 스펙(h-40 / rounded-md / hairline), 패널은 canvas + hairline +
  * shadow-card, 항목은 rounded-sm (DESIGN.md 에서 dropdown item 에 지정한 값).
+ *
+ * 패널은 body 로 포털해서 position:fixed 로 띄운다. 목록 뷰의 표처럼
+ * overflow 가 걸린 상자 안에 들어가면 그 안에 갇혀 잘리기 때문이다.
+ * (overflow-x:auto 는 overflow-y 도 auto 로 만든다)
  *
  * 접근성:
  *  - 트리거 role=combobox, 패널 role=listbox, 항목 role=option
@@ -55,6 +60,8 @@ export function Dropdown<T extends string>({
   const [activeIndex, setActiveIndex] = useState(-1)
   const [dropUp, setDropUp] = useState(false)
 
+  const [panelBox, setPanelBox] = useState({ top: 0, left: 0, width: 0 })
+
   const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
@@ -64,13 +71,39 @@ export function Dropdown<T extends string>({
   const selectedIndex = useMemo(() => options.findIndex((o) => o.value === value), [options, value])
   const selected = selectedIndex >= 0 ? options[selectedIndex] : undefined
 
-  // 열릴 때 아래 공간이 부족하면 위로 띄운다.
-  useLayoutEffect(() => {
-    if (!open || !triggerRef.current) return
-    const rect = triggerRef.current.getBoundingClientRect()
+  // 트리거 위치에 패널을 맞춘다. 아래 공간이 부족하면 위로 띄운다.
+  const place = useCallback(() => {
+    const el = triggerRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
     const needed = Math.min(options.length * 40 + 16, 280)
-    setDropUp(rect.bottom + needed > window.innerHeight && rect.top > needed)
-  }, [open, options.length])
+    const up = rect.bottom + needed > window.innerHeight && rect.top > needed
+    setDropUp(up)
+    const width = Math.max(rect.width, 180)
+    setPanelBox({
+      top: up ? rect.top - 4 : rect.bottom + 4,
+      // 오른쪽 끝에서 잘리지 않게 안으로 당긴다.
+      left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
+      width: rect.width,
+    })
+  }, [options.length])
+
+  useLayoutEffect(() => {
+    if (!open) return
+    place()
+  }, [open, place])
+
+  // 스크롤·리사이즈를 따라다닌다. capture 로 받아야 표 같은 안쪽 스크롤도 잡힌다.
+  useEffect(() => {
+    if (!open) return
+    const onMove = () => place()
+    window.addEventListener('scroll', onMove, true)
+    window.addEventListener('resize', onMove)
+    return () => {
+      window.removeEventListener('scroll', onMove, true)
+      window.removeEventListener('resize', onMove)
+    }
+  }, [open, place])
 
   useEffect(() => {
     if (!open) return
@@ -86,7 +119,10 @@ export function Dropdown<T extends string>({
   useEffect(() => {
     if (!open) return
     const onPointerDown = (e: MouseEvent) => {
-      if (rootRef.current && !rootRef.current.contains(e.target as Node)) setOpen(false)
+      const target = e.target as Node
+      // 패널이 포털로 빠져 있어서 root 만 보면 안 된다.
+      if (rootRef.current?.contains(target) || listRef.current?.contains(target)) return
+      setOpen(false)
     }
     document.addEventListener('mousedown', onPointerDown)
     return () => document.removeEventListener('mousedown', onPointerDown)
@@ -189,49 +225,57 @@ export function Dropdown<T extends string>({
         />
       </button>
 
-      {open && (
-        <ul
-          ref={listRef}
-          id={listId}
-          role="listbox"
-          aria-labelledby={ariaLabelledBy}
-          tabIndex={-1}
-          onKeyDown={onKeyDown}
-          className={cn(
-            'absolute z-50 max-h-[280px] w-full min-w-[180px] animate-scale-in overflow-y-auto rounded-md border border-hairline',
-            'bg-canvas p-xxs shadow-card',
-            dropUp ? 'bottom-[calc(100%+4px)] origin-bottom' : 'top-[calc(100%+4px)] origin-top',
-          )}
-        >
-          {options.map((option, index) => {
-            const isSelected = option.value === value
-            return (
-              <li
-                key={option.value}
-                role="option"
-                aria-selected={isSelected}
-                onMouseEnter={() => setActiveIndex(index)}
-                onClick={() => pick(index)}
-                className={cn(
-                  'flex cursor-pointer items-center gap-xs rounded-sm px-sm py-xs text-body-sm transition-colors',
-                  index === activeIndex ? 'bg-surface-card text-ink' : 'text-body',
-                )}
-              >
-                {option.adornment && <span className="flex shrink-0 items-center">{option.adornment}</span>}
-                <span className="min-w-0 flex-1">
-                  <span className={cn('block truncate', isSelected && 'font-semibold text-ink')}>{option.label}</span>
-                  {option.description && (
-                    <span className="block truncate text-caption font-normal text-muted-soft">
-                      {option.description}
-                    </span>
+      {open &&
+        createPortal(
+          <ul
+            ref={listRef}
+            id={listId}
+            role="listbox"
+            aria-labelledby={ariaLabelledBy}
+            tabIndex={-1}
+            onKeyDown={onKeyDown}
+            style={{
+              top: panelBox.top,
+              left: panelBox.left,
+              width: panelBox.width,
+              transform: dropUp ? 'translateY(-100%)' : undefined,
+            }}
+            className={cn(
+              'fixed z-[60] max-h-[280px] min-w-[180px] animate-scale-in overflow-y-auto rounded-md border border-hairline',
+              'bg-canvas p-xxs shadow-card',
+              dropUp ? 'origin-bottom' : 'origin-top',
+            )}
+          >
+            {options.map((option, index) => {
+              const isSelected = option.value === value
+              return (
+                <li
+                  key={option.value}
+                  role="option"
+                  aria-selected={isSelected}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  onClick={() => pick(index)}
+                  className={cn(
+                    'flex cursor-pointer items-center gap-xs rounded-sm px-sm py-xs text-body-sm transition-colors',
+                    index === activeIndex ? 'bg-surface-card text-ink' : 'text-body',
                   )}
-                </span>
-                {isSelected && <Check size={15} className="shrink-0 text-ink" aria-hidden />}
-              </li>
-            )
-          })}
-        </ul>
-      )}
+                >
+                  {option.adornment && <span className="flex shrink-0 items-center">{option.adornment}</span>}
+                  <span className="min-w-0 flex-1">
+                    <span className={cn('block truncate', isSelected && 'font-semibold text-ink')}>{option.label}</span>
+                    {option.description && (
+                      <span className="block truncate text-caption font-normal text-muted-soft">
+                        {option.description}
+                      </span>
+                    )}
+                  </span>
+                  {isSelected && <Check size={15} className="shrink-0 text-ink" aria-hidden />}
+                </li>
+              )
+            })}
+          </ul>,
+          document.body,
+        )}
     </div>
   )
 }
