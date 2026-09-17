@@ -1,7 +1,9 @@
-import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import type { ReactNode } from 'react'
 import { MoreHorizontal } from 'lucide-react'
 import { cn } from '@/lib/cn'
+import { useAnchoredPanel } from './useAnchoredPanel'
 
 export interface RowMenuItem {
   label: string
@@ -20,18 +22,29 @@ export interface RowMenuItem {
  *
  * 카드 전체가 눌리면 상세 패널이 열리므로, 여기서 일어나는 클릭은
  * 전부 바깥으로 새어 나가지 않게 막는다. (stopPropagation)
- * 위치는 열 때 재 보고 아래 공간이 모자라면 위로 펼친다.
+ *
+ * 메뉴는 body 로 포털한다. 목록 뷰의 표가 overflow-x-auto 안에 있어서
+ * (x 가 auto 면 y 도 auto 가 된다) 그 안에서 띄우면 아래쪽 행에서 잘린다.
  */
 export function RowMenu({ items, label = '업무 메뉴' }: { items: RowMenuItem[]; label?: string }) {
   const [open, setOpen] = useState(false)
-  const [dropUp, setDropUp] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  const { dropUp, style: panelStyle } = useAnchoredPanel(open, triggerRef, {
+    width: 164,
+    align: 'right',
+    estimatedHeight: items.length * 36 + 16,
+  })
 
   useEffect(() => {
     if (!open) return
     const onDown = (e: MouseEvent) => {
-      if (!rootRef.current?.contains(e.target as Node)) setOpen(false)
+      const target = e.target as Node
+      // 메뉴가 포털로 빠져 있어서 root 만 보면 안 된다.
+      if (rootRef.current?.contains(target) || panelRef.current?.contains(target)) return
+      setOpen(false)
     }
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return
@@ -47,12 +60,6 @@ export function RowMenu({ items, label = '업무 메뉴' }: { items: RowMenuItem
       document.removeEventListener('keydown', onKey, true)
     }
   }, [open])
-
-  useLayoutEffect(() => {
-    if (!open) return
-    const rect = triggerRef.current?.getBoundingClientRect()
-    if (rect) setDropUp(window.innerHeight - rect.bottom < 8 + items.length * 36 + 16)
-  }, [open, items.length])
 
   return (
     <div
@@ -85,34 +92,40 @@ export function RowMenu({ items, label = '업무 메뉴' }: { items: RowMenuItem
         <MoreHorizontal size={16} />
       </button>
 
-      {open && (
-        <div
-          role="menu"
-          className={cn(
-            'absolute right-0 z-30 w-[164px] animate-scale-in rounded-md border border-hairline bg-canvas p-xxs shadow-card',
-            dropUp ? 'bottom-[calc(100%+4px)] origin-bottom' : 'top-[calc(100%+4px)] origin-top',
-          )}
-        >
-          {items.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setOpen(false)
-                item.onSelect()
-              }}
-              className={cn(
-                'flex w-full items-center gap-xs rounded-sm px-sm py-xs text-left text-body-sm transition-colors',
-                item.destructive ? 'text-error hover:bg-error/5' : 'text-body hover:bg-surface-card hover:text-ink',
-              )}
-            >
-              {item.icon}
-              {item.label}
-            </button>
-          ))}
-        </div>
-      )}
+      {open &&
+        createPortal(
+          <div
+            ref={panelRef}
+            role="menu"
+            style={panelStyle}
+            // 포털된 메뉴의 클릭도 카드까지 새지 않게 여기서도 막는다.
+            onClick={(e) => e.stopPropagation()}
+            className={cn(
+              'fixed z-[60] animate-scale-in rounded-md border border-hairline bg-canvas p-xxs shadow-card',
+              dropUp ? 'origin-bottom' : 'origin-top',
+            )}
+          >
+            {items.map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false)
+                  item.onSelect()
+                }}
+                className={cn(
+                  'flex w-full items-center gap-xs rounded-sm px-sm py-xs text-left text-body-sm transition-colors',
+                  item.destructive ? 'text-error hover:bg-error/5' : 'text-body hover:bg-surface-card hover:text-ink',
+                )}
+              >
+                {item.icon}
+                {item.label}
+              </button>
+            ))}
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }

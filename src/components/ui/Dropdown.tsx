@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { ReactNode } from 'react'
 import { Check, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/cn'
+import { useAnchoredPanel } from './useAnchoredPanel'
 
 /**
  * 커스텀 드롭다운 (DESIGN.md 준수)
@@ -58,9 +59,6 @@ export function Dropdown<T extends string>({
 }: DropdownProps<T>) {
   const [open, setOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
-  const [dropUp, setDropUp] = useState(false)
-
-  const [panelBox, setPanelBox] = useState({ top: 0, left: 0, width: 0 })
 
   const rootRef = useRef<HTMLDivElement>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -71,39 +69,11 @@ export function Dropdown<T extends string>({
   const selectedIndex = useMemo(() => options.findIndex((o) => o.value === value), [options, value])
   const selected = selectedIndex >= 0 ? options[selectedIndex] : undefined
 
-  // 트리거 위치에 패널을 맞춘다. 아래 공간이 부족하면 위로 띄운다.
-  const place = useCallback(() => {
-    const el = triggerRef.current
-    if (!el) return
-    const rect = el.getBoundingClientRect()
-    const needed = Math.min(options.length * 40 + 16, 280)
-    const up = rect.bottom + needed > window.innerHeight && rect.top > needed
-    setDropUp(up)
-    const width = Math.max(rect.width, 180)
-    setPanelBox({
-      top: up ? rect.top - 4 : rect.bottom + 4,
-      // 오른쪽 끝에서 잘리지 않게 안으로 당긴다.
-      left: Math.max(8, Math.min(rect.left, window.innerWidth - width - 8)),
-      width: rect.width,
-    })
-  }, [options.length])
-
-  useLayoutEffect(() => {
-    if (!open) return
-    place()
-  }, [open, place])
-
-  // 스크롤·리사이즈를 따라다닌다. capture 로 받아야 표 같은 안쪽 스크롤도 잡힌다.
-  useEffect(() => {
-    if (!open) return
-    const onMove = () => place()
-    window.addEventListener('scroll', onMove, true)
-    window.addEventListener('resize', onMove)
-    return () => {
-      window.removeEventListener('scroll', onMove, true)
-      window.removeEventListener('resize', onMove)
-    }
-  }, [open, place])
+  const { dropUp, style: panelStyle } = useAnchoredPanel(open, triggerRef, {
+    width: 'anchor',
+    minWidth: 180,
+    estimatedHeight: Math.min(options.length * 40 + 16, 280),
+  })
 
   useEffect(() => {
     if (!open) return
@@ -234,12 +204,7 @@ export function Dropdown<T extends string>({
             aria-labelledby={ariaLabelledBy}
             tabIndex={-1}
             onKeyDown={onKeyDown}
-            style={{
-              top: panelBox.top,
-              left: panelBox.left,
-              width: panelBox.width,
-              transform: dropUp ? 'translateY(-100%)' : undefined,
-            }}
+            style={panelStyle}
             className={cn(
               'fixed z-[60] max-h-[280px] min-w-[180px] animate-scale-in overflow-y-auto rounded-md border border-hairline',
               'bg-canvas p-xxs shadow-card',
