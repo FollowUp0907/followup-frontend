@@ -70,6 +70,20 @@ export function speechErrorMessage(code: string) {
   }
 }
 
+/**
+ * 받아쓰는 중인 조각을 본문 끝에 붙여서 "말하는 대로" 보이게 한다.
+ * 조각은 아직 본문이 아니다 — 확정되면 onText 로 따로 들어온다.
+ */
+export function withDraft(content: string, interim: string) {
+  const tail = interim ? `${content.trim() ? '\n' : ''}${interim}` : ''
+  return { tail, shown: content + tail }
+}
+
+/** 사용자가 직접 고쳤을 때, 끝에 얹어 둔 조각은 떼고 본문만 남긴다. */
+export function stripDraft(value: string, tail: string) {
+  return tail && value.endsWith(tail) ? value.slice(0, -tail.length) : value
+}
+
 export function useSpeechToText({
   onText,
   onError,
@@ -82,6 +96,8 @@ export function useSpeechToText({
 }) {
   const [listening, setListening] = useState(false)
   const [interim, setInterim] = useState('')
+  // onend 에서 바로 읽어야 해서 state 와 같이 들고 있는다.
+  const interimRef = useRef('')
   const recRef = useRef<SpeechRecognitionLike | null>(null)
   // 사용자가 중지를 누를 때까지 붙잡아 둔다.
   const keepAlive = useRef(false)
@@ -115,6 +131,7 @@ export function useSpeechToText({
         else draft += r[0].transcript
       }
       if (confirmed.trim()) onTextRef.current(confirmed.trim())
+      interimRef.current = draft
       setInterim(draft)
     }
 
@@ -126,9 +143,10 @@ export function useSpeechToText({
     }
 
     rec.onend = () => {
-      setInterim('')
       if (keepAlive.current) {
         // 조용해서 저 혼자 끝난 것뿐이다. 이어서 듣는다.
+        interimRef.current = ''
+        setInterim('')
         try {
           rec.start()
           return
@@ -136,6 +154,12 @@ export function useSpeechToText({
           keepAlive.current = false
         }
       }
+      // 말하다 만 조각이 남아 있으면 버리지 말고 본문에 넣는다.
+      // (크롬은 stop() 때 보통 확정 결과를 먼저 주므로 여기까지 오는 일은 드물다)
+      const leftover = interimRef.current.trim()
+      interimRef.current = ''
+      setInterim('')
+      if (leftover) onTextRef.current(leftover)
       recRef.current = null
       setListening(false)
     }
@@ -154,6 +178,7 @@ export function useSpeechToText({
   useEffect(
     () => () => {
       keepAlive.current = false
+      interimRef.current = ''
       recRef.current?.abort()
       recRef.current = null
     },

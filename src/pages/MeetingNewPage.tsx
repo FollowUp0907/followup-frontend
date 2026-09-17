@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from 'react-router-dom'
@@ -19,12 +19,11 @@ import { useCreateMeeting } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { useAuth } from '@/features/auth/AuthContext'
 import { dayjs, fromDateTimeLocalInput } from '@/lib/date'
-import { useSpeechToText } from '@/lib/speech'
+import { stripDraft, useSpeechToText, withDraft } from '@/lib/speech'
 
 const schema = z.object({
   title: z.string().min(1, '회의 제목을 입력해 주세요.').max(200, '200자 이하로 입력해 주세요.'),
   scheduledAt: z.string().min(1, '회의 날짜와 시간을 선택해 주세요.'),
-  content: z.string().optional(),
 })
 type FormValues = z.infer<typeof schema>
 
@@ -48,50 +47,45 @@ export default function MeetingNewPage() {
   const {
     register,
     handleSubmit,
-    getValues,
-    setValue,
-    setFocus,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
       title: '',
       scheduledAt: dayjs().format('YYYY-MM-DDTHH:mm'),
-      content: '',
     },
   })
 
-  // register 가 주는 ref 와 우리 ref 를 같이 물린다. (받아쓴 뒤 맨 아래로 스크롤하려고)
-  const { ref: registerContentRef, ...contentField } = register('content')
   const contentRef = useRef<HTMLTextAreaElement | null>(null)
+  // 확정된 회의록. 받아쓰는 중인 조각은 여기 넣지 않고 화면에만 얹는다.
+  const [content, setContent] = useState('')
 
   // 확정된 문장은 한 줄씩 쌓는다. 회의록은 발화 단위로 끊어 읽는 게 편하다.
-  const appendTranscript = useCallback(
-    (text: string) => {
-      const prev = getValues('content') ?? ''
-      const next = prev.trim() ? `${prev.replace(/\s+$/, '')}\n${text}` : text
-      setValue('content', next, { shouldDirty: true })
-      const el = contentRef.current
-      if (el) {
-        el.value = next
-        el.scrollTop = el.scrollHeight
-      }
-    },
-    [getValues, setValue],
-  )
+  const appendTranscript = useCallback((text: string) => {
+    setContent((prev) => (prev.trim() ? `${prev.replace(/\s+$/, '')}\n${text}` : text))
+  }, [])
 
   const stt = useSpeechToText({
     onText: appendTranscript,
     onError: (message) => toast.error(message),
   })
 
+  // 말하는 중인 조각을 맨 끝에 붙여서 보여 준다. 확정되면 onText 가 본문으로 옮긴다.
+  const { tail: draftTail, shown } = withDraft(content, stt.interim)
+
+  // 글자가 늘어나는 동안 항상 마지막 줄이 보이게 따라 내린다.
+  useEffect(() => {
+    const el = contentRef.current
+    if (el && stt.listening) el.scrollTop = el.scrollHeight
+  }, [shown, stt.listening])
+
   const toggle = (list: number[], setList: (v: number[]) => void, id: number) =>
     setList(list.includes(id) ? list.filter((v) => v !== id) : [...list, id])
 
   const onSubmit = handleSubmit(async (values) => {
-    if (!values.content?.trim()) {
+    if (!content.trim()) {
       toast.error('회의록 내용을 채워 주세요. 내용이 있어야 AI 분석을 할 수 있습니다.')
-      setFocus('content')
+      contentRef.current?.focus()
       return
     }
     setPendingValues(values)
@@ -105,7 +99,7 @@ export default function MeetingNewPage() {
       const created = await createMeeting.mutateAsync({
         title: values.title,
         scheduledAt: fromDateTimeLocalInput(values.scheduledAt),
-        content: values.content?.trim() || undefined,
+        content: content.trim() || undefined,
         participantIds: participantIds.length ? participantIds : undefined,
         carryOverActionItemIds: carryOverIds.length ? carryOverIds : undefined,
       })
@@ -189,20 +183,19 @@ export default function MeetingNewPage() {
             </p>
             <Textarea
               id="content"
+              ref={contentRef}
               className="min-h-[280px]"
               placeholder="회의에서 나온 이야기를 그대로 적어 주세요."
-              {...contentField}
-              ref={(el) => {
-                registerContentRef(el)
-                contentRef.current = el
+              value={shown}
+              onChange={(e) => {
+                // 받아쓰는 중이면 끝에 붙여 둔 조각은 본문이 아니라 미리보기다. 떼고 저장한다.
+                setContent(stripDraft(e.target.value, draftTail))
               }}
             />
             {stt.listening && (
-              <p className="mt-xs flex items-start gap-xs text-body-sm text-muted" aria-live="polite">
-                <Mic size={14} className="mt-[3px] shrink-0 text-error" aria-hidden />
-                <span className="min-w-0 flex-1">
-                  {stt.interim || '듣고 있습니다. 말씀하시면 회의록에 한 줄씩 쌓입니다.'}
-                </span>
+              <p className="mt-xs flex items-center gap-xs text-caption font-normal text-muted" aria-live="polite">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-pill bg-error" aria-hidden />
+                말하는 대로 적히고 있습니다. 문장이 끝나면 줄이 바뀝니다.
               </p>
             )}
           </SurfaceCard>
