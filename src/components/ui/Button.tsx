@@ -60,9 +60,17 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   )
 })
 
-export function ButtonLink({ to, variant, size, fullWidth, className, children }: BaseProps & { to: string }) {
+export function ButtonLink({
+  to,
+  state,
+  variant,
+  size,
+  fullWidth,
+  className,
+  children,
+}: BaseProps & { to: string; state?: unknown }) {
   return (
-    <Link to={to} className={classes({ variant, size, fullWidth, className })}>
+    <Link to={to} state={state} className={classes({ variant, size, fullWidth, className })}>
       {children}
     </Link>
   )

@@ -1,6 +1,6 @@
 import { useId, useMemo, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
-import { CalendarClock, ChevronDown, ChevronsUp, Equal, GripVertical, Plus, Search } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { CalendarClock, ChevronDown, ChevronsUp, Equal, ExternalLink, GripVertical, Plus, Search, Trash2 } from 'lucide-react'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar, DueBadge, PriorityBadge } from '@/components/ui/Badge'
@@ -8,11 +8,20 @@ import { Button } from '@/components/ui/Button'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
 import { Dropdown } from '@/components/ui/Dropdown'
 import { Pager, usePager } from '@/components/ui/Pager'
+import { RowMenu } from '@/components/ui/RowMenu'
+import type { RowMenuItem } from '@/components/ui/RowMenu'
 import { FormRow, Input, Select, Textarea } from '@/components/ui/Field'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Modal } from '@/components/ui/Modal'
 import { SegmentedControl } from '@/components/ui/NavPillGroup'
 import { useToast } from '@/components/ui/Toast'
-import { useActionItems, useCreateActionItem, useUpdateActionItem } from '@/features/actionItems/queries'
+import { TaskDetailDrawer } from '@/features/actionItems/TaskDetailDrawer'
+import {
+  useActionItems,
+  useCreateActionItem,
+  useDeleteActionItem,
+  useUpdateActionItem,
+} from '@/features/actionItems/queries'
 import { useActionItemOrigins } from '@/features/actionItems/useActionItemOrigins'
 import { useMeetings } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
@@ -56,8 +65,13 @@ export default function TaskBoardPage() {
   const { originByItemId, isLoading: originsLoading } = useActionItemOrigins(projectId, !!meetingFilter)
   const updateItem = useUpdateActionItem(projectId)
   const createItem = useCreateActionItem(projectId)
+  const deleteItem = useDeleteActionItem(projectId)
+  const navigate = useNavigate()
 
   const [createOpen, setCreateOpen] = useState(false)
+  // 카드·행을 누르면 오른쪽 패널로 열린다. 톱니 메뉴로만 전체 화면으로 넘어간다.
+  const [previewId, setPreviewId] = useState<number | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<ActionItemListResDto | null>(null)
   const [dragOverColumn, setDragOverColumn] = useState<ActionItemStatus | null>(null)
   const [draggingId, setDraggingId] = useState<number | null>(null)
   const [query, setQuery] = useState('')
@@ -104,6 +118,26 @@ export default function TaskBoardPage() {
     if (item.status === status) return
     try {
       await updateItem.mutateAsync({ id: item.id, data: { status } })
+    } catch (e) {
+      toast.error(errorMessage(e))
+    }
+  }
+
+  const openFullPage = (id: number) => navigate(`/projects/${projectId}/tasks/${id}`, { state: { from: listUrl } })
+
+  /** 톱니 메뉴 항목 — 카드와 목록이 같은 것을 쓴다. */
+  const menuItems = (item: ActionItemListResDto) => [
+    { label: '후속 업무 창 열기', icon: <ExternalLink size={14} />, onSelect: () => openFullPage(item.id) },
+    { label: '삭제', icon: <Trash2 size={14} />, destructive: true, onSelect: () => setPendingDelete(item) },
+  ]
+
+  const removeItem = async () => {
+    if (!pendingDelete) return
+    try {
+      await deleteItem.mutateAsync(pendingDelete.id)
+      if (previewId === pendingDelete.id) setPreviewId(null)
+      toast.success('업무를 삭제했습니다.')
+      setPendingDelete(null)
     } catch (e) {
       toast.error(errorMessage(e))
     }
@@ -319,9 +353,9 @@ export default function TaskBoardPage() {
               key={status}
               status={status}
               items={byStatus(status)}
-              projectId={projectId}
-              listUrl={listUrl}
               memberName={memberName}
+              onOpenPreview={setPreviewId}
+              menuItems={menuItems}
               draggingId={draggingId}
               isDropTarget={
                 dragOverColumn === status &&
@@ -361,19 +395,30 @@ export default function TaskBoardPage() {
                   <th className="px-lg py-sm font-medium">마감일</th>
                   <th className="px-lg py-sm font-medium">우선순위</th>
                   <th className="px-lg py-sm font-medium">상태</th>
+                  <th className="w-[52px] px-lg py-sm font-medium">
+                    <span className="sr-only">설정</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.map((item) => (
-                  <tr key={item.id} className="border-b border-hairline-soft last:border-0">
+                  <tr
+                    key={item.id}
+                    onClick={() => setPreviewId(item.id)}
+                    className="cursor-pointer border-b border-hairline-soft transition-colors last:border-0 hover:bg-surface-card"
+                  >
                     <td className="px-lg py-sm">
-                      <Link
-                        to={`/projects/${projectId}/tasks/${item.id}`}
-                        state={{ from: listUrl }}
-                        className="text-body-sm text-ink hover:underline"
+                      {/* 행 전체가 눌리지만, 키보드로도 열 수 있게 제목은 버튼으로 둔다 */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setPreviewId(item.id)
+                        }}
+                        className="text-left text-body-sm text-ink hover:underline"
                       >
                         {item.title}
-                      </Link>
+                      </button>
                     </td>
                     <td className="px-lg py-sm">
                       <span className="flex items-center gap-xs text-body-sm text-body">
@@ -390,7 +435,8 @@ export default function TaskBoardPage() {
                     <td className="px-lg py-sm">
                       <PriorityBadge priority={item.priority} />
                     </td>
-                    <td className="px-lg py-sm">
+                    {/* 상태 변경은 행 클릭(패널 열기)과 겹치면 안 된다 */}
+                    <td className="px-lg py-sm" onClick={(e) => e.stopPropagation()}>
                       <Select
                         className="h-8 w-[120px] text-body-sm"
                         value={item.status}
@@ -403,6 +449,11 @@ export default function TaskBoardPage() {
                         ))}
                       </Select>
                     </td>
+                    <td className="px-lg py-sm">
+                      <div className="flex justify-end">
+                        <RowMenu items={menuItems(item)} label={`${item.title} 설정`} />
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -410,6 +461,23 @@ export default function TaskBoardPage() {
           </div>
         </SurfaceCard>
       )}
+
+      <TaskDetailDrawer
+        actionItemId={previewId}
+        projectId={projectId}
+        backTo={listUrl}
+        onClose={() => setPreviewId(null)}
+      />
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="이 업무를 삭제할까요?"
+        description={pendingDelete ? `"${pendingDelete.title}" 이(가) 사라집니다. 되돌릴 수 없습니다.` : undefined}
+        confirmLabel="삭제"
+        loading={deleteItem.isPending}
+        onConfirm={removeItem}
+        onClose={() => setPendingDelete(null)}
+      />
 
       <CreateTaskModal
         open={createOpen}
@@ -447,9 +515,9 @@ function FilterField({ label, children }: { label: string; children: (id: string
 function BoardColumn({
   status,
   items,
-  projectId,
-  listUrl,
   memberName,
+  onOpenPreview,
+  menuItems,
   draggingId,
   isDropTarget,
   onDragEnter,
@@ -460,9 +528,9 @@ function BoardColumn({
 }: {
   status: ActionItemStatus
   items: ActionItemListResDto[]
-  projectId: number
-  listUrl: string
   memberName: (userId?: number) => string
+  onOpenPreview: (id: number) => void
+  menuItems: (item: ActionItemListResDto) => RowMenuItem[]
   draggingId: number | null
   isDropTarget: boolean
   onDragEnter: () => void
@@ -508,9 +576,9 @@ function BoardColumn({
           <li key={item.id}>
             <TaskCard
               item={item}
-              projectId={projectId}
-              backTo={listUrl}
               assigneeName={memberName(item.assigneeUserId)}
+              menuItems={menuItems(item)}
+              onOpen={() => onOpenPreview(item.id)}
               dragging={draggingId === item.id}
               onDragStart={() => onCardDragStart(item.id)}
               onDragEnd={onCardDragEnd}
@@ -537,17 +605,17 @@ function BoardColumn({
 
 function TaskCard({
   item,
-  projectId,
-  backTo,
   assigneeName,
+  menuItems,
+  onOpen,
   onDragStart,
   onDragEnd,
   dragging,
 }: {
   item: ActionItemListResDto
-  projectId: number
-  backTo: string
   assigneeName: string
+  menuItems: RowMenuItem[]
+  onOpen: () => void
   onDragStart: () => void
   onDragEnd: () => void
   dragging: boolean
@@ -556,9 +624,17 @@ function TaskCard({
   const PriorityIcon = item.priority === 'HIGH' ? ChevronsUp : item.priority === 'LOW' ? ChevronDown : Equal
 
   return (
-    <Link
-      to={`/projects/${projectId}/tasks/${item.id}`}
-      state={{ from: backTo }}
+    // 링크가 아니라 버튼이다. 누르면 오른쪽 패널로 열리고,
+    // 전체 화면으로는 톱니 메뉴를 통해서만 넘어간다.
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key !== 'Enter' && e.key !== ' ') return
+        e.preventDefault()
+        onOpen()
+      }}
       draggable
       onDragStart={(e) => {
         e.dataTransfer.setData('text/plain', String(item.id))
@@ -570,13 +646,14 @@ function TaskCard({
         // 제목이 한 줄이라 높이가 같지만, 배지 유무로 어긋나지 않게 최소 높이를 고정한다.
         'group relative flex h-[86px] flex-col justify-between cursor-grab rounded-md border bg-canvas px-md py-sm shadow-soft',
         'transition-[box-shadow,opacity,transform] hover:shadow-card active:cursor-grabbing',
+        'focus-visible:outline-none focus-visible:ring-[1.5px] focus-visible:ring-ink',
         overdue ? 'border-error/40' : 'border-hairline',
         dragging && 'rotate-[-2deg] scale-[0.98] opacity-35',
       )}
     >
       <GripVertical
         size={14}
-        className="absolute right-sm top-sm text-muted-soft opacity-0 transition-opacity group-hover:opacity-100"
+        className="absolute left-xxs top-1/2 -translate-y-1/2 text-muted-soft opacity-0 transition-opacity group-hover:opacity-100"
         aria-hidden
       />
 
@@ -595,17 +672,17 @@ function TaskCard({
         aria-label={STATUS_LABEL[item.status]}
       />
 
-      <div className="mb-sm flex items-center justify-between gap-xs pl-md pr-lg">
+      <div className="flex items-start justify-between gap-xs pl-md">
         {/* 한 줄로 자르고, 카드에 올리면 제목 전체가 말풍선으로 뜬다 */}
-        <p className="min-w-0 truncate text-title-sm leading-snug text-ink">{item.title}</p>
-        <DueBadge dueDate={item.dueDate} status={item.status} />
+        <p className="min-w-0 flex-1 truncate pt-[1px] text-title-sm leading-snug text-ink">{item.title}</p>
+        <RowMenu items={menuItems} label={`${item.title} 설정`} />
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-sm">
+      <div className="flex items-center justify-between gap-xs">
+        <div className="flex min-w-0 items-center gap-xs">
           {item.priority && (
             <span
-              className="inline-flex items-center gap-xxs rounded-pill px-xs py-[2px] text-caption font-semibold"
+              className="inline-flex shrink-0 items-center gap-xxs rounded-pill px-xs py-[2px] text-caption font-semibold"
               style={{
                 color: PRIORITY_ICON_COLOR[item.priority],
                 background: `${PRIORITY_ICON_COLOR[item.priority]}1a`,
@@ -615,12 +692,12 @@ function TaskCard({
               {PRIORITY_LABEL[item.priority]}
             </span>
           )}
-          <span
-            className={cn('flex items-center gap-xxs text-caption font-normal', overdue ? 'text-error' : 'text-muted')}
-          >
+          {/* 마감일과 그 오른쪽에 D-day */}
+          <span className="flex shrink-0 items-center gap-xxs text-caption font-normal text-muted">
             <CalendarClock size={12} />
             {item.dueDate ? item.dueDate.slice(5) : '미정'}
           </span>
+          <DueBadge dueDate={item.dueDate} status={item.status} />
         </div>
         {/* 올리면 아이콘 왼쪽으로 이름이 펼쳐진다 */}
         <span className="group/assignee relative flex shrink-0 items-center">
@@ -633,7 +710,7 @@ function TaskCard({
           <Avatar name={item.assigneeUserId ? assigneeName : undefined} size={24} />
         </span>
       </div>
-    </Link>
+    </div>
   )
 }
 

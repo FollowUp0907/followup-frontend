@@ -105,12 +105,23 @@ export default {
           from: { opacity: '0', transform: 'scaleY(0.6)' },
           to: { opacity: '1', transform: 'scaleY(1)' },
         },
+        // 오른쪽에서 밀려 들어오는 상세 패널
+        'slide-in-right': {
+          from: { transform: 'translateX(100%)' },
+          to: { transform: 'translateX(0)' },
+        },
+        'veil-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
       },
       animation: {
         'fade-in': 'fade-in 160ms ease-out',
         'scale-in': 'scale-in 140ms ease-out',
         'slot-in': 'slot-in 120ms ease-out',
         'page-in': 'page-in 180ms ease-out',
+        'slide-in-right': 'slide-in-right 220ms cubic-bezier(0.32, 0.72, 0, 1)',
+        'veil-in': 'veil-in 180ms ease-out',
       },
     },
   },

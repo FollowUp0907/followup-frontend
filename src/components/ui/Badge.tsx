@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 import { PRIORITY_LABEL, STATUS_LABEL, avatarColor } from '@/lib/constants'
 import type { ActionItemPriority, ActionItemStatus, MeetingStatus } from '@/types/api'
-import { dDayLabel, isDueSoon, isOverdue } from '@/lib/date'
+import { dDayLabel } from '@/lib/date'
 
 type Tone =
   | 'neutral'
@@ -83,13 +83,17 @@ export function MeetingStatusBadge({ status }: { status: MeetingStatus }) {
   return status === 'CONFIRMED' ? <Badge tone="ink">분석 완료</Badge> : <Badge tone="neutral">작성 중</Badge>
 }
 
-/** 마감 임박 / 지연 뱃지. 완료 업무에는 붙지 않는다. */
+/**
+ * 마감 뱃지 — D-3 / D-day / D+2 만 보여 준다.
+ *
+ * "지연" "마감 임박" 같은 말과 빨강·주황은 뺐다. 목록에 뱃지가 여러 개
+ * 나란히 서면 색이 서로 싸워서, 마감은 무채색으로 통일하고 급한 정도는
+ * D-day 숫자 자체가 말하게 둔다. 완료 업무에는 붙지 않는다.
+ */
 export function DueBadge({ dueDate, status }: { dueDate?: string | null; status?: ActionItemStatus }) {
-  if (!dueDate) return null
+  if (!dueDate || status === 'DONE') return null
   const label = dDayLabel(dueDate)
   if (!label) return null
-  if (isOverdue(dueDate, status)) return <Badge tone="error">지연 {label}</Badge>
-  if (isDueSoon(dueDate, status)) return <Badge tone="warning">마감 임박 {label}</Badge>
   return <Badge tone="neutral">{label}</Badge>
 }
 
