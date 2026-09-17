@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
+import { Mic, Square } from 'lucide-react'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageWidth } from '@/components/layout/PageWidth'
@@ -18,11 +19,7 @@ import { useCreateMeeting } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { useAuth } from '@/features/auth/AuthContext'
 import { dayjs, fromDateTimeLocalInput } from '@/lib/date'
-
-const SAMPLE = `로그인 오류는 반서현님이 금요일까지 수정하기로 했다.
-배포는 다음 주 월요일에 진행한다.
-검색 기능은 이번 버전에서 제외하기로 결정했다.
-API 문서는 장은호님이 이번 주 안에 정리한다.`
+import { useSpeechToText } from '@/lib/speech'
 
 const schema = z.object({
   title: z.string().min(1, '회의 제목을 입력해 주세요.').max(200, '200자 이하로 입력해 주세요.'),
@@ -51,6 +48,7 @@ export default function MeetingNewPage() {
   const {
     register,
     handleSubmit,
+    getValues,
     setValue,
     setFocus,
     formState: { errors },
@@ -61,6 +59,30 @@ export default function MeetingNewPage() {
       scheduledAt: dayjs().format('YYYY-MM-DDTHH:mm'),
       content: '',
     },
+  })
+
+  // register 가 주는 ref 와 우리 ref 를 같이 물린다. (받아쓴 뒤 맨 아래로 스크롤하려고)
+  const { ref: registerContentRef, ...contentField } = register('content')
+  const contentRef = useRef<HTMLTextAreaElement | null>(null)
+
+  // 확정된 문장은 한 줄씩 쌓는다. 회의록은 발화 단위로 끊어 읽는 게 편하다.
+  const appendTranscript = useCallback(
+    (text: string) => {
+      const prev = getValues('content') ?? ''
+      const next = prev.trim() ? `${prev.replace(/\s+$/, '')}\n${text}` : text
+      setValue('content', next, { shouldDirty: true })
+      const el = contentRef.current
+      if (el) {
+        el.value = next
+        el.scrollTop = el.scrollHeight
+      }
+    },
+    [getValues, setValue],
+  )
+
+  const stt = useSpeechToText({
+    onText: appendTranscript,
+    onError: (message) => toast.error(message),
   })
 
   const toggle = (list: number[], setList: (v: number[]) => void, id: number) =>
@@ -139,19 +161,50 @@ export default function MeetingNewPage() {
           <SurfaceCard className="p-xl">
             <div className="mb-sm flex items-center justify-between gap-md">
               <h2 className="text-title-md text-ink">회의록</h2>
-              <Button type="button" variant="ghost" size="sm" onClick={() => setValue('content', SAMPLE)}>
-                예시 넣기
-              </Button>
+              {stt.supported && (
+                <Button
+                  type="button"
+                  variant={stt.listening ? 'secondary' : 'ghost'}
+                  size="sm"
+                  onClick={stt.listening ? stt.stop : stt.start}
+                  aria-pressed={stt.listening}
+                >
+                  {stt.listening ? (
+                    <>
+                      <span className="h-2 w-2 animate-pulse rounded-pill bg-error" aria-hidden />
+                      <Square size={13} aria-hidden /> 받아쓰기 중지
+                    </>
+                  ) : (
+                    <>
+                      <Mic size={14} aria-hidden /> 음성으로 받아쓰기
+                    </>
+                  )}
+                </Button>
+              )}
             </div>
             <p className="mb-md text-body-sm text-muted">
-              형식은 자유입니다. 지금 비워 두고 회의 후에 작성해도 됩니다.
+              {stt.supported
+                ? '직접 적어도 되고, 받아쓰기를 켜고 말해도 됩니다. 지금 비워 두고 회의 후에 작성해도 됩니다.'
+                : '형식은 자유입니다. 지금 비워 두고 회의 후에 작성해도 됩니다.'}
             </p>
             <Textarea
               id="content"
               className="min-h-[280px]"
               placeholder="회의에서 나온 이야기를 그대로 적어 주세요."
-              {...register('content')}
+              {...contentField}
+              ref={(el) => {
+                registerContentRef(el)
+                contentRef.current = el
+              }}
             />
+            {stt.listening && (
+              <p className="mt-xs flex items-start gap-xs text-body-sm text-muted" aria-live="polite">
+                <Mic size={14} className="mt-[3px] shrink-0 text-error" aria-hidden />
+                <span className="min-w-0 flex-1">
+                  {stt.interim || '듣고 있습니다. 말씀하시면 회의록에 한 줄씩 쌓입니다.'}
+                </span>
+              </p>
+            )}
           </SurfaceCard>
         </div>
 
