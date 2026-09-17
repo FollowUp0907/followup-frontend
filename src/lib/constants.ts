@@ -47,10 +47,15 @@ export const STATUS_DOT_COLOR: Record<ActionItemStatus, string> = {
 }
 
 /** 보드 카드의 우선순위 아이콘 색 (시안 PRIORITY_ICON) */
+/**
+ * 우선순위 색.
+ * 마감 배지가 빨강(지연)·주황(마감 임박)을 쓰기 때문에, 우선순위는 그 둘을 피해
+ * 보라 계열로 잡는다. 같은 카드에서 "보통"과 "마감 임박"이 같은 색이던 문제 해결.
+ */
 export const PRIORITY_ICON_COLOR: Record<ActionItemPriority, string> = {
-  HIGH: '#ef4444',
-  MEDIUM: '#f59e0b',
-  LOW: '#3b82f6',
+  HIGH: '#7c3aed',
+  MEDIUM: '#8b5cf6',
+  LOW: '#94a3b8',
 }
 
 /** 업무 키 표기 (시안의 FU-101 형태) */

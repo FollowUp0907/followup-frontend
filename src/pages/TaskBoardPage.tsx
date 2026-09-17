@@ -7,6 +7,7 @@ import { Avatar, DueBadge, PriorityBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
 import { Dropdown } from '@/components/ui/Dropdown'
+import { Pager, usePager } from '@/components/ui/Pager'
 import { FormRow, Input, Select, Textarea } from '@/components/ui/Field'
 import { Modal } from '@/components/ui/Modal'
 import { SegmentedControl } from '@/components/ui/NavPillGroup'
@@ -313,84 +314,39 @@ export default function TaskBoardPage() {
 
       {!isLoading && !isError && filtered.length > 0 && view === 'board' && (
         <div className="grid gap-lg md:grid-cols-3">
-          {STATUS_ORDER.map((status) => {
-            const items = byStatus(status)
-            const draggingItem = draggingId ? (data ?? []).find((i) => i.id === draggingId) : undefined
-            // 같은 컬럼 안으로 되돌리는 건 상태 변화가 없으므로 강조하지 않는다.
-            const isDropTarget = dragOverColumn === status && !!draggingItem && draggingItem.status !== status
-            return (
-              <section
-                key={status}
-                onDragEnter={(e) => {
-                  e.preventDefault()
-                  const depth = (dragDepth.current.get(status) ?? 0) + 1
-                  dragDepth.current.set(status, depth)
-                  setDragOverColumn(status)
-                }}
-                onDragOver={(e) => {
-                  // preventDefault 를 해야 drop 이 허용된다. 커서도 move 로 고정.
-                  e.preventDefault()
-                  e.dataTransfer.dropEffect = 'move'
-                }}
-                onDragLeave={() => {
-                  const depth = (dragDepth.current.get(status) ?? 1) - 1
-                  dragDepth.current.set(status, depth)
-                  if (depth <= 0) setDragOverColumn((c) => (c === status ? null : c))
-                }}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  const id = Number(e.dataTransfer.getData('text/plain'))
-                  const item = (data ?? []).find((i) => i.id === id)
-                  endDrag()
-                  if (item) void changeStatus(item, status)
-                }}
-                className={cn(
-                  // cn 은 단순 join 이라 상충하는 유틸을 같이 주면 안 된다. 배경은 한쪽에서만 지정.
-                  'rounded-lg p-sm transition-[background-color,box-shadow] duration-150',
-                  isDropTarget ? 'bg-surface-card ring-[1.5px] ring-inset ring-ink' : 'bg-surface-soft',
-                )}
-              >
-                <div className="flex items-center gap-xs px-xs pb-md pt-xs">
-                  <span
-                    className="h-2 w-2 shrink-0 rounded-pill"
-                    style={{ background: STATUS_DOT_COLOR[status] }}
-                    aria-hidden
-                  />
-                  <h2 className="text-title-sm text-ink">{STATUS_LABEL[status]}</h2>
-                  <span className="ml-auto rounded-pill bg-canvas px-xs py-[1px] text-caption tabular-nums text-muted">
-                    {items.length}
-                  </span>
-                </div>
-
-                <ul className="space-y-sm">
-                  {items.map((item) => (
-                    <li key={item.id}>
-                      <TaskCard
-                        item={item}
-                        projectId={projectId}
-                        backTo={listUrl}
-                        assigneeName={memberName(item.assigneeUserId)}
-                        dragging={draggingId === item.id}
-                        onDragStart={() => setDraggingId(item.id)}
-                        onDragEnd={endDrag}
-                      />
-                    </li>
-                  ))}
-                  {isDropTarget && (
-                    <li
-                      aria-hidden
-                      className="h-[86px] animate-slot-in rounded-md border-[1.5px] border-dashed border-ink/40 bg-ink/[0.04]"
-                    />
-                  )}
-                  {items.length === 0 && !isDropTarget && (
-                    <li className="rounded-md border border-dashed border-surface-strong px-sm py-lg text-center text-caption font-normal text-muted-soft">
-                      업무 없음
-                    </li>
-                  )}
-                </ul>
-              </section>
-            )
-          })}
+          {STATUS_ORDER.map((status) => (
+            <BoardColumn
+              key={status}
+              status={status}
+              items={byStatus(status)}
+              projectId={projectId}
+              listUrl={listUrl}
+              memberName={memberName}
+              draggingId={draggingId}
+              isDropTarget={
+                dragOverColumn === status &&
+                !!(draggingId ? (data ?? []).find((i) => i.id === draggingId) : undefined) &&
+                (draggingId ? (data ?? []).find((i) => i.id === draggingId)!.status : status) !== status
+              }
+              onDragEnter={() => {
+                const depth = (dragDepth.current.get(status) ?? 0) + 1
+                dragDepth.current.set(status, depth)
+                setDragOverColumn(status)
+              }}
+              onDragLeave={() => {
+                const depth = (dragDepth.current.get(status) ?? 1) - 1
+                dragDepth.current.set(status, depth)
+                if (depth <= 0) setDragOverColumn((c) => (c === status ? null : c))
+              }}
+              onDropItem={(id) => {
+                const item = (data ?? []).find((i) => i.id === id)
+                endDrag()
+                if (item) void changeStatus(item, status)
+              }}
+              onCardDragStart={setDraggingId}
+              onCardDragEnd={endDrag}
+            />
+          ))}
         </div>
       )}
 
@@ -487,6 +443,98 @@ function FilterField({ label, children }: { label: string; children: (id: string
   )
 }
 
+/** 컬럼 하나. 5개씩 끊어 보여 주고 화살표·스와이프·인디케이터로 넘긴다. */
+function BoardColumn({
+  status,
+  items,
+  projectId,
+  listUrl,
+  memberName,
+  draggingId,
+  isDropTarget,
+  onDragEnter,
+  onDragLeave,
+  onDropItem,
+  onCardDragStart,
+  onCardDragEnd,
+}: {
+  status: ActionItemStatus
+  items: ActionItemListResDto[]
+  projectId: number
+  listUrl: string
+  memberName: (userId?: number) => string
+  draggingId: number | null
+  isDropTarget: boolean
+  onDragEnter: () => void
+  onDragLeave: () => void
+  onDropItem: (id: number) => void
+  onCardDragStart: (id: number) => void
+  onCardDragEnd: () => void
+}) {
+  const pager = usePager(items, 5)
+
+  return (
+    <section
+      onDragEnter={(e) => {
+        e.preventDefault()
+        onDragEnter()
+      }}
+      onDragOver={(e) => {
+        // preventDefault 를 해야 drop 이 허용된다. 커서도 move 로 고정.
+        e.preventDefault()
+        e.dataTransfer.dropEffect = 'move'
+      }}
+      onDragLeave={onDragLeave}
+      onDrop={(e) => {
+        e.preventDefault()
+        onDropItem(Number(e.dataTransfer.getData('text/plain')))
+      }}
+      className={cn(
+        // cn 은 단순 join 이라 상충하는 유틸을 같이 주면 안 된다. 배경은 한쪽에서만 지정.
+        'flex flex-col rounded-lg p-sm transition-[background-color,box-shadow] duration-150',
+        isDropTarget ? 'bg-surface-card ring-[1.5px] ring-inset ring-ink' : 'bg-surface-soft',
+      )}
+    >
+      <div className="flex items-center gap-xs px-xs pb-md pt-xs">
+        <span className="h-2 w-2 shrink-0 rounded-pill" style={{ background: STATUS_DOT_COLOR[status] }} aria-hidden />
+        <h2 className="text-title-sm text-ink">{STATUS_LABEL[status]}</h2>
+        <span className="ml-auto rounded-pill bg-canvas px-xs py-[1px] text-caption tabular-nums text-muted">
+          {items.length}
+        </span>
+      </div>
+
+      <ul className="flex-1 space-y-sm" {...pager.swipe}>
+        {pager.visible.map((item) => (
+          <li key={item.id}>
+            <TaskCard
+              item={item}
+              projectId={projectId}
+              backTo={listUrl}
+              assigneeName={memberName(item.assigneeUserId)}
+              dragging={draggingId === item.id}
+              onDragStart={() => onCardDragStart(item.id)}
+              onDragEnd={onCardDragEnd}
+            />
+          </li>
+        ))}
+        {isDropTarget && (
+          <li
+            aria-hidden
+            className="h-[86px] animate-slot-in rounded-md border-[1.5px] border-dashed border-ink/40 bg-ink/[0.04]"
+          />
+        )}
+        {items.length === 0 && !isDropTarget && (
+          <li className="rounded-md border border-dashed border-surface-strong px-sm py-lg text-center text-caption font-normal text-muted-soft">
+            업무 없음
+          </li>
+        )}
+      </ul>
+
+      <Pager page={pager.page} pageCount={pager.pageCount} onChange={pager.setPage} />
+    </section>
+  )
+}
+
 function TaskCard({
   item,
   projectId,
@@ -564,7 +612,14 @@ function TaskCard({
             {item.dueDate ? item.dueDate.slice(5) : '미정'}
           </span>
         </div>
-        <span title={item.assigneeUserId ? assigneeName : '담당자 미지정'} className="shrink-0">
+        {/* 올리면 아이콘 왼쪽으로 이름이 펼쳐진다 */}
+        <span className="group/assignee relative flex shrink-0 items-center">
+          <span
+            className="pointer-events-none absolute right-[calc(100%+6px)] whitespace-nowrap rounded-sm bg-ink px-xs py-[2px] text-caption font-normal text-on-dark opacity-0 transition-opacity group-hover/assignee:opacity-100"
+            role="tooltip"
+          >
+            {item.assigneeUserId ? assigneeName : '담당자 미지정'}
+          </span>
           <Avatar name={item.assigneeUserId ? assigneeName : undefined} size={24} />
         </span>
       </div>

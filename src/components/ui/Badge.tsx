@@ -4,7 +4,18 @@ import { PRIORITY_LABEL, STATUS_LABEL, avatarColor } from '@/lib/constants'
 import type { ActionItemPriority, ActionItemStatus, MeetingStatus } from '@/types/api'
 import { dDayLabel, isDueSoon, isOverdue } from '@/lib/date'
 
-type Tone = 'neutral' | 'ink' | 'success' | 'warning' | 'error' | 'info' | 'violet' | 'orange' | 'pink' | 'emerald'
+type Tone =
+  | 'neutral'
+  | 'ink'
+  | 'success'
+  | 'warning'
+  | 'error'
+  | 'info'
+  | 'violet'
+  | 'violet-strong'
+  | 'orange'
+  | 'pink'
+  | 'emerald'
 
 const TONE: Record<Tone, string> = {
   neutral: 'bg-surface-card text-body',
@@ -15,6 +26,7 @@ const TONE: Record<Tone, string> = {
   info: 'bg-brand-accent/10 text-brand-accent',
   // DESIGN.md 의 파스텔 — 태그 pill 용
   violet: 'bg-badge-violet/12 text-[#6d28d9]',
+  'violet-strong': 'bg-badge-violet/25 text-[#4c1d95]',
   orange: 'bg-badge-orange/15 text-[#c2410c]',
   pink: 'bg-badge-pink/12 text-[#be185d]',
   emerald: 'bg-badge-emerald/15 text-[#047857]',
@@ -52,9 +64,10 @@ export function StatusBadge({ status }: { status: ActionItemStatus }) {
   return <Badge tone={STATUS_TONE[status]}>{STATUS_LABEL[status]}</Badge>
 }
 
+// 마감 배지(빨강·주황)와 겹치지 않도록 우선순위는 보라 계열로 둔다.
 const PRIORITY_TONE: Record<ActionItemPriority, Tone> = {
-  HIGH: 'error',
-  MEDIUM: 'warning',
+  HIGH: 'violet-strong',
+  MEDIUM: 'violet',
   LOW: 'neutral',
 }
 

@@ -41,7 +41,7 @@ export default function MeetingNewPage() {
 
   const openItems = useMemo(() => (allItems ?? []).filter((i) => i.status !== 'DONE'), [allItems])
   // 목록이 길어지면 스크롤 대신 페이지로 넘긴다.
-  const carryOverPage = usePager(openItems, 5)
+  const carryOverPage = usePager(openItems, 3)
 
   const [participantIds, setParticipantIds] = useState<number[]>(() => (user ? [user.userId] : []))
   const [carryOverIds, setCarryOverIds] = useState<number[]>([])
@@ -208,7 +208,7 @@ export default function MeetingNewPage() {
                     {carryOverIds.length === openItems.length ? '전체 해제' : '전체 선택'}
                   </Button>
                 </div>
-                <ul className="space-y-xxs">
+                <ul className="space-y-xxs" {...carryOverPage.swipe}>
                   {carryOverPage.visible.map((item) => (
                     <li key={item.id}>
                       <label className="flex cursor-pointer items-start gap-sm rounded-md border border-hairline px-sm py-sm transition-colors hover:bg-surface-card">

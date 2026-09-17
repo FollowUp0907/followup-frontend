@@ -231,8 +231,8 @@ export default function DashboardPage() {
               지연된 업무가 없습니다.
             </p>
           ) : (
-            <ul className="space-y-xxs">
-              {overdueItems.slice(0, 5).map((item) => (
+            <ul className="thin-scroll max-h-[260px] space-y-xxs overflow-y-auto pr-xxs">
+              {overdueItems.map((item) => (
                 <li key={item.actionItemId}>
                   <Link
                     to={`${base}/tasks/${item.actionItemId}`}

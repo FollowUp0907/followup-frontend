@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/cn'
 
@@ -17,7 +17,51 @@ export function usePager<T>(items: T[], perPage: number) {
 
   const visible = useMemo(() => items.slice(page * perPage, page * perPage + perPage), [items, page, perPage])
 
-  return { page, setPage, pageCount, visible, needsPaging: items.length > perPage }
+  const go = useCallback((next: number) => setPage(Math.min(pageCount - 1, Math.max(0, next))), [pageCount])
+
+  /**
+   * 좌우로 끌면 페이지가 넘어가게 하는 핸들러.
+   * 카드의 HTML5 드래그앤드롭과 부딪히지 않도록 포인터 제스처로만 판정하고,
+   * 가로 이동이 세로보다 확실히 클 때(45px 이상)에만 페이지를 넘긴다.
+   */
+  const swipe = useSwipe(
+    useCallback(() => go(page + 1), [go, page]),
+    useCallback(() => go(page - 1), [go, page]),
+  )
+
+  return { page, setPage: go, pageCount, visible, needsPaging: items.length > perPage, swipe }
+}
+
+/** 가로 스와이프(포인터 드래그 + 트랙패드 가로 스크롤) */
+function useSwipe(onNext: () => void, onPrev: () => void) {
+  const start = useRef<{ x: number; y: number } | null>(null)
+  const wheelLock = useRef(0)
+
+  return {
+    onPointerDown: (e: React.PointerEvent) => {
+      // 카드 자체를 잡고 끄는 건 카드 드래그이므로 제외한다.
+      if ((e.target as HTMLElement).closest('[draggable="true"]')) return
+      start.current = { x: e.clientX, y: e.clientY }
+    },
+    onPointerUp: (e: React.PointerEvent) => {
+      const from = start.current
+      start.current = null
+      if (!from) return
+      const dx = e.clientX - from.x
+      const dy = e.clientY - from.y
+      if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy)) return
+      if (dx < 0) onNext()
+      else onPrev()
+    },
+    onWheel: (e: React.WheelEvent) => {
+      if (Math.abs(e.deltaX) < Math.abs(e.deltaY) || Math.abs(e.deltaX) < 25) return
+      const now = Date.now()
+      if (now - wheelLock.current < 400) return
+      wheelLock.current = now
+      if (e.deltaX > 0) onNext()
+      else onPrev()
+    },
+  }
 }
 
 export function Pager({
