@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { PageWidth } from '@/components/layout/PageWidth'
 import { Avatar, Badge } from '@/components/ui/Badge'
 import { Button, ButtonLink, Spinner } from '@/components/ui/Button'
 import { EmptyState, SurfaceCard } from '@/components/ui/Card'
@@ -271,7 +270,7 @@ export default function AnalysisPage() {
   const isConfirmed = analysis.status === 'CONFIRMED'
 
   return (
-    <PageWidth size={1120}>
+    <div className="w-full">
       {header}
 
       {isConfirmed && (
@@ -299,7 +298,7 @@ export default function AnalysisPage() {
 
       <div className="space-y-lg">
         {/* 결정 사항 */}
-        <SurfaceCard className="p-xl">
+        <SurfaceCard className="p-lg">
           <div className="mb-md flex items-center justify-between gap-md">
             <h2 className="text-title-md text-ink">결정 사항</h2>
             {!isConfirmed && (
@@ -353,7 +352,7 @@ export default function AnalysisPage() {
         </SurfaceCard>
 
         {/* 후속 업무 */}
-        <SurfaceCard className="p-xl">
+        <SurfaceCard className="p-lg">
           <div className="mb-md flex items-center justify-between gap-md">
             <h2 className="text-title-md text-ink">후속 업무</h2>
             {!isConfirmed && (
@@ -524,7 +523,7 @@ export default function AnalysisPage() {
         pending={confirmAnalysis.isPending || deleteActionItem.isPending}
         onConfirm={onConfirm}
       />
-    </PageWidth>
+    </div>
   )
 }
 

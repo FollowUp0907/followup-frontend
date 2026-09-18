@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { PageWidth } from '@/components/layout/PageWidth'
+import { FitPage } from '@/components/layout/FitPage'
 import { Avatar, DueBadge, PriorityBadge, StatusBadge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -13,7 +13,7 @@ import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { SegmentedControl } from '@/components/ui/NavPillGroup'
 import { useToast } from '@/components/ui/Toast'
 import { useActionItem, useDeleteActionItem, useUpdateActionItem } from '@/features/actionItems/queries'
-import { assigneeIdsOf, assigneePatch } from '@/features/actionItems/assignees'
+import { assigneeIdsOf, assigneeLabel, assigneePatch } from '@/features/actionItems/assignees'
 import { useMeeting } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { PRIORITY_ICON_COLOR, PRIORITY_LABEL, PRIORITY_ORDER, STATUS_LABEL, STATUS_ORDER } from '@/lib/constants'
@@ -21,7 +21,7 @@ import { formatDate, formatDateTime, formatServerDateTime, toDateInput } from '@
 import type { ActionItemPriority, ActionItemStatus } from '@/types/api'
 
 export default function TaskDetailPage() {
-  const { projectId, members } = useProjectContext()
+  const { projectId, members, memberName } = useProjectContext()
   const params = useParams()
   const actionItemId = Number(params.actionItemId)
   const navigate = useNavigate()
@@ -98,7 +98,7 @@ export default function TaskDetailPage() {
     }
     // 백엔드가 null 을 "값 지우기" 로 처리하지 않고 무시한다(2026-09-10 확인).
     // 그래서 비우려 한 필드는 따로 기억해 두고, 저장 결과를 보고 사용자에게 알려 준다.
-    const clearingAssignee = assigneeIds.length === 0 && !!item.assignee
+    const clearingAssignee = assigneeIds.length === 0 && assigneeIdsOf(item).length > 0
     const clearingDueDate = !dueDate && !!item.dueDate
     try {
       const saved = await updateItem.mutateAsync({
@@ -112,7 +112,7 @@ export default function TaskDetailPage() {
         },
       })
       const kept = [
-        clearingAssignee && saved.assignee ? '담당자' : null,
+        clearingAssignee && assigneeIdsOf(saved).length > 0 ? '담당자' : null,
         clearingDueDate && saved.dueDate ? '마감일' : null,
       ].filter(Boolean)
       if (kept.length) {
@@ -137,7 +137,7 @@ export default function TaskDetailPage() {
   }
 
   return (
-    <PageWidth size={1120}>
+    <FitPage>
       <PageHeader
         title={item.title}
         breadcrumb={
@@ -159,9 +159,9 @@ export default function TaskDetailPage() {
         }
       />
 
-      <div className="grid gap-lg lg:grid-cols-12">
-        <div className="space-y-lg lg:col-span-8">
-          <SurfaceCard className="p-xl">
+      <div className="grid min-h-0 flex-1 gap-md lg:grid-cols-12">
+        <div className="flex min-h-0 flex-col gap-md lg:col-span-8">
+          <SurfaceCard className="p-lg">
             <h2 className="mb-md text-title-md text-ink">업무 내용</h2>
             {editing ? (
               <div className="space-y-md">
@@ -250,13 +250,13 @@ export default function TaskDetailPage() {
           </SurfaceCard>
 
           {item.priorityReason && (
-            <SurfaceCard className="p-xl">
+            <SurfaceCard className="p-lg">
               <h2 className="mb-sm text-title-md text-ink">AI 추천 이유</h2>
               <p className="rounded-md bg-surface-card px-md py-sm text-body-md text-body">{item.priorityReason}</p>
             </SurfaceCard>
           )}
 
-          <SurfaceCard className="p-xl">
+          <SurfaceCard className="p-lg">
             <h2 className="mb-md text-title-md text-ink">상태 변경</h2>
             <SegmentedControl<ActionItemStatus>
               value={item.status}
@@ -272,8 +272,8 @@ export default function TaskDetailPage() {
           </SurfaceCard>
         </div>
 
-        <div className="space-y-lg lg:col-span-4">
-          <SurfaceCard className="p-xl">
+        <div className="thin-scroll flex min-h-0 flex-col gap-md overflow-y-auto pr-xxs lg:col-span-4">
+          <SurfaceCard className="p-lg">
             <h2 className="mb-md text-title-md text-ink">업무 정보</h2>
             <dl className="space-y-md text-body-sm">
               <div className="flex items-center justify-between gap-md">
@@ -295,8 +295,11 @@ export default function TaskDetailPage() {
               <div className="flex items-center justify-between gap-md">
                 <dt className="text-muted">담당자</dt>
                 <dd className="flex items-center gap-xs text-ink">
-                  <Avatar name={item.assignee?.name} size={24} />
-                  {item.assignee?.name ?? '미지정'}
+                  <Avatar
+                    name={assigneeIdsOf(item)[0] ? memberName(assigneeIdsOf(item)[0]) : undefined}
+                    size={24}
+                  />
+                  {assigneeLabel(assigneeIdsOf(item), memberName)}
                 </dd>
               </div>
               <div className="flex items-center justify-between gap-md">
@@ -319,7 +322,7 @@ export default function TaskDetailPage() {
             </dl>
           </SurfaceCard>
 
-          <SurfaceCard className="p-xl">
+          <SurfaceCard className="p-lg">
             <h2 className="mb-sm text-title-md text-ink">생성된 회의</h2>
             {item.originMeetingId ? (
               originMeetingDeleted ? (
@@ -365,6 +368,6 @@ export default function TaskDetailPage() {
         onConfirm={onDelete}
         onClose={() => setConfirmDelete(false)}
       />
-    </PageWidth>
+    </FitPage>
   )
 }

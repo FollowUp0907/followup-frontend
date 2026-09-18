@@ -77,7 +77,7 @@ export function Pager({
 }) {
   if (pageCount <= 1) return null
   return (
-    <div className={cn('mt-xs flex items-center justify-center gap-sm', className)}>
+    <div className={cn('mt-xxs flex items-center justify-center gap-sm', className)}>
       <button
         type="button"
         onClick={() => onChange(Math.max(0, page - 1))}

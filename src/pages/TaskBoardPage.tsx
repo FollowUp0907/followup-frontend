@@ -129,7 +129,7 @@ export default function TaskBoardPage() {
   const byStatus = (status: ActionItemStatus) => filtered.filter((i) => i.status === status)
 
   // 목록 뷰도 한 화면에 들어오도록 끊어 보여 준다. 보드 컬럼과 같은 Pager 를 쓴다.
-  const listPage = usePager(filtered, 5)
+  const listPage = usePager(filtered, 6)
 
   const changeStatus = async (item: ActionItemListResDto, status: ActionItemStatus) => {
     if (item.status === status) return
@@ -191,27 +191,35 @@ export default function TaskBoardPage() {
         }
       />
 
-      {/* 검색 + 필터를 한 카드에 담는다. 줄 수를 줄여 페이지가 화면 안에 들어오게. */}
-      <SurfaceCard className="mb-sm shrink-0 p-sm">
-        {/* 업무명 검색 — 백엔드에 검색 파라미터가 없어 받아 온 목록에서 거른다 */}
-        <div className="relative mb-xs">
-          <Search size={16} className="pointer-events-none absolute left-sm top-1/2 -translate-y-1/2 text-muted" />
-          <Input
-            type="search"
-            className="h-9 pl-xl"
-            placeholder="업무명 검색"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            aria-label="업무명 검색"
-          />
-        </div>
+      {/* 검색과 필터를 한 줄에 담는다. 줄 수를 줄인 만큼 카드에 높이를 준다. */}
+      <SurfaceCard className="mb-xs shrink-0 p-xs">
         <div
           className={cn(
             'grid grid-cols-1 gap-sm sm:grid-cols-2',
-            // 목록 뷰는 상태 필터가 하나 더 붙어서 5칸 — 한 줄에 들어가도록 칸을 좁힌다.
-            view === 'list' ? 'lg:grid-cols-5' : 'lg:grid-cols-4',
+            // 검색 + 필터. 목록 뷰는 상태 필터가 하나 더 붙는다.
+            view === 'list' ? 'lg:grid-cols-6' : 'lg:grid-cols-5',
           )}
         >
+          {/* 업무명 검색 — 백엔드에 검색 파라미터가 없어 받아 온 목록에서 거른다 */}
+          <FilterField label="검색">
+            {(id) => (
+              <div className="relative">
+                <Search
+                  size={15}
+                  className="pointer-events-none absolute left-sm top-1/2 -translate-y-1/2 text-muted"
+                />
+                <Input
+                  type="search"
+                  className="pl-xl"
+                  placeholder="업무명"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  aria-labelledby={id}
+                />
+              </div>
+            )}
+          </FilterField>
+
           <FilterField label="회의">
             {(id) => (
               <Dropdown
@@ -581,8 +589,8 @@ function BoardColumn({
   onCardDragStart: (id: number) => void
   onCardDragEnd: () => void
 }) {
-  // 한 화면에 5개씩 보인다. 넘치면 페이지로 넘긴다.
-  const pager = usePager(items, 5)
+  // 한 화면에 6개씩 보인다. 넘치면 페이지로 넘긴다.
+  const pager = usePager(items, 6)
 
   return (
     <section
@@ -602,11 +610,11 @@ function BoardColumn({
       }}
       className={cn(
         // cn 은 단순 join 이라 상충하는 유틸을 같이 주면 안 된다. 배경은 한쪽에서만 지정.
-        'flex flex-col rounded-lg p-xs transition-[background-color,box-shadow] duration-150',
+        'flex flex-col rounded-lg p-xxs transition-[background-color,box-shadow] duration-150',
         isDropTarget ? 'bg-surface-card ring-[1.5px] ring-inset ring-ink' : 'bg-surface-soft',
       )}
     >
-      <div className="flex items-center gap-xs px-xs pb-xs pt-xxs">
+      <div className="flex items-center gap-xs px-xs pb-xxs pt-xxs">
         <span className="h-2 w-2 shrink-0 rounded-pill" style={{ background: STATUS_DOT_COLOR[status] }} aria-hidden />
         <h2 className="text-title-sm text-ink">{STATUS_LABEL[status]}</h2>
         <span className="ml-auto rounded-pill bg-canvas px-xs py-[1px] text-caption tabular-nums text-muted">
@@ -632,7 +640,7 @@ function BoardColumn({
         {isDropTarget && (
           <li
             aria-hidden
-            className="h-[68px] animate-slot-in rounded-md border-[1.5px] border-dashed border-ink/40 bg-ink/[0.04]"
+            className="h-[71px] animate-slot-in rounded-md border-[1.5px] border-dashed border-ink/40 bg-ink/[0.04]"
           />
         )}
         {items.length === 0 && !isDropTarget && (
@@ -690,7 +698,7 @@ function TaskCard({
       onDragEnd={onDragEnd}
       className={cn(
         // 제목이 한 줄이라 높이가 같지만, 배지 유무로 어긋나지 않게 최소 높이를 고정한다.
-        'group relative flex h-[68px] flex-col justify-between cursor-grab rounded-md border bg-canvas px-sm py-xs shadow-soft',
+        'group relative flex h-[71px] flex-col justify-between cursor-grab rounded-md border bg-canvas px-sm py-xs shadow-soft',
         'transition-[box-shadow,opacity,transform] hover:shadow-card active:cursor-grabbing',
         'focus-visible:outline-none focus-visible:ring-[1.5px] focus-visible:ring-ink',
         overdue ? 'border-error/40' : 'border-hairline',

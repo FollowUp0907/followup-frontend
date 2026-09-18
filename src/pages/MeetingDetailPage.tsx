@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { PageWidth } from '@/components/layout/PageWidth'
+import { FitPage } from '@/components/layout/FitPage'
 import { Pager, usePager } from '@/components/ui/Pager'
 import { Avatar, DueBadge, MeetingStatusBadge, PriorityBadge, StatusBadge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
@@ -117,7 +117,7 @@ export default function MeetingDetailPage() {
   }
 
   return (
-    <PageWidth size={1120}>
+    <FitPage>
       <PageHeader
         title={meeting.title}
         description={formatDateTime(meeting.scheduledAt)}
@@ -139,10 +139,10 @@ export default function MeetingDetailPage() {
         }
       />
 
-      <div className="grid gap-lg lg:grid-cols-12">
-        <div className="space-y-lg lg:col-span-8">
-          <SurfaceCard className="p-xl">
-            <div className="mb-md flex items-center justify-between gap-md">
+      <div className="grid min-h-0 flex-1 gap-md lg:grid-cols-12">
+        <div className="flex min-h-0 flex-col gap-md lg:col-span-8">
+          <SurfaceCard className="flex min-h-[200px] flex-1 flex-col p-lg">
+            <div className="mb-sm flex shrink-0 items-center justify-between gap-md">
               <h2 className="text-title-md text-ink">회의록</h2>
               {editing && (
                 <Button size="sm" onClick={saveContent} loading={updateMeeting.isPending}>
@@ -175,7 +175,7 @@ export default function MeetingDetailPage() {
                 </FormRow>
               </div>
             ) : hasContent ? (
-              <p className="whitespace-pre-wrap rounded-lg bg-surface-card p-lg text-body-md leading-relaxed text-body">
+              <p className="thin-scroll min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap rounded-lg bg-surface-card p-md text-body-md leading-relaxed text-body">
                 {meeting.content}
               </p>
             ) : (
@@ -187,8 +187,8 @@ export default function MeetingDetailPage() {
             )}
           </SurfaceCard>
 
-          <SurfaceCard className="p-xl">
-            <h2 className="mb-md text-title-md text-ink">결정 사항</h2>
+          <SurfaceCard className="flex min-h-0 shrink-0 flex-col p-lg">
+            <h2 className="mb-sm text-title-md text-ink">결정 사항</h2>
             {!meeting.decisions?.length ? (
               <p className="rounded-md bg-surface-soft px-md py-lg text-center text-body-sm text-muted">
                 아직 확정된 결정 사항이 없습니다. AI 분석 결과를 확정하면 여기에 표시됩니다.
@@ -204,8 +204,8 @@ export default function MeetingDetailPage() {
             )}
           </SurfaceCard>
 
-          <SurfaceCard className="p-xl">
-            <h2 className="mb-md text-title-md text-ink">이 회의에서 생성된 후속 업무</h2>
+          <SurfaceCard className="flex min-h-[132px] flex-1 flex-col p-lg">
+            <h2 className="mb-sm shrink-0 text-title-md text-ink">이 회의에서 생성된 후속 업무</h2>
             {generatedLoading ? (
               <Skeleton className="h-20" />
             ) : generatedItems.length === 0 ? (
@@ -244,8 +244,8 @@ export default function MeetingDetailPage() {
           </SurfaceCard>
         </div>
 
-        <div className="space-y-lg lg:col-span-4">
-          <SurfaceCard className="p-xl">
+        <div className="thin-scroll flex min-h-0 flex-col gap-md overflow-y-auto pr-xxs lg:col-span-4">
+          <SurfaceCard className="p-lg">
             <h2 className="mb-md text-title-md text-ink">참여자</h2>
             {!meeting.participants?.length ? (
               <p className="text-body-sm text-muted">참여자가 지정되지 않았습니다.</p>
@@ -264,7 +264,7 @@ export default function MeetingDetailPage() {
             )}
           </SurfaceCard>
 
-          <SurfaceCard className="p-xl">
+          <SurfaceCard className="p-lg">
             <h2 className="mb-sm text-title-md text-ink">이전 회의 미완료 업무</h2>
             <p className="mb-md text-body-sm text-muted">이 회의를 만들 때 연결한 업무입니다.</p>
             {!meeting.carryOverActionItems?.length ? (
@@ -296,7 +296,7 @@ export default function MeetingDetailPage() {
             <Pager page={carryOverPage.page} pageCount={carryOverPage.pageCount} onChange={carryOverPage.setPage} />
           </SurfaceCard>
 
-          <SurfaceCard className="p-xl">
+          <SurfaceCard className="p-lg">
             <h2 className="mb-md text-title-md text-ink">회의 정보</h2>
             <dl className="space-y-sm text-body-sm">
               <div className="flex justify-between gap-md">
@@ -356,6 +356,6 @@ export default function MeetingDetailPage() {
         onConfirm={onDelete}
         onClose={() => setConfirmDelete(false)}
       />
-    </PageWidth>
+    </FitPage>
   )
 }

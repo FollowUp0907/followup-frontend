@@ -37,7 +37,7 @@ function StatTile({
   dot?: string
 }) {
   return (
-    <Link to={to} className="block rounded-lg bg-surface-card p-sm transition-colors active:bg-surface-strong">
+    <Link to={to} className="block rounded-lg bg-surface-card px-sm py-xs transition-colors active:bg-surface-strong">
       <span className="flex items-center gap-xs text-caption font-normal text-muted">
         {dot && <span className="h-2 w-2 shrink-0 rounded-pill" style={{ background: dot }} aria-hidden />}
         {label}
@@ -201,7 +201,7 @@ export default function DashboardPage() {
               </ButtonLink>
             </div>
           ) : (
-            <ul className="thin-scroll min-h-[168px] flex-1 space-y-xxs overflow-y-auto pr-xxs">
+            <ul className="thin-scroll min-h-[208px] flex-1 space-y-xxs overflow-y-auto pr-xxs">
               {data.recentMeetings.map((m) => (
                 <li key={m.meetingId}>
                   <Link

@@ -30,7 +30,7 @@ export default function MeetingListPage() {
     .sort((a, b) => dayjs(b.scheduledAt).valueOf() - dayjs(a.scheduledAt).valueOf())
 
   // 한 화면에 들어오도록 5개씩 끊는다.
-  const page = usePager(meetings, 5)
+  const page = usePager(meetings, 7)
 
   return (
     <FitPage>
@@ -45,7 +45,7 @@ export default function MeetingListPage() {
       />
 
       {/* 회의 제목 검색 — 백엔드에 검색 파라미터가 없어 받아 온 목록에서 거른다 */}
-      <div className="relative mb-lg">
+      <div className="relative mb-sm shrink-0">
         <Search size={16} className="pointer-events-none absolute left-sm top-1/2 -translate-y-1/2 text-muted" />
         <Input
           type="search"
@@ -95,19 +95,19 @@ export default function MeetingListPage() {
 
       {meetings.length > 0 && (
         <div className="flex min-h-0 flex-1 flex-col">
-          <ul key={page.page} className="animate-page-in space-y-sm">
+          <ul key={page.page} className="animate-page-in space-y-xxs">
             {page.visible.map((m) => (
             <SurfaceCard as="li" key={m.id} className="shadow-none transition-shadow hover:shadow-card">
               <Link
                 to={`${base}/meetings/${m.id}`}
-                className="flex flex-wrap items-center justify-between gap-md px-lg py-md"
+                className="flex flex-wrap items-center justify-between gap-md px-md py-xs"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-sm">
-                    <h2 className="truncate text-title-md text-ink">{m.title}</h2>
+                    <h2 className="truncate text-title-sm text-ink">{m.title}</h2>
                     <MeetingStatusBadge status={statusById.get(m.id) ?? m.status} />
                   </div>
-                  <p className="mt-xxs text-body-sm text-muted">{formatDateTime(m.scheduledAt)}</p>
+                  <p className="mt-xxs text-caption font-normal text-muted">{formatDateTime(m.scheduledAt)}</p>
                 </div>
                 <span className="text-nav-link text-muted">상세 보기 →</span>
               </Link>
