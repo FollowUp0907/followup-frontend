@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 import { ErrorBoundary } from '@/components/layout/ErrorBoundary'
 import { RedirectIfAuthenticated, RequireAuth } from '@/components/layout/RouteGuards'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
@@ -17,7 +17,6 @@ const MeetingDetailPage = lazy(() => import('@/pages/MeetingDetailPage'))
 const AnalysisPage = lazy(() => import('@/pages/AnalysisPage'))
 const TaskBoardPage = lazy(() => import('@/pages/TaskBoardPage'))
 const TaskDetailPage = lazy(() => import('@/pages/TaskDetailPage'))
-const MembersPage = lazy(() => import('@/pages/MembersPage'))
 const ProjectSettingsPage = lazy(() => import('@/pages/ProjectSettingsPage'))
 const NotFoundPage = lazy(() => import('@/pages/NotFoundPage'))
 
@@ -52,7 +51,8 @@ export default function App() {
               <Route path="meetings/:meetingId/analysis" element={<AnalysisPage />} />
               <Route path="tasks" element={<TaskBoardPage />} />
               <Route path="tasks/:actionItemId" element={<TaskDetailPage />} />
-              <Route path="members" element={<MembersPage />} />
+              {/* 구성원은 설정 안으로 옮겼다. 예전 링크는 설정으로 보낸다. */}
+              <Route path="members" element={<Navigate to="../settings" replace />} />
               <Route path="settings" element={<ProjectSettingsPage />} />
             </Route>
           </Route>

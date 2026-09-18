@@ -1085,3 +1085,75 @@ SSE/웹소켓 없어도 됩니다. 지금 사용자 수에서는 폴링으로 �
 **그래서 1차 때 여쭤본 것 하나만 다시 부탁드립니다** —
 **서버 `dueSoonActionItems` 의 임박 기준이 며칠인가요?**
 그 값에 프론트의 뱃지 기준과 알림 기준을 함께 맞추겠습니다.
+
+---
+
+# 👥 담당자 여러 명 — 필드 하나만 부탁드립니다
+
+**날짜**: 2026-09-18
+
+후속 업무 하나를 **여러 명이 나눠 맡는** 경우가 있어서 요청드립니다.
+지금은 `assigneeUserId` 하나뿐이라 한 명만 담을 수 있습니다.
+
+## 필요한 것
+
+```jsonc
+// ActionItemListResDto / ActionItemDetailResDto
+{
+  "id": 64,
+  "title": "로그인 오류 수정",
+  "assigneeUserId": 7,        // ← 그대로 두세요 (아래 참고)
+  "assigneeUserIds": [7, 12], // ★ 추가
+  ...
+}
+
+// ActionItemCreateReqDto / ActionItemUpdateReqDto
+{ "assigneeUserIds": [7, 12] }   // ★ 추가
+```
+
+**`assigneeUserId` 는 지우지 말아 주세요.** 첫 번째 담당자를 계속 넣어 주시면
+예전 화면·예전 클라이언트가 그대로 돕니다. 나중에 정리하면 됩니다.
+
+**스키마**: `action_item` 에 컬럼을 늘리는 대신 조인 테이블이 자연스럽습니다.
+```sql
+action_item_assignee(action_item_id, user_id, primary key (action_item_id, user_id))
+```
+
+## 프론트는 이미 준비돼 있습니다
+
+`src/features/actionItems/assignees.ts` 가 **`assigneeUserIds` 가 오면 그걸 쓰고,
+없으면 `assigneeUserId` 를 한 명짜리 목록으로** 다룹니다. 화면은 전부 이 목록을
+기준으로 그리고 있습니다.
+
+- 카드: 아바타를 겹쳐 놓고 **"반서현 외 2명"**
+- 목록 뷰: 같은 방식
+- 오른쪽 상세 패널: 담당자를 한 줄에 한 명씩 펼쳐서
+
+**그래서 필드만 내려 주시면 프론트 배포 없이 여러 명이 바로 보입니다.**
+(지금은 한 명만 오니 아바타도 하나만 보입니다)
+
+## 알림은 어떻게 되나
+
+`BACKEND_NOTES` "알림 3차 (최종) 요청" 의 규칙에서 **"담당자"** 를
+**"담당자 전원"** 으로 읽어 주시면 됩니다.
+
+- `TASK_CREATED` → 새로 추가된 담당자들에게
+- `TASK_UPDATED` / `OVERDUE` / `DUE_SOON` → 담당자 전원에게
+- `TASK_COMPLETED` → 담당자 전원 + 생성자 (지금과 같음, 중복 제거)
+- **행위자 본인은 제외** 하는 규칙은 그대로
+
+## 함께 정할 것
+
+- 담당자를 **0명**으로 두는 걸 허용할까요? (지금 `assigneeUserId = null` 과 같은 뜻)
+  저희는 허용 쪽이 자연스럽다고 봅니다 — "아직 안 정함" 이 실제로 있습니다.
+- 담당자 **상한**이 필요할까요? 없어도 화면은 3명까지 아바타를 보이고 나머지는
+  숫자로 접습니다.
+
+## 정리
+
+1. `action_item_assignee` 조인 테이블
+2. 응답 DTO 두 개에 `assigneeUserIds` 추가 (`assigneeUserId` 는 첫 번째로 유지)
+3. 생성/수정 요청 DTO에 `assigneeUserIds` 받기
+4. 알림 대상에서 "담당자" 를 "담당자 전원" 으로
+
+**프론트 작업은 0입니다.** 필드가 오는 순간 반영됩니다.

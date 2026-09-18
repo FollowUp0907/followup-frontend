@@ -1,7 +1,5 @@
 import { useState } from 'react'
 import { errorMessage } from '@/api/client'
-import { PageHeader } from '@/components/layout/PageHeader'
-import { PageWidth } from '@/components/layout/PageWidth'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -18,7 +16,11 @@ import { ROLE_LABEL } from '@/lib/constants'
 import { formatServerDate } from '@/lib/date'
 import type { ProjectMemberResDto } from '@/types/api'
 
-export default function MembersPage() {
+/**
+ * 구성원 관리.
+ * 예전에는 별도 탭이었는데 설정 안으로 들어왔다. (탭이 다섯 개면 많았다)
+ */
+export function MembersSection() {
   const { projectId, members, membersLoading, isOwner } = useProjectContext()
   const { user } = useAuth()
   const toast = useToast()
@@ -68,18 +70,20 @@ export default function MembersPage() {
   }
 
   return (
-    <PageWidth size={1120}>
-      <PageHeader
-        title="구성원"
-        description="프로젝트를 만든 사람은 OWNER, 초대된 사람은 MEMBER 권한을 갖습니다."
-        actions={
-          isOwner ? (
-            <Button onClick={() => setInviteOpen(true)}>구성원 추가</Button>
-          ) : (
-            <Badge tone="neutral">MEMBER 권한</Badge>
-          )
-        }
-      />
+    <section>
+      <div className="mb-md flex flex-wrap items-center justify-between gap-md">
+        <div>
+          <h2 className="text-title-md text-ink">구성원</h2>
+          <p className="mt-xxs text-body-sm text-muted">
+            프로젝트를 만든 사람은 OWNER, 초대된 사람은 MEMBER 권한을 갖습니다.
+          </p>
+        </div>
+        {isOwner ? (
+          <Button onClick={() => setInviteOpen(true)}>구성원 추가</Button>
+        ) : (
+          <Badge tone="neutral">MEMBER 권한</Badge>
+        )}
+      </div>
 
       {membersLoading && <Skeleton className="h-[200px]" />}
 
@@ -169,6 +173,6 @@ export default function MembersPage() {
         onConfirm={remove}
         onClose={() => setTarget(null)}
       />
-    </PageWidth>
+    </section>
   )
 }

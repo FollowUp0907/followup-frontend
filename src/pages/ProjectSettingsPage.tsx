@@ -6,6 +6,7 @@ import { PageWidth } from '@/components/layout/PageWidth'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { SurfaceCard } from '@/components/ui/Card'
+import { MembersSection } from '@/features/members/MembersSection'
 import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { useToast } from '@/components/ui/Toast'
 import { useProjectContext } from '@/features/projects/ProjectContext'
@@ -65,7 +66,7 @@ export default function ProjectSettingsPage() {
 
   return (
     <PageWidth size={1120}>
-      <PageHeader title="프로젝트 설정" description="프로젝트 기본 정보를 관리합니다." />
+      <PageHeader title="프로젝트 설정" description="프로젝트 기본 정보와 구성원을 관리합니다." />
 
       <div className="grid gap-lg lg:grid-cols-12">
         <div className="space-y-lg lg:col-span-8">
@@ -95,6 +96,10 @@ export default function ProjectSettingsPage() {
                 프로젝트 정보는 OWNER만 수정할 수 있습니다.
               </p>
             )}
+          </SurfaceCard>
+
+          <SurfaceCard className="p-xl">
+            <MembersSection />
           </SurfaceCard>
 
           {isOwner && (

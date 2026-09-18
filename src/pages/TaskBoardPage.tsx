@@ -7,6 +7,7 @@ import { Avatar, DueBadge, PriorityBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
 import { Dropdown } from '@/components/ui/Dropdown'
+import { assigneeIdsOf, assigneeLabel } from '@/features/actionItems/assignees'
 import { Pager, usePager } from '@/components/ui/Pager'
 import { RowMenu } from '@/components/ui/RowMenu'
 import type { RowMenuItem } from '@/components/ui/RowMenu'
@@ -38,6 +39,18 @@ import { dayjs, formatDate, formatDateTime, isDueSoon, isOverdue } from '@/lib/d
 import type { ActionItemListResDto, ActionItemPriority, ActionItemStatus } from '@/types/api'
 
 type ViewMode = 'board' | 'list'
+
+/**
+ * 마감이 임박한 순서. 지난 업무(D+)가 가장 위로 오고, 마감일이 없는 업무는 맨 아래.
+ * 보드 컬럼과 목록 뷰가 같은 순서를 쓴다.
+ */
+function byDueSoonest(a: ActionItemListResDto, b: ActionItemListResDto) {
+  if (!a.dueDate && !b.dueDate) return a.id - b.id
+  if (!a.dueDate) return 1
+  if (!b.dueDate) return -1
+  const diff = dayjs(a.dueDate).valueOf() - dayjs(b.dueDate).valueOf()
+  return diff !== 0 ? diff : a.id - b.id
+}
 
 export default function TaskBoardPage() {
   const { projectId, members, memberName } = useProjectContext()
@@ -103,13 +116,8 @@ export default function TaskBoardPage() {
       const target = Number(meetingFilter)
       items = items.filter((i) => originByItemId.get(i.id) === target)
     }
-    return [...items].sort((a, b) => {
-      // 마감일이 있는 항목 먼저, 그다음 마감일 순
-      if (!a.dueDate && !b.dueDate) return a.id - b.id
-      if (!a.dueDate) return 1
-      if (!b.dueDate) return -1
-      return dayjs(a.dueDate).valueOf() - dayjs(b.dueDate).valueOf()
-    })
+    // D-day 가 적게 남은 순. 지난 것(D+)이 맨 위, 마감일 없는 것은 맨 아래.
+    return [...items].sort(byDueSoonest)
   }, [data, dueFilter, statusFilter, view, meetingFilter, originByItemId, query])
 
   const byStatus = (status: ActionItemStatus) => filtered.filter((i) => i.status === status)
@@ -422,8 +430,17 @@ export default function TaskBoardPage() {
                     </td>
                     <td className="px-lg py-sm">
                       <span className="flex items-center gap-xs text-body-sm text-body">
-                        <Avatar name={item.assigneeUserId ? memberName(item.assigneeUserId) : undefined} size={24} />
-                        {item.assigneeUserId ? memberName(item.assigneeUserId) : '미지정'}
+                        <span className="flex shrink-0 items-center">
+                          {(assigneeIdsOf(item).length ? assigneeIdsOf(item) : [0]).slice(0, 3).map((id, i) => (
+                            <span
+                              key={id || 'none'}
+                              className={cn('rounded-pill ring-2 ring-canvas', i > 0 && '-ml-[8px]')}
+                            >
+                              <Avatar name={id ? memberName(id) : undefined} size={24} />
+                            </span>
+                          ))}
+                        </span>
+                        {assigneeLabel(assigneeIdsOf(item), memberName)}
                       </span>
                     </td>
                     <td className="px-lg py-sm">
@@ -583,7 +600,8 @@ function BoardColumn({
           <li key={item.id}>
             <TaskCard
               item={item}
-              assigneeName={memberName(item.assigneeUserId)}
+              assigneeIds={assigneeIdsOf(item)}
+              memberName={memberName}
               menuItems={menuItems(item)}
               onOpen={() => onOpenPreview(item.id)}
               dragging={draggingId === item.id}
@@ -612,7 +630,8 @@ function BoardColumn({
 
 function TaskCard({
   item,
-  assigneeName,
+  assigneeIds,
+  memberName,
   menuItems,
   onOpen,
   onDragStart,
@@ -620,7 +639,8 @@ function TaskCard({
   dragging,
 }: {
   item: ActionItemListResDto
-  assigneeName: string
+  assigneeIds: number[]
+  memberName: (userId?: number) => string
   menuItems: RowMenuItem[]
   onOpen: () => void
   onDragStart: () => void
@@ -632,7 +652,7 @@ function TaskCard({
 
   return (
     // 링크가 아니라 버튼이다. 누르면 오른쪽 패널로 열리고,
-    // 전체 화면으로는 톱니 메뉴를 통해서만 넘어간다.
+    // 전체 화면으로는 점 메뉴를 통해서만 넘어간다.
     <div
       role="button"
       tabIndex={0}
@@ -673,25 +693,23 @@ function TaskCard({
       </span>
 
       <div className="flex items-start justify-between gap-xs">
-        {/* 한 줄로 자르고, 카드에 올리면 제목 전체가 말풍선으로 뜬다 */}
+        {/* 우선순위는 아이콘만, 제목 바로 왼쪽에 */}
+        {item.priority && (
+          <span
+            className="mt-[1px] shrink-0"
+            style={{ color: PRIORITY_ICON_COLOR[item.priority] }}
+            title={PRIORITY_LABEL[item.priority]}
+            aria-label={`우선순위 ${PRIORITY_LABEL[item.priority]}`}
+          >
+            <PriorityIcon size={16} strokeWidth={3} />
+          </span>
+        )}
         <p className="min-w-0 flex-1 truncate pt-[1px] text-title-sm leading-snug text-ink">{item.title}</p>
         <RowMenu items={menuItems} label={`${item.title} 메뉴`} />
       </div>
 
       <div className="flex items-center justify-between gap-xs">
         <div className="flex min-w-0 items-center gap-xs">
-          {item.priority && (
-            <span
-              className="inline-flex shrink-0 items-center gap-xxs rounded-pill px-xs py-[2px] text-caption font-semibold"
-              style={{
-                color: PRIORITY_ICON_COLOR[item.priority],
-                background: `${PRIORITY_ICON_COLOR[item.priority]}1a`,
-              }}
-            >
-              <PriorityIcon size={14} strokeWidth={2.75} />
-              {PRIORITY_LABEL[item.priority]}
-            </span>
-          )}
           {/* 마감일과 그 오른쪽에 D-day */}
           <span className="flex shrink-0 items-center gap-xxs text-caption font-normal text-muted">
             <CalendarClock size={12} />
@@ -699,15 +717,18 @@ function TaskCard({
           </span>
           <DueBadge dueDate={item.dueDate} status={item.status} />
         </div>
-        {/* 올리면 아이콘 왼쪽으로 이름이 펼쳐진다 */}
-        <span className="group/assignee relative flex shrink-0 items-center">
-          <span
-            className="pointer-events-none absolute right-[calc(100%+6px)] whitespace-nowrap rounded-sm bg-ink px-xs py-[2px] text-caption font-normal text-on-dark opacity-0 transition-opacity group-hover/assignee:opacity-100"
-            role="tooltip"
-          >
-            {item.assigneeUserId ? assigneeName : '담당자 미지정'}
+        {/* 담당자 — 겹친 아바타 + 이름. 여러 명이면 "OOO 외 N명" */}
+        <span className="flex min-w-0 shrink items-center gap-xs">
+          <span className="flex shrink-0 items-center">
+            {(assigneeIds.length ? assigneeIds : [0]).slice(0, 3).map((id, i) => (
+              <span key={id || 'none'} className={cn('rounded-pill ring-2 ring-canvas', i > 0 && '-ml-[8px]')}>
+                <Avatar name={id ? memberName(id) : undefined} size={22} />
+              </span>
+            ))}
           </span>
-          <Avatar name={item.assigneeUserId ? assigneeName : undefined} size={24} />
+          <span className="truncate text-caption font-normal text-muted">
+            {assigneeLabel(assigneeIds, memberName)}
+          </span>
         </span>
       </div>
     </div>

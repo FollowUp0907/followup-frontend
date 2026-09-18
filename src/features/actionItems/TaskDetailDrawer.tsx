@@ -11,6 +11,7 @@ import { Skeleton } from '@/components/ui/Card'
 import { SegmentedControl } from '@/components/ui/NavPillGroup'
 import { useToast } from '@/components/ui/Toast'
 import { useActionItem, useUpdateActionItem } from '@/features/actionItems/queries'
+import { assigneeIdsOf } from '@/features/actionItems/assignees'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import {
   PRIORITY_ICON_COLOR,
@@ -47,7 +48,7 @@ export function TaskDetailDrawer({
     if (actionItemId !== null) setHeldId(actionItemId)
   }, [actionItemId])
 
-  const { members } = useProjectContext()
+  const { members, memberName } = useProjectContext()
   const { data: item, isLoading, isError, error } = useActionItem(heldId ?? 0)
   const updateItem = useUpdateActionItem(projectId)
   const toast = useToast()
@@ -232,11 +233,25 @@ export function TaskDetailDrawer({
           </div>
 
           <dl className="space-y-sm text-body-sm">
-            <div className="flex items-center justify-between gap-md">
-              <dt className="text-muted">담당자</dt>
-              <dd className="flex min-w-0 items-center gap-xs text-ink">
-                <Avatar name={item.assignee?.name} size={22} />
-                <span className="truncate">{item.assignee?.name ?? '미지정'}</span>
+            <div className="flex items-start justify-between gap-md">
+              <dt className="pt-xxs text-muted">담당자</dt>
+              <dd className="min-w-0 text-ink">
+                {assigneeIdsOf(item).length === 0 ? (
+                  <span className="flex items-center gap-xs">
+                    <Avatar size={22} />
+                    미지정
+                  </span>
+                ) : (
+                  // 여러 명이면 한 줄에 한 명씩 — 카드에서는 "외 N명" 으로 접히니 여기서 펼쳐 준다.
+                  <ul className="space-y-xxs">
+                    {assigneeIdsOf(item).map((id) => (
+                      <li key={id} className="flex items-center justify-end gap-xs">
+                        <Avatar name={memberName(id)} size={22} />
+                        <span className="truncate">{memberName(id)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </dd>
             </div>
             <div className="flex items-center justify-between gap-md">

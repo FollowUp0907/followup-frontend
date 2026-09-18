@@ -75,9 +75,10 @@ export const STATUS_DOT_COLOR: Record<ActionItemStatus, string> = {
  * 마감 배지가 쓰는 빨강(지연)·주황(마감 임박)은 피한다.
  */
 export const PRIORITY_ICON_COLOR: Record<ActionItemPriority, string> = {
-  HIGH: '#ef4444', // 빨강 (디자인 시스템 error)
-  MEDIUM: '#0f766e', // 짙은 청록
-  LOW: '#64748b', // 슬레이트
+  // 카드에서는 아이콘만 남기므로 색이 곧 의미다. 흐리면 구분이 안 돼서 선명하게 쓴다.
+  HIGH: '#ef4444',
+  MEDIUM: '#f59e0b',
+  LOW: '#3b82f6',
 }
 
 /** 업무 키 표기 (시안의 FU-101 형태) */

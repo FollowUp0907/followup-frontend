@@ -1,5 +1,5 @@
 import { Navigate, Outlet, useParams } from 'react-router-dom'
-import { Calendar, CheckSquare, LayoutDashboard, Settings, Users } from 'lucide-react'
+import { Calendar, CheckSquare, LayoutDashboard, Settings } from 'lucide-react'
 import { TopNav } from '@/components/layout/TopNav'
 import { NavPillGroup } from '@/components/ui/NavPillGroup'
 import { EmptyState, Skeleton } from '@/components/ui/Card'
@@ -22,18 +22,19 @@ export default function ProjectLayout() {
     { to: base, label: '대시보드', end: true, icon: LayoutDashboard },
     { to: `${base}/meetings`, label: '회의', icon: Calendar },
     { to: `${base}/tasks`, label: '후속 업무', icon: CheckSquare },
-    { to: `${base}/members`, label: '구성원', icon: Users },
+    // 구성원은 설정 안으로 들어갔다. 탭은 네 개로 유지한다.
     { to: `${base}/settings`, label: '설정', icon: Settings },
   ]
 
   return (
-    <div className="flex min-h-screen flex-col bg-canvas">
+    <div className="flex h-screen flex-col overflow-hidden bg-canvas">
       {/* 시안: 64px 한 줄에 심볼 · 구분선 · 탭 · 아바타 */}
       <TopNav variant="app">
         <NavPillGroup items={items} />
       </TopNav>
 
-      <main className="flex-1">
+      {/* 본문만 안에서 스크롤한다. 바깥(페이지 전체) 스크롤바는 생기지 않는다. */}
+      <main className="thin-scroll min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[1200px] px-lg py-xxl">
           {isLoading && (
             <div className="space-y-lg">

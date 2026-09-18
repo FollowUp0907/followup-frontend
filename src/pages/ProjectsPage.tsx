@@ -54,10 +54,10 @@ export default function ProjectsPage() {
   })
 
   return (
-    <div className="flex min-h-screen flex-col bg-canvas">
+    <div className="flex h-screen flex-col overflow-hidden bg-canvas">
       <TopNav variant="plain" />
 
-      <main className="flex-1">
+      <main className="thin-scroll min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-[800px] px-lg py-[64px]">
           <PageHeader
             title="프로젝트"
