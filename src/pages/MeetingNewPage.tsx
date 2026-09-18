@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from 'react-router-dom'
@@ -67,6 +67,34 @@ export default function MeetingNewPage() {
   })
 
   const contentRef = useRef<HTMLTextAreaElement | null>(null)
+  const asideRef = useRef<HTMLDivElement>(null)
+  /**
+   * 회의록 칸이 자랄 수 있는 최대 높이.
+   * 오른쪽 칸(참여자 · 이전 회의 미완료 업무) 아래 끝까지만 늘어나고,
+   * 그 뒤로는 칸 안에서 스크롤된다. 입력칸이 커져도 제 윗변은 안 움직이므로
+   * "오른쪽 칸 아래 - 입력칸 위" 로 재면 값이 흔들리지 않는다.
+   * 화면이 좁아 위아래로 쌓이면 오른쪽 칸이 아래에 오므로 사실상 제한이 없다.
+   */
+  const [transcriptMaxHeight, setTranscriptMaxHeight] = useState<number>()
+
+  useLayoutEffect(() => {
+    const aside = asideRef.current
+    if (!aside) return
+    const measure = () => {
+      const ta = contentRef.current
+      if (!ta) return
+      const room = Math.round(aside.getBoundingClientRect().bottom - ta.getBoundingClientRect().top)
+      setTranscriptMaxHeight(room > 200 ? room : undefined)
+    }
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(aside)
+    window.addEventListener('resize', measure)
+    return () => {
+      ro.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [])
   // 확정된 회의록. 받아쓰는 중인 조각은 여기 넣지 않고 화면에만 얹는다.
   const [content, setContent] = useState('')
 
@@ -217,7 +245,9 @@ export default function MeetingNewPage() {
             <Textarea
               id="content"
               ref={contentRef}
-              className="resize-none"
+              autoGrow
+              style={{ maxHeight: transcriptMaxHeight }}
+              className="min-h-[280px]"
               placeholder="회의에서 나온 이야기를 그대로 적어 주세요."
               value={shown}
               onChange={(e) => {
@@ -234,7 +264,7 @@ export default function MeetingNewPage() {
           </SurfaceCard>
         </div>
 
-        <div className="space-y-lg lg:col-span-5">
+        <div ref={asideRef} className="space-y-lg lg:col-span-5">
           <SurfaceCard className="p-xl">
             <div className="mb-sm flex items-center justify-between gap-md">
               <h2 className="text-title-md text-ink">참여자</h2>

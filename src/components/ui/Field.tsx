@@ -64,17 +64,22 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
 export const Textarea = forwardRef<
   HTMLTextAreaElement,
   TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean; autoGrow?: boolean }
->(function Textarea({ className, invalid, autoGrow, onChange, value, ...rest }, ref) {
+>(function Textarea({ className, invalid, autoGrow, onChange, value, style, ...rest }, ref) {
   const innerRef = useRef<HTMLTextAreaElement | null>(null)
 
   const fit = useCallback(() => {
     const el = innerRef.current
     if (!el || !autoGrow) return
     el.style.height = 'auto'
-    el.style.height = `${el.scrollHeight}px`
+    // max-height 가 걸려 있으면 거기까지만 자라고, 그 뒤부터는 안에서 스크롤한다.
+    const max = Number.parseFloat(getComputedStyle(el).maxHeight)
+    const capped = Number.isFinite(max) && el.scrollHeight > max
+    el.style.height = `${capped ? max : el.scrollHeight}px`
+    el.style.overflowY = capped ? 'auto' : 'hidden'
   }, [autoGrow])
 
-  useLayoutEffect(fit, [fit, value])
+  // 값이 바뀔 때는 물론, 밖에서 max-height 가 바뀌어도 다시 재야 한다.
+  useLayoutEffect(fit, [fit, value, style?.maxHeight])
 
   return (
     <textarea
@@ -84,6 +89,7 @@ export const Textarea = forwardRef<
         else if (ref) ref.current = el
       }}
       value={value}
+      style={style}
       onChange={(e) => {
         onChange?.(e)
         fit()
@@ -94,8 +100,9 @@ export const Textarea = forwardRef<
         // 호출부가 min-h 를 정했으면 기본값을 아예 넣지 않는다.
         !className?.includes('min-h-') && 'min-h-[160px]',
         'px-sm py-sm leading-relaxed',
-        // 자동으로 늘어나면 사용자가 크기를 끌 이유가 없다. 스크롤바도 안 생기게.
-        autoGrow ? 'resize-none overflow-hidden' : 'resize-y',
+        // 자동으로 늘어나면 사용자가 크기를 끌 이유가 없다.
+        // (overflow 는 fit() 이 내용 길이를 보고 직접 켜고 끈다)
+        autoGrow ? 'thin-scroll resize-none' : 'resize-y',
         invalid && 'border-error',
         className,
       )}
