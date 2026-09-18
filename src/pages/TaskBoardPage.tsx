@@ -395,16 +395,17 @@ export default function TaskBoardPage() {
 
       {!isLoading && !isError && filtered.length > 0 && view === 'list' && (
         <SurfaceCard className="overflow-hidden">
-          <div className="thin-scroll overflow-x-auto">
-            <table className="w-full min-w-[720px] border-collapse text-left">
+          {/* 가로 스크롤 없이 화면 폭에 맞춘다. 좁아지면 덜 중요한 칸부터 접는다. */}
+          <div>
+            <table className="w-full table-fixed border-collapse text-left">
               <thead>
                 <tr className="border-b border-hairline text-caption text-muted">
-                  <th className="px-lg py-sm font-medium">업무명</th>
-                  <th className="px-lg py-sm font-medium">담당자</th>
-                  <th className="px-lg py-sm font-medium">마감일</th>
-                  <th className="px-lg py-sm font-medium">우선순위</th>
-                  <th className="px-lg py-sm font-medium">상태</th>
-                  <th className="w-[52px] px-lg py-sm font-medium">
+                  <th className="px-md py-sm font-medium">업무명</th>
+                  <th className="hidden px-md py-sm font-medium sm:table-cell sm:w-[150px]">담당자</th>
+                  <th className="hidden px-md py-sm font-medium lg:table-cell lg:w-[164px]">마감일</th>
+                  <th className="hidden px-md py-sm font-medium xl:table-cell xl:w-[96px]">우선순위</th>
+                  <th className="w-[150px] px-md py-sm font-medium">상태</th>
+                  <th className="w-[44px] px-md py-sm font-medium">
                     <span className="sr-only">메뉴</span>
                   </th>
                 </tr>
@@ -416,7 +417,7 @@ export default function TaskBoardPage() {
                     onClick={() => setPreviewId(item.id)}
                     className="group cursor-pointer border-b border-hairline-soft transition-colors last:border-0 hover:bg-surface-card"
                   >
-                    <td className="px-lg py-sm">
+                    <td className="px-md py-sm">
                       {/* 행 전체가 눌리지만, 키보드로도 열 수 있게 제목은 버튼으로 둔다 */}
                       <button
                         type="button"
@@ -424,12 +425,13 @@ export default function TaskBoardPage() {
                           e.stopPropagation()
                           setPreviewId(item.id)
                         }}
-                        className="text-left text-body-sm text-ink hover:underline"
+                        title={item.title}
+                        className="block w-full truncate text-left text-body-sm text-ink hover:underline"
                       >
                         {item.title}
                       </button>
                     </td>
-                    <td className="px-lg py-sm">
+                    <td className="hidden px-md py-sm sm:table-cell">
                       <span className="flex items-center gap-xs text-body-sm text-body">
                         <span className="flex shrink-0 items-center">
                           {(assigneeIdsOf(item).length ? assigneeIdsOf(item) : [0]).slice(0, 3).map((id, i) => (
@@ -441,23 +443,23 @@ export default function TaskBoardPage() {
                             </span>
                           ))}
                         </span>
-                        {assigneeLabel(assigneeIdsOf(item), memberName)}
+                        <span className="truncate">{assigneeLabel(assigneeIdsOf(item), memberName)}</span>
                       </span>
                     </td>
-                    <td className="px-lg py-sm">
-                      <span className="flex items-center gap-xs text-body-sm text-body">
+                    <td className="hidden px-md py-sm lg:table-cell">
+                      <span className="flex items-center gap-xs whitespace-nowrap text-body-sm text-body">
                         {formatDate(item.dueDate)}
                         <DueBadge dueDate={item.dueDate} status={item.status} />
                       </span>
                     </td>
-                    <td className="px-lg py-sm">
+                    <td className="hidden px-md py-sm xl:table-cell">
                       <PriorityBadge priority={item.priority} />
                     </td>
                     {/* 상태 변경은 행 클릭(패널 열기)과 겹치면 안 된다 */}
-                    <td className="px-lg py-sm" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-md py-sm" onClick={(e) => e.stopPropagation()}>
                       {/* 위 필터 바와 같은 드롭다운 — 상태 점까지 그대로 */}
                       <Dropdown
-                        className="w-[132px]"
+                        className="w-full"
                         ariaLabel={`${item.title} 상태`}
                         value={item.status}
                         onChange={(v) => void changeStatus(item, v as ActionItemStatus)}
@@ -474,7 +476,7 @@ export default function TaskBoardPage() {
                         }))}
                       />
                     </td>
-                    <td className="px-lg py-sm">
+                    <td className="px-md py-sm">
                       <div className="flex justify-end">
                         <RowMenu items={menuItems(item)} label={`${item.title} 메뉴`} />
                       </div>

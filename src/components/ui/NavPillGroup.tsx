@@ -14,7 +14,8 @@ export function NavPillGroup({ items, className }: { items: PillItem[]; classNam
   return (
     <nav
       className={cn(
-        'thin-scroll inline-flex max-w-full gap-xxs overflow-x-auto rounded-pill bg-surface-soft p-[4px]',
+        // 좁아지면 가로로 밀리지 않게 칸을 줄인다. 아주 좁으면 글자를 접고 아이콘만 남긴다.
+        'inline-flex max-w-full gap-xxs overflow-hidden rounded-pill bg-surface-soft p-[4px]',
         className,
       )}
     >
@@ -25,13 +26,13 @@ export function NavPillGroup({ items, className }: { items: PillItem[]; classNam
           end={item.end}
           className={({ isActive }) =>
             cn(
-              'inline-flex items-center gap-xs whitespace-nowrap rounded-pill px-[14px] py-xs text-nav-link transition-colors',
+              'inline-flex min-w-0 items-center gap-xs whitespace-nowrap rounded-pill px-sm py-xs text-nav-link transition-colors sm:px-[14px]',
               isActive ? 'bg-canvas text-ink shadow-pill' : 'text-muted hover:text-ink',
             )
           }
         >
-          {item.icon && <item.icon size={15} />}
-          {item.label}
+          {item.icon && <item.icon size={15} className="shrink-0" />}
+          <span className={cn(item.icon && 'hidden sm:inline')}>{item.label}</span>
         </NavLink>
       ))}
     </nav>

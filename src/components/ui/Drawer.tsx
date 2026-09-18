@@ -126,7 +126,12 @@ export function Drawer({
         </div>
 
         <div className="relative min-h-0 flex-1">
-          <div ref={bodyRef} onScroll={measure} className="thin-scroll h-full overflow-y-auto px-lg pb-xxl pt-lg">
+          {/*
+            기본은 패널 자체가 스크롤되지 않는 것 — 내용이 화면 높이에 맞춰 들어간다.
+            그래도 넘치는 화면(아주 낮은 창, 수정 폼)에서는 내용이 닿지 않으면 안 되니
+            넘칠 때만 스크롤을 허용하고, 그때는 아래 그라데이션으로 알린다.
+          */}
+          <div ref={bodyRef} onScroll={measure} className="thin-scroll h-full overflow-y-auto px-lg py-lg">
             {children}
           </div>
           {/* 아래에 더 있을 때만 — 내용이 끊긴 게 아니라 이어진다는 표시 */}

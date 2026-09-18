@@ -236,7 +236,8 @@ export function TaskDetailDrawer({
       )}
 
       {item && !editing && (
-        <div className="space-y-lg">
+        // 패널 높이에 맞춰 들어간다. 메타 줄은 고정이고, 설명만 남는 공간을 먹는다.
+        <div className="flex h-full min-h-0 flex-col gap-md">
           <div>
             <p className="mb-xs text-caption text-body">상태</p>
             <SegmentedControl<ActionItemStatus>
@@ -246,7 +247,7 @@ export function TaskDetailDrawer({
             />
           </div>
 
-          <dl className="space-y-sm text-body-sm">
+          <dl className="shrink-0 space-y-xs text-body-sm">
             <div className="flex items-start justify-between gap-md">
               <dt className="pt-xxs text-muted">담당자</dt>
               <dd className="min-w-0 text-ink">
@@ -291,28 +292,34 @@ export function TaskDetailDrawer({
             )}
           </dl>
 
-          <div>
-            <p className="mb-xs text-caption text-body">설명</p>
+          {/*
+            설명만 남는 높이를 먹고, 길면 안에서만 스크롤한다. 패널 전체는 안 움직인다.
+            min-h 를 안 주면 창이 낮을 때 이 상자가 0 으로 찌부러지고 글자만 비어져 나온다.
+          */}
+          <div className="flex min-h-[92px] flex-1 flex-col">
+            <p className="mb-xs shrink-0 text-caption text-body">설명</p>
             {item.description ? (
-              <p className="whitespace-pre-wrap rounded-md bg-surface-card p-md leading-relaxed text-body-sm text-body">
+              <p className="thin-scroll min-h-[64px] flex-1 overflow-y-auto whitespace-pre-wrap rounded-md bg-surface-card p-md leading-relaxed text-body-sm text-body">
                 {item.description}
               </p>
             ) : (
-              <p className="rounded-md bg-surface-soft px-md py-lg text-center text-body-sm text-muted">
+              <p className="shrink-0 rounded-md bg-surface-soft px-md py-md text-center text-body-sm text-muted">
                 설명이 없습니다.
               </p>
             )}
           </div>
 
           {item.priorityReason && (
-            <div>
+            <div className="shrink-0">
               <p className="mb-xs text-caption text-body">AI 추천 이유</p>
-              <p className="rounded-md bg-surface-card px-md py-sm text-body-sm text-body">{item.priorityReason}</p>
+              <p className="line-clamp-2 rounded-md bg-surface-card px-md py-sm text-body-sm text-body">
+                {item.priorityReason}
+              </p>
             </div>
           )}
 
           {item.originMeetingId && (
-            <div>
+            <div className="shrink-0">
               <p className="mb-xs text-caption text-body">생성된 회의</p>
               {item.originMeetingDeleted ? (
                 <div className="rounded-md border border-hairline bg-surface-soft p-sm">

@@ -84,9 +84,7 @@ export function TopNav({
         */}
         {children && (
           <>
-            <div className="min-w-0 flex-1 lg:hidden">
-              <div className="thin-scroll overflow-x-auto">{children}</div>
-            </div>
+            <div className="flex min-w-0 flex-1 justify-center lg:hidden">{children}</div>
             <div className="pointer-events-none absolute inset-x-0 hidden justify-center lg:flex">
               <div className="pointer-events-auto">{children}</div>
             </div>
