@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import { errorMessage } from '@/api/client'
 import { Plus, Search } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { FitPage } from '@/components/layout/FitPage'
+import { PageWidth } from '@/components/layout/PageWidth'
 import { Pager, usePager } from '@/components/ui/Pager'
 import { MeetingStatusBadge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
@@ -33,7 +33,7 @@ export default function MeetingListPage() {
   const page = usePager(meetings, 7)
 
   return (
-    <FitPage>
+    <PageWidth size={1120}>
       <PageHeader
         title="회의"
         description="회의록을 작성하고 과거 회의를 확인하세요."
@@ -45,7 +45,7 @@ export default function MeetingListPage() {
       />
 
       {/* 회의 제목 검색 — 백엔드에 검색 파라미터가 없어 받아 온 목록에서 거른다 */}
-      <div className="relative mb-sm shrink-0">
+      <div className="relative mb-lg">
         <Search size={16} className="pointer-events-none absolute left-sm top-1/2 -translate-y-1/2 text-muted" />
         <Input
           type="search"
@@ -94,29 +94,29 @@ export default function MeetingListPage() {
       )}
 
       {meetings.length > 0 && (
-        <div className="flex min-h-0 flex-1 flex-col">
-          <ul key={page.page} className="animate-page-in space-y-xxs">
+        <div>
+          <ul key={page.page} className="animate-page-in space-y-sm">
             {page.visible.map((m) => (
             <SurfaceCard as="li" key={m.id} className="shadow-none transition-shadow hover:shadow-card">
               <Link
                 to={`${base}/meetings/${m.id}`}
-                className="flex flex-wrap items-center justify-between gap-md px-md py-xs"
+                className="flex flex-wrap items-center justify-between gap-md px-xl py-lg"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-sm">
-                    <h2 className="truncate text-title-sm text-ink">{m.title}</h2>
+                    <h2 className="truncate text-title-md text-ink">{m.title}</h2>
                     <MeetingStatusBadge status={statusById.get(m.id) ?? m.status} />
                   </div>
-                  <p className="mt-xxs text-caption font-normal text-muted">{formatDateTime(m.scheduledAt)}</p>
+                  <p className="mt-xxs text-body-sm text-muted">{formatDateTime(m.scheduledAt)}</p>
                 </div>
                 <span className="text-nav-link text-muted">상세 보기 →</span>
               </Link>
             </SurfaceCard>
             ))}
           </ul>
-          <Pager page={page.page} pageCount={page.pageCount} onChange={page.setPage} className="mt-auto pt-sm" />
+          <Pager page={page.page} pageCount={page.pageCount} onChange={page.setPage}  />
         </div>
       )}
-    </FitPage>
+    </PageWidth>
   )
 }

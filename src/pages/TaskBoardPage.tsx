@@ -2,7 +2,6 @@ import { useId, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { CalendarClock, ChevronDown, ChevronsUp, Equal, ExternalLink, GripVertical, Plus, Search, Trash2 } from 'lucide-react'
 import { errorMessage } from '@/api/client'
-import { FitPage } from '@/components/layout/FitPage'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar, DueBadge, PriorityBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -170,7 +169,7 @@ export default function TaskBoardPage() {
   )
 
   return (
-    <FitPage>
+    <>
       <PageHeader
         title="후속 업무"
         description="회의에서 확정된 업무와 직접 추가한 업무를 함께 관리합니다."
@@ -191,35 +190,28 @@ export default function TaskBoardPage() {
         }
       />
 
-      {/* 검색과 필터를 한 줄에 담는다. 줄 수를 줄인 만큼 카드에 높이를 준다. */}
-      <SurfaceCard className="mb-xs shrink-0 p-xs">
+      {/* 업무명 검색 — 백엔드에 검색 파라미터가 없어 받아 온 목록에서 거른다 */}
+      <div className="relative mb-md">
+        <Search size={16} className="pointer-events-none absolute left-sm top-1/2 -translate-y-1/2 text-muted" />
+        <Input
+          type="search"
+          className="pl-xl"
+          placeholder="업무명 검색"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          aria-label="업무명 검색"
+        />
+      </div>
+
+      {/* 필터 바 — 칸 너비를 그리드로 통일해 길이가 어긋나지 않게 한다 */}
+      <SurfaceCard className="mb-lg p-lg">
         <div
           className={cn(
-            'grid grid-cols-1 gap-sm sm:grid-cols-2',
-            // 검색 + 필터. 목록 뷰는 상태 필터가 하나 더 붙는다.
-            view === 'list' ? 'lg:grid-cols-6' : 'lg:grid-cols-5',
+            'grid grid-cols-1 gap-md sm:grid-cols-2',
+            // 목록 뷰는 상태 필터가 하나 더 붙어서 5칸 — 한 줄에 들어가도록 칸을 좁힌다.
+            view === 'list' ? 'lg:grid-cols-5 lg:gap-sm' : 'lg:grid-cols-4',
           )}
         >
-          {/* 업무명 검색 — 백엔드에 검색 파라미터가 없어 받아 온 목록에서 거른다 */}
-          <FilterField label="검색">
-            {(id) => (
-              <div className="relative">
-                <Search
-                  size={15}
-                  className="pointer-events-none absolute left-sm top-1/2 -translate-y-1/2 text-muted"
-                />
-                <Input
-                  type="search"
-                  className="pl-xl"
-                  placeholder="업무명"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  aria-labelledby={id}
-                />
-              </div>
-            )}
-          </FilterField>
-
           <FilterField label="회의">
             {(id) => (
               <Dropdown
@@ -339,7 +331,7 @@ export default function TaskBoardPage() {
       </SurfaceCard>
 
       {isLoading && (
-        <div className="grid min-h-0 flex-1 gap-md md:grid-cols-3">
+        <div className="grid gap-lg md:grid-cols-3">
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-[240px]" />
           ))}
@@ -371,7 +363,7 @@ export default function TaskBoardPage() {
       )}
 
       {!isLoading && !isError && filtered.length > 0 && view === 'board' && (
-        <div className="grid min-h-0 flex-1 gap-md md:grid-cols-3">
+        <div className="grid gap-lg md:grid-cols-3">
           {STATUS_ORDER.map((status) => (
             <BoardColumn
               key={status}
@@ -415,12 +407,12 @@ export default function TaskBoardPage() {
             <table className="w-full table-fixed border-collapse text-left">
               <thead>
                 <tr className="border-b border-hairline text-caption text-muted">
-                  <th className="px-md py-xs font-medium">업무명</th>
-                  <th className="hidden px-md py-xs font-medium sm:table-cell sm:w-[150px]">담당자</th>
-                  <th className="hidden px-md py-xs font-medium lg:table-cell lg:w-[164px]">마감일</th>
-                  <th className="hidden px-md py-xs font-medium xl:table-cell xl:w-[96px]">우선순위</th>
-                  <th className="w-[150px] px-md py-xs font-medium">상태</th>
-                  <th className="w-[44px] px-md py-xs font-medium">
+                  <th className="px-lg py-sm font-medium">업무명</th>
+                  <th className="hidden px-lg py-sm font-medium sm:table-cell sm:w-[150px]">담당자</th>
+                  <th className="hidden px-lg py-sm font-medium lg:table-cell lg:w-[164px]">마감일</th>
+                  <th className="hidden px-lg py-sm font-medium xl:table-cell xl:w-[96px]">우선순위</th>
+                  <th className="w-[150px] px-lg py-sm font-medium">상태</th>
+                  <th className="w-[44px] px-lg py-sm font-medium">
                     <span className="sr-only">메뉴</span>
                   </th>
                 </tr>
@@ -432,7 +424,7 @@ export default function TaskBoardPage() {
                     onClick={() => setPreviewId(item.id)}
                     className="group cursor-pointer border-b border-hairline-soft transition-colors last:border-0 hover:bg-surface-card"
                   >
-                    <td className="px-md py-xs">
+                    <td className="px-lg py-sm">
                       {/* 행 전체가 눌리지만, 키보드로도 열 수 있게 제목은 버튼으로 둔다 */}
                       <button
                         type="button"
@@ -446,9 +438,9 @@ export default function TaskBoardPage() {
                         {item.title}
                       </button>
                     </td>
-                    <td className="hidden px-md py-xs sm:table-cell">
+                    <td className="hidden px-lg py-sm sm:table-cell">
                       <span className="flex items-center gap-xs text-body-sm text-body">
-                        <span className="flex shrink-0 items-center">
+                        <span className="flex items-center">
                           {(assigneeIdsOf(item).length ? assigneeIdsOf(item) : [0]).slice(0, 3).map((id, i) => (
                             <span
                               key={id || 'none'}
@@ -461,20 +453,20 @@ export default function TaskBoardPage() {
                         <span className="truncate">{assigneeLabel(assigneeIdsOf(item), memberName)}</span>
                       </span>
                     </td>
-                    <td className="hidden px-md py-xs lg:table-cell">
+                    <td className="hidden px-lg py-sm lg:table-cell">
                       <span className="flex items-center gap-xs whitespace-nowrap text-body-sm text-body">
                         {formatDate(item.dueDate)}
                         <DueBadge dueDate={item.dueDate} status={item.status} />
                       </span>
                     </td>
-                    <td className="hidden px-md py-xs xl:table-cell">
+                    <td className="hidden px-lg py-sm xl:table-cell">
                       <PriorityBadge priority={item.priority} />
                     </td>
                     {/* 상태 변경은 행 클릭(패널 열기)과 겹치면 안 된다 */}
-                    <td className="px-md py-xs" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-lg py-sm" onClick={(e) => e.stopPropagation()}>
                       {/* 위 필터 바와 같은 드롭다운 — 상태 점까지 그대로 */}
                       <Dropdown
-                        className="w-full [&>button]:h-8"
+                        className="w-full"
                         ariaLabel={`${item.title} 상태`}
                         value={item.status}
                         onChange={(v) => void changeStatus(item, v as ActionItemStatus)}
@@ -491,7 +483,7 @@ export default function TaskBoardPage() {
                         }))}
                       />
                     </td>
-                    <td className="px-md py-xs">
+                    <td className="px-lg py-sm">
                       <div className="flex justify-end">
                         <RowMenu items={menuItems(item)} label={`${item.title} 메뉴`} />
                       </div>
@@ -544,7 +536,7 @@ export default function TaskBoardPage() {
         pending={createItem.isPending}
         members={members}
       />
-    </FitPage>
+    </>
   )
 }
 
@@ -610,19 +602,19 @@ function BoardColumn({
       }}
       className={cn(
         // cn 은 단순 join 이라 상충하는 유틸을 같이 주면 안 된다. 배경은 한쪽에서만 지정.
-        'flex flex-col rounded-lg p-xxs transition-[background-color,box-shadow] duration-150',
+        'flex flex-col rounded-lg p-sm transition-[background-color,box-shadow] duration-150',
         isDropTarget ? 'bg-surface-card ring-[1.5px] ring-inset ring-ink' : 'bg-surface-soft',
       )}
     >
-      <div className="flex items-center gap-xs px-xs pb-xxs pt-xxs">
-        <span className="h-2 w-2 shrink-0 rounded-pill" style={{ background: STATUS_DOT_COLOR[status] }} aria-hidden />
+      <div className="flex items-center gap-xs px-xs pb-md pt-xs">
+        <span className="h-2 w-2 rounded-pill" style={{ background: STATUS_DOT_COLOR[status] }} aria-hidden />
         <h2 className="text-title-sm text-ink">{STATUS_LABEL[status]}</h2>
         <span className="ml-auto rounded-pill bg-canvas px-xs py-[1px] text-caption tabular-nums text-muted">
           {items.length}
         </span>
       </div>
 
-      <ul key={pager.page} className="flex-1 animate-page-in space-y-xxs" {...pager.swipe}>
+      <ul key={pager.page} className="flex-1 animate-page-in space-y-sm" {...pager.swipe}>
         {pager.visible.map((item) => (
           <li key={item.id}>
             <TaskCard
@@ -640,7 +632,7 @@ function BoardColumn({
         {isDropTarget && (
           <li
             aria-hidden
-            className="h-[71px] animate-slot-in rounded-md border-[1.5px] border-dashed border-ink/40 bg-ink/[0.04]"
+            className="h-[86px] animate-slot-in rounded-md border-[1.5px] border-dashed border-ink/40 bg-ink/[0.04]"
           />
         )}
         {items.length === 0 && !isDropTarget && (
@@ -698,7 +690,7 @@ function TaskCard({
       onDragEnd={onDragEnd}
       className={cn(
         // 제목이 한 줄이라 높이가 같지만, 배지 유무로 어긋나지 않게 최소 높이를 고정한다.
-        'group relative flex h-[71px] flex-col justify-between cursor-grab rounded-md border bg-canvas px-sm py-xs shadow-soft',
+        'group relative flex h-[86px] flex-col justify-between cursor-grab rounded-md border bg-canvas px-md py-sm shadow-soft',
         'transition-[box-shadow,opacity,transform] hover:shadow-card active:cursor-grabbing',
         'focus-visible:outline-none focus-visible:ring-[1.5px] focus-visible:ring-ink',
         overdue ? 'border-error/40' : 'border-hairline',
@@ -723,7 +715,7 @@ function TaskCard({
         {/* 우선순위는 아이콘만, 제목 바로 왼쪽에 */}
         {item.priority && (
           <span
-            className="mt-[1px] shrink-0"
+            className="mt-[1px]"
             style={{ color: PRIORITY_ICON_COLOR[item.priority] }}
             title={PRIORITY_LABEL[item.priority]}
             aria-label={`우선순위 ${PRIORITY_LABEL[item.priority]}`}
@@ -738,7 +730,7 @@ function TaskCard({
       <div className="flex items-center justify-between gap-xs">
         <div className="flex min-w-0 items-center gap-xs">
           {/* 마감일과 그 오른쪽에 D-day */}
-          <span className="flex shrink-0 items-center gap-xxs text-caption font-normal text-muted">
+          <span className="flex items-center gap-xxs text-caption font-normal text-muted">
             <CalendarClock size={12} />
             {item.dueDate ? item.dueDate.slice(5) : '미정'}
           </span>
@@ -746,7 +738,7 @@ function TaskCard({
         </div>
         {/* 담당자 — 겹친 아바타 + 이름. 여러 명이면 "OOO 외 N명" */}
         <span className="flex min-w-0 shrink items-center gap-xs">
-          <span className="flex shrink-0 items-center">
+          <span className="flex items-center">
             {(assigneeIds.length ? assigneeIds : [0]).slice(0, 3).map((id, i) => (
               <span key={id || 'none'} className={cn('rounded-pill ring-2 ring-canvas', i > 0 && '-ml-[8px]')}>
                 <Avatar name={id ? memberName(id) : undefined} size={22} />

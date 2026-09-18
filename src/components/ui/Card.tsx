@@ -36,9 +36,9 @@ export function SectionTitle({
   iconColor?: string
 }) {
   return (
-    <div className={cn('mb-sm flex flex-wrap items-end justify-between gap-md', className)}>
+    <div className={cn('mb-lg flex flex-wrap items-end justify-between gap-md', className)}>
       <div>
-        <h2 className="flex items-center gap-xs text-title-md text-ink">
+        <h2 className="flex items-center gap-xs text-title-lg text-ink">
           {icon && (
             <span
               className="flex h-6 w-6 items-center justify-center rounded-sm"
@@ -50,7 +50,7 @@ export function SectionTitle({
           )}
           {title}
         </h2>
-        {description && <p className="mt-xxs text-caption font-normal text-muted">{description}</p>}
+        {description && <p className="mt-xxs text-body-sm text-muted">{description}</p>}
       </div>
       {action}
     </div>

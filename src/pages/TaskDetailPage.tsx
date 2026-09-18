@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { FitPage } from '@/components/layout/FitPage'
+import { PageWidth } from '@/components/layout/PageWidth'
 import { Avatar, DueBadge, PriorityBadge, StatusBadge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
@@ -137,7 +137,7 @@ export default function TaskDetailPage() {
   }
 
   return (
-    <FitPage>
+    <PageWidth size={1120}>
       <PageHeader
         title={item.title}
         breadcrumb={
@@ -159,9 +159,9 @@ export default function TaskDetailPage() {
         }
       />
 
-      <div className="grid min-h-0 flex-1 gap-md lg:grid-cols-12">
-        <div className="flex min-h-0 flex-col gap-md lg:col-span-8">
-          <SurfaceCard className="p-lg">
+      <div className="grid gap-lg lg:grid-cols-12">
+        <div className="space-y-lg lg:col-span-8">
+          <SurfaceCard className="p-xl">
             <h2 className="mb-md text-title-md text-ink">업무 내용</h2>
             {editing ? (
               <div className="space-y-md">
@@ -250,13 +250,13 @@ export default function TaskDetailPage() {
           </SurfaceCard>
 
           {item.priorityReason && (
-            <SurfaceCard className="p-lg">
-              <h2 className="mb-sm text-title-md text-ink">AI 추천 이유</h2>
+            <SurfaceCard className="p-xl">
+              <h2 className="mb-md text-title-md text-ink">AI 추천 이유</h2>
               <p className="rounded-md bg-surface-card px-md py-sm text-body-md text-body">{item.priorityReason}</p>
             </SurfaceCard>
           )}
 
-          <SurfaceCard className="p-lg">
+          <SurfaceCard className="p-xl">
             <h2 className="mb-md text-title-md text-ink">상태 변경</h2>
             <SegmentedControl<ActionItemStatus>
               value={item.status}
@@ -272,8 +272,8 @@ export default function TaskDetailPage() {
           </SurfaceCard>
         </div>
 
-        <div className="thin-scroll flex min-h-0 flex-col gap-md overflow-y-auto pr-xxs lg:col-span-4">
-          <SurfaceCard className="p-lg">
+        <div className="thin-scroll space-y-lg overflow-y-auto pr-xxs lg:col-span-4">
+          <SurfaceCard className="p-xl">
             <h2 className="mb-md text-title-md text-ink">업무 정보</h2>
             <dl className="space-y-md text-body-sm">
               <div className="flex items-center justify-between gap-md">
@@ -322,8 +322,8 @@ export default function TaskDetailPage() {
             </dl>
           </SurfaceCard>
 
-          <SurfaceCard className="p-lg">
-            <h2 className="mb-sm text-title-md text-ink">생성된 회의</h2>
+          <SurfaceCard className="p-xl">
+            <h2 className="mb-md text-title-md text-ink">생성된 회의</h2>
             {item.originMeetingId ? (
               originMeetingDeleted ? (
                 // 삭제된 회의는 열 수 없으니 링크를 걸지 않는다.
@@ -368,6 +368,6 @@ export default function TaskDetailPage() {
         onConfirm={onDelete}
         onClose={() => setConfirmDelete(false)}
       />
-    </FitPage>
+    </PageWidth>
   )
 }

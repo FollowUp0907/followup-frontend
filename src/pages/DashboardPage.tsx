@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom'
 import { FileText, Plus, RefreshCw } from 'lucide-react'
 import { errorMessage } from '@/api/client'
-import { FitPage } from '@/components/layout/FitPage'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar, DueBadge, MeetingStatusBadge, PriorityBadge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
@@ -37,12 +36,12 @@ function StatTile({
   dot?: string
 }) {
   return (
-    <Link to={to} className="block rounded-lg bg-surface-card px-sm py-xs transition-colors active:bg-surface-strong">
+    <Link to={to} className="block rounded-lg bg-surface-card p-xl transition-colors active:bg-surface-strong">
       <span className="flex items-center gap-xs text-caption font-normal text-muted">
-        {dot && <span className="h-2 w-2 shrink-0 rounded-pill" style={{ background: dot }} aria-hidden />}
+        {dot && <span className="h-2 w-2 rounded-pill" style={{ background: dot }} aria-hidden />}
         {label}
       </span>
-      <span className="mt-xxs block text-title-lg tabular-nums text-ink">{value}</span>
+      <span className="mt-sm block text-display-sm tabular-nums text-ink">{value}</span>
     </Link>
   )
 }
@@ -61,7 +60,7 @@ export default function DashboardPage() {
     return (
       <div className="space-y-lg">
         <Skeleton className="h-12 w-72" />
-        <div className="grid gap-md sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-lg sm:grid-cols-2 lg:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-[104px]" />
           ))}
@@ -117,10 +116,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <FitPage>
+    <>
       {header}
 
-      <div className="grid shrink-0 gap-md sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-lg sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="전체 업무" value={s.total} to={`${base}/tasks`} />
         <StatTile label="예정" value={s.todo} to={`${base}/tasks?status=TODO`} dot={STATUS_DOT_COLOR.TODO} />
         <StatTile
@@ -131,11 +130,9 @@ export default function DashboardPage() {
         />
         <StatTile label="완료" value={s.done} to={`${base}/tasks?status=DONE`} dot={STATUS_DOT_COLOR.DONE} />
       </div>
-
-      {/* 아래 두 줄이 남는 높이를 반씩 나눠 갖는다 — 페이지가 늘 화면에 딱 맞는다. */}
-      <div className="mt-md grid min-h-0 flex-1 gap-md lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      <div className="mt-lg grid gap-lg lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         {/* 마감 임박 업무 */}
-        <SurfaceCard className="flex min-h-0 flex-col p-md">
+        <SurfaceCard className="p-xl">
           <SectionTitle
             title="마감 임박 업무"
             description={
@@ -151,19 +148,19 @@ export default function DashboardPage() {
             }
           />
           {!data.dueSoonActionItems?.length ? (
-            <p className="rounded-md bg-surface-soft px-md py-md text-center text-body-sm text-muted">
+            <p className="rounded-md bg-surface-soft px-md py-lg text-center text-body-sm text-muted">
               마감이 임박한 업무가 없습니다.
             </p>
           ) : (
-            <ul className="thin-scroll min-h-[168px] flex-1 space-y-xxs overflow-y-auto pr-xxs">
+            <ul className="space-y-xxs">
               {data.dueSoonActionItems.map((item) => (
                 <li key={item.actionItemId}>
                   <Link
                     to={`${base}/tasks/${item.actionItemId}`}
-                    className="flex flex-wrap items-center justify-between gap-sm rounded-md px-xs py-xxs transition-colors hover:bg-surface-soft"
+                    className="flex flex-wrap items-center justify-between gap-sm rounded-md px-xs py-xs transition-colors hover:bg-surface-soft"
                   >
-                    <div className="flex min-w-0 items-center gap-xs">
-                      <Avatar name={assigneeNamesOf(item)[0]} size={26} />
+                    <div className="flex min-w-0 items-center gap-sm">
+                      <Avatar name={assigneeNamesOf(item)[0]} size={32} />
                       <div className="min-w-0">
                         <p className="truncate text-title-sm text-ink">{item.title}</p>
                         <p className="text-caption font-normal text-muted">
@@ -183,7 +180,7 @@ export default function DashboardPage() {
         </SurfaceCard>
 
         {/* 최근 회의 */}
-        <SurfaceCard className="flex min-h-0 flex-col p-md">
+        <SurfaceCard className="p-xl">
           <SectionTitle
             title="최근 회의"
             className="mb-md"
@@ -201,14 +198,14 @@ export default function DashboardPage() {
               </ButtonLink>
             </div>
           ) : (
-            <ul className="thin-scroll min-h-[208px] flex-1 space-y-xxs overflow-y-auto pr-xxs">
+            <ul className="space-y-xxs">
               {data.recentMeetings.map((m) => (
                 <li key={m.meetingId}>
                   <Link
                     to={`${base}/meetings/${m.meetingId}`}
-                    className="flex items-center justify-between gap-sm rounded-md px-xs py-xxs transition-colors hover:bg-surface-soft"
+                    className="flex items-center justify-between gap-sm rounded-md px-xs py-xs transition-colors hover:bg-surface-soft"
                   >
-                    <div className="flex min-w-0 items-center gap-xs">
+                    <div className="flex min-w-0 items-center gap-sm">
                       <FileText size={16} className="shrink-0 text-muted" />
                       <div className="min-w-0">
                         <p className="truncate text-title-sm text-ink">{m.title}</p>
@@ -225,8 +222,8 @@ export default function DashboardPage() {
       </div>
 
       {/* 아래 행 — 왼쪽: 바로 손봐야 할 지연 업무 / 오른쪽: 담당자별 진행률 */}
-      <div className="mt-md grid min-h-0 flex-1 gap-md lg:grid-cols-2">
-        <SurfaceCard className="flex min-h-0 flex-col p-md">
+      <div className="mt-lg grid gap-lg lg:grid-cols-2">
+        <SurfaceCard className="p-xl">
           <SectionTitle
             title="지연된 업무"
             description={s.overdue > 0 ? `기한이 지난 업무 ${s.overdue}건` : undefined}
@@ -241,21 +238,21 @@ export default function DashboardPage() {
             }
           />
           {!overdueItems.length ? (
-            <p className="rounded-md bg-surface-soft px-md py-md text-center text-body-sm text-muted">
+            <p className="rounded-md bg-surface-soft px-md py-lg text-center text-body-sm text-muted">
               지연된 업무가 없습니다.
             </p>
           ) : (
-            <ul className="thin-scroll min-h-[168px] flex-1 space-y-xxs overflow-y-auto pr-xxs">
+            <ul className="space-y-xxs">
               {overdueItems.map((item) => (
                 <li key={item.id}>
                   <Link
                     to={`${base}/tasks/${item.id}`}
-                    className="flex items-center justify-between gap-sm rounded-md px-xs py-xxs transition-colors hover:bg-surface-soft"
+                    className="flex items-center justify-between gap-sm rounded-md px-xs py-xs transition-colors hover:bg-surface-soft"
                   >
-                    <div className="flex min-w-0 items-center gap-xs">
+                    <div className="flex min-w-0 items-center gap-sm">
                       <Avatar
                         name={assigneeIdsOf(item)[0] ? memberName(assigneeIdsOf(item)[0]) : undefined}
-                        size={26}
+                        size={28}
                       />
                       <div className="min-w-0">
                         <p className="truncate text-title-sm text-ink" title={item.title}>
@@ -275,14 +272,14 @@ export default function DashboardPage() {
           )}
         </SurfaceCard>
 
-        <SurfaceCard className="flex min-h-0 flex-col p-md">
+        <SurfaceCard className="p-xl">
           <SectionTitle title="담당자별 진행률" className="mb-md" />
           {!data.memberProgress?.length ? (
-            <p className="rounded-md bg-surface-soft px-md py-md text-center text-body-sm text-muted">
+            <p className="rounded-md bg-surface-soft px-md py-lg text-center text-body-sm text-muted">
               구성원 정보가 없습니다.
             </p>
           ) : (
-            <ul className="thin-scroll min-h-[168px] flex-1 space-y-sm overflow-y-auto pr-xxs">
+            <ul className="space-y-sm">
               {data.memberProgress.slice(0, 5).map((m) => {
                 const rate = progressPercent(m.doneCount, m.totalCount, m.completionRate)
                 return (
@@ -291,15 +288,15 @@ export default function DashboardPage() {
                       to={`${base}/tasks?assigneeId=${m.userId}`}
                       className="flex items-center gap-sm rounded-md px-xs py-xs transition-colors hover:bg-surface-soft"
                     >
-                      <Avatar name={m.name} size={24} />
-                      <span className="w-[64px] shrink-0 truncate text-caption text-ink">{m.name}</span>
+                      <Avatar name={m.name} size={28} />
+                      <span className="w-[64px] truncate text-caption text-ink">{m.name}</span>
                       <span className="h-1.5 flex-1 overflow-hidden rounded-pill bg-surface-strong">
                         <span
                           className="block h-full rounded-pill bg-ink transition-[width]"
                           style={{ width: `${rate}%` }}
                         />
                       </span>
-                      <span className="w-[56px] shrink-0 text-right text-caption font-normal tabular-nums text-muted">
+                      <span className="w-[56px] text-right text-caption font-normal tabular-nums text-muted">
                         {rate}%
                       </span>
                     </Link>
@@ -310,6 +307,6 @@ export default function DashboardPage() {
           )}
         </SurfaceCard>
       </div>
-    </FitPage>
+    </>
   )
 }

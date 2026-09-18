@@ -35,7 +35,7 @@ export default function ProjectLayout() {
 
       {/* 본문만 안에서 스크롤한다. 바깥(페이지 전체) 스크롤바는 생기지 않는다. */}
       <main className="flex-1">
-        <div className="mx-auto w-full max-w-[1200px] p-lg">
+        <div className="mx-auto w-full max-w-[1200px] px-lg py-xxl">
           {isLoading && (
             <div className="space-y-lg">
               <Skeleton className="h-10 w-64" />

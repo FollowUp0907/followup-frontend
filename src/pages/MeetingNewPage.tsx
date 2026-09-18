@@ -6,7 +6,7 @@ import { z } from 'zod'
 import { Mic, Square, UserPlus } from 'lucide-react'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { FitPage } from '@/components/layout/FitPage'
+import { PageWidth } from '@/components/layout/PageWidth'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Modal } from '@/components/ui/Modal'
 import { Pager, usePager } from '@/components/ui/Pager'
@@ -138,7 +138,7 @@ export default function MeetingNewPage() {
   }
 
   return (
-    <FitPage>
+    <PageWidth size={1120}>
       <PageHeader
         title="새 회의"
         description="회의를 만들고 회의록을 작성하면 AI 분석으로 넘어갈 수 있습니다."
@@ -159,10 +159,10 @@ export default function MeetingNewPage() {
         }
       />
 
-      <form id="meeting-create-form" onSubmit={onSubmit} noValidate className="grid min-h-0 flex-1 gap-md lg:grid-cols-12">
-        <div className="flex min-h-0 flex-col gap-md lg:col-span-7">
-          <SurfaceCard className="shrink-0 p-lg">
-            <h2 className="mb-md text-title-md text-ink">기본 정보</h2>
+      <form id="meeting-create-form" onSubmit={onSubmit} noValidate className="grid gap-lg lg:grid-cols-12">
+        <div className="space-y-lg lg:col-span-7">
+          <SurfaceCard className="p-xl">
+            <h2 className="mb-lg text-title-md text-ink">기본 정보</h2>
             <div className="space-y-md">
               <FormRow label="회의 제목" htmlFor="title" error={errors.title?.message}>
                 <Input id="title" placeholder="9월 2주차 개발 회의" invalid={!!errors.title} {...register('title')} />
@@ -178,8 +178,8 @@ export default function MeetingNewPage() {
             </div>
           </SurfaceCard>
 
-          <SurfaceCard className="flex min-h-[220px] flex-1 flex-col p-lg">
-            <div className="mb-sm flex shrink-0 items-center justify-between gap-md">
+          <SurfaceCard className="p-xl">
+            <div className="mb-sm flex items-center justify-between gap-md">
               <h2 className="text-title-md text-ink">회의록</h2>
               {stt.supported && (
                 <Button
@@ -202,7 +202,7 @@ export default function MeetingNewPage() {
                 </Button>
               )}
             </div>
-            <p className="mb-sm shrink-0 text-body-sm text-muted">
+            <p className="mb-md text-body-sm text-muted">
               {stt.supported
                 ? '직접 적어도 되고, 받아쓰기를 켜고 말해도 됩니다. 지금 비워 두고 회의 후에 작성해도 됩니다.'
                 : '형식은 자유입니다. 지금 비워 두고 회의 후에 작성해도 됩니다.'}
@@ -210,7 +210,7 @@ export default function MeetingNewPage() {
             <Textarea
               id="content"
               ref={contentRef}
-              className="min-h-0 flex-1 resize-none"
+              className="resize-none"
               placeholder="회의에서 나온 이야기를 그대로 적어 주세요."
               value={shown}
               onChange={(e) => {
@@ -227,14 +227,14 @@ export default function MeetingNewPage() {
           </SurfaceCard>
         </div>
 
-        <div className="flex min-h-0 flex-col gap-md lg:col-span-5">
-          <SurfaceCard className="flex min-h-[150px] flex-1 flex-col p-lg">
+        <div className="space-y-lg lg:col-span-5">
+          <SurfaceCard className="p-xl">
             <div className="mb-sm flex items-center justify-between gap-md">
               <h2 className="text-title-md text-ink">참여자</h2>
               <span className="text-caption font-normal text-muted-soft">{participantIds.length}명 선택됨</span>
             </div>
-            <p className="mb-sm text-body-sm text-muted">이 회의에 참여한 구성원을 선택하세요.</p>
-            <div className="mb-xs flex shrink-0 flex-wrap items-center gap-xs">
+            <p className="mb-md text-body-sm text-muted">이 회의에 참여한 구성원을 선택하세요.</p>
+            <div className="mb-md flex flex-wrap items-center gap-xs">
               <Button
                 type="button"
                 variant="secondary"
@@ -262,7 +262,7 @@ export default function MeetingNewPage() {
             {members.length === 0 ? (
               <p className="text-body-sm text-muted">구성원 정보를 불러오는 중입니다.</p>
             ) : (
-              <ul className="thin-scroll min-h-0 flex-1 space-y-xxs overflow-y-auto pr-xxs">
+              <ul className="space-y-xxs">
                 {members.map((m) => (
                   <li key={m.userId}>
                     <label className="flex cursor-pointer items-center gap-sm rounded-md px-xs py-xs transition-colors hover:bg-surface-card">
@@ -284,9 +284,9 @@ export default function MeetingNewPage() {
             )}
           </SurfaceCard>
 
-          <SurfaceCard className="flex min-h-0 flex-1 flex-col p-lg">
-            <h2 className="mb-sm shrink-0 text-title-md text-ink">이전 회의 미완료 업무</h2>
-            <p className="mb-sm shrink-0 text-body-sm text-muted">
+          <SurfaceCard className="p-xl">
+            <h2 className="mb-md text-title-md text-ink">이전 회의 미완료 업무</h2>
+            <p className="mb-md text-body-sm text-muted">
               선택한 업무는 이 회의에 연결되어, 회의 상세에서 진행 상황을 함께 볼 수 있습니다.
             </p>
             {openItems.length === 0 ? (
@@ -295,7 +295,7 @@ export default function MeetingNewPage() {
               </p>
             ) : (
               <>
-                <div className="mb-xs flex shrink-0 items-center justify-between">
+                <div className="mb-sm flex items-center justify-between">
                   <span className="text-caption font-normal text-muted">{carryOverIds.length}건 선택됨</span>
                   <Button
                     type="button"
@@ -308,7 +308,7 @@ export default function MeetingNewPage() {
                     {carryOverIds.length === openItems.length ? '전체 해제' : '전체 선택'}
                   </Button>
                 </div>
-                <ul key={carryOverPage.page} className="thin-scroll min-h-0 flex-1 animate-page-in space-y-xxs overflow-y-auto pr-xxs" {...carryOverPage.swipe}>
+                <ul key={carryOverPage.page} className="animate-page-in space-y-xxs" {...carryOverPage.swipe}>
                   {carryOverPage.visible.map((item) => (
                     <li key={item.id}>
                       <label className="flex cursor-pointer items-start gap-sm rounded-md border border-hairline px-sm py-sm transition-colors hover:bg-surface-card">
@@ -388,6 +388,6 @@ export default function MeetingNewPage() {
         onConfirm={createNow}
         onClose={() => setConfirmOpen(false)}
       />
-    </FitPage>
+    </PageWidth>
   )
 }

@@ -298,7 +298,7 @@ export default function AnalysisPage() {
 
       <div className="space-y-lg">
         {/* 결정 사항 */}
-        <SurfaceCard className="p-lg">
+        <SurfaceCard className="p-xl">
           <div className="mb-md flex items-center justify-between gap-md">
             <h2 className="text-title-md text-ink">결정 사항</h2>
             {!isConfirmed && (
@@ -352,7 +352,7 @@ export default function AnalysisPage() {
         </SurfaceCard>
 
         {/* 후속 업무 */}
-        <SurfaceCard className="p-lg">
+        <SurfaceCard className="p-xl">
           <div className="mb-md flex items-center justify-between gap-md">
             <h2 className="text-title-md text-ink">후속 업무</h2>
             {!isConfirmed && (
@@ -398,7 +398,7 @@ export default function AnalysisPage() {
 
                     <FormRow label="설명" hint="선택">
                       <Textarea
-                        className="min-h-[72px]"
+                        className="min-h-[120px]"
                         value={row.description}
                         disabled={isConfirmed}
                         onChange={(e) => patchRow(row.key, { description: e.target.value })}

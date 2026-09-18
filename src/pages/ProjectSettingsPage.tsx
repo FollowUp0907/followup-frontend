@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { FitPage } from '@/components/layout/FitPage'
+import { PageWidth } from '@/components/layout/PageWidth'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { SurfaceCard } from '@/components/ui/Card'
@@ -65,20 +65,20 @@ export default function ProjectSettingsPage() {
   }
 
   return (
-    <FitPage>
+    <PageWidth size={1120}>
       <PageHeader title="프로젝트 설정" description="프로젝트 기본 정보와 구성원을 관리합니다." />
 
-      <div className="grid min-h-0 flex-1 gap-md lg:grid-cols-12">
-        <div className="flex min-h-0 flex-col gap-md lg:col-span-8">
-          <SurfaceCard className="shrink-0 p-lg">
-            <h2 className="mb-sm text-title-md text-ink">기본 정보</h2>
+      <div className="grid gap-lg lg:grid-cols-12">
+        <div className="space-y-lg lg:col-span-8">
+          <SurfaceCard className="p-xl">
+            <h2 className="mb-md text-title-md text-ink">기본 정보</h2>
             <div className="space-y-md">
               <FormRow label="프로젝트명">
                 <Input value={name} onChange={(e) => setName(e.target.value)} disabled={!isOwner} maxLength={150} />
               </FormRow>
               <FormRow label="설명" hint="선택">
                 <Textarea
-                  className="min-h-[72px]"
+                  className="min-h-[120px]"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
                   disabled={!isOwner}
@@ -86,26 +86,26 @@ export default function ProjectSettingsPage() {
               </FormRow>
             </div>
             {isOwner ? (
-              <div className="mt-md flex justify-end">
+              <div className="mt-lg flex justify-end">
                 <Button onClick={save} disabled={!dirty} loading={updateProject.isPending}>
                   저장
                 </Button>
               </div>
             ) : (
-              <p className="mt-md rounded-md bg-surface-soft px-md py-sm text-body-sm text-muted">
+              <p className="mt-lg rounded-md bg-surface-soft px-md py-sm text-body-sm text-muted">
                 프로젝트 정보는 OWNER만 수정할 수 있습니다.
               </p>
             )}
           </SurfaceCard>
 
-          <SurfaceCard className="flex min-h-[236px] flex-1 flex-col p-lg">
+          <SurfaceCard className="p-xl">
             <MembersSection />
           </SurfaceCard>
         </div>
 
-        <div className="flex min-h-0 flex-col gap-md lg:col-span-4">
-          <SurfaceCard className="p-lg">
-            <h2 className="mb-sm text-title-md text-ink">프로젝트 정보</h2>
+        <div className="space-y-lg lg:col-span-4">
+          <SurfaceCard className="p-xl">
+            <h2 className="mb-md text-title-md text-ink">프로젝트 정보</h2>
             <dl className="space-y-sm text-body-sm">
               <div className="flex justify-between gap-md">
                 <dt className="text-muted">프로젝트 ID</dt>
@@ -128,12 +128,12 @@ export default function ProjectSettingsPage() {
 
           {/* 프로젝트 정보 바로 아래에 붙인다. */}
           {isOwner && (
-            <SurfaceCard className="border-error/30 p-lg">
-              <h2 className="text-title-sm text-error">프로젝트 삭제</h2>
-              <p className="mt-xxs text-caption font-normal text-muted">
+            <SurfaceCard className="border-error/30 p-xl">
+              <h2 className="text-title-md text-error">프로젝트 삭제</h2>
+              <p className="mt-xs text-body-sm text-muted">
                 회의·회의록·결정 사항·후속 업무가 모두 삭제됩니다. 되돌릴 수 없습니다.
               </p>
-              <div className="mt-sm flex justify-end">
+              <div className="mt-lg flex justify-end">
                 <Button size="sm" variant="danger" onClick={() => setConfirmDelete(true)}>
                   프로젝트 삭제
                 </Button>
@@ -162,6 +162,6 @@ export default function ProjectSettingsPage() {
       >
         <Input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder={project.name} />
       </ConfirmDialog>
-    </FitPage>
+    </PageWidth>
   )
 }
