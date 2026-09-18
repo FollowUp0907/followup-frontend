@@ -34,7 +34,7 @@ export default function ProjectLayout() {
       </TopNav>
 
       {/* 본문만 안에서 스크롤한다. 바깥(페이지 전체) 스크롤바는 생기지 않는다. */}
-      <main className="page-scroll min-h-0 flex-1 overflow-y-auto">
+      <main className="page-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
         <div className="mx-auto w-full max-w-[1200px] px-lg pb-xxl pt-lg">
           {isLoading && (
             <div className="space-y-lg">

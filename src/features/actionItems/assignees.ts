@@ -18,7 +18,10 @@ export function assigneeIdsOf(item?: (ActionItemListResDto | ActionItemDetailRes
   // 목록 DTO 는 assigneeUserId, 상세 DTO 는 assignee.userId 로 준다.
   const one =
     'assigneeUserId' in item ? item.assigneeUserId : 'assignee' in item ? item.assignee?.userId : undefined
-  return one ? [one] : []
+  if (!one) return []
+  // 서버가 목록을 못 받는 동안 이 브라우저에 적어 둔 나머지 담당자를 뒤에 붙인다.
+  const rest = extras()[String((item as { id?: number }).id)] ?? []
+  return [...new Set([one, ...rest])]
 }
 
 /** "반서현" / "반서현 외 2명" / "미지정" */
@@ -36,6 +39,57 @@ export function assigneeLabel(ids: number[], nameOf: (userId?: number) => string
  * (한 번 확인하면 계속 기억한다)
  */
 let serverKnowsMany = false
+
+/**
+ * 서버가 담당자 목록을 받기 전까지, 두 번째 담당자부터는 **이 브라우저에** 적어 둔다.
+ *
+ * 백엔드에 자리가 없어서 다른 기기·다른 사람에게는 안 보인다. 그래도 화면에서는
+ * 여러 명으로 다룰 수 있어야 해서 임시로 둔다. 서버가 assigneeUserIds 를 주기
+ * 시작하면 이 저장소는 무시되고(위 래치), 그때 지우면 된다.
+ */
+const EXTRA_KEY = 'followup.actionItem.extraAssignees'
+
+function readExtras(): Record<string, number[]> {
+  try {
+    const raw = localStorage.getItem(EXTRA_KEY)
+    const parsed: unknown = raw ? JSON.parse(raw) : {}
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, number[]>) : {}
+  } catch {
+    return {}
+  }
+}
+
+const listeners = new Set<() => void>()
+let extrasCache: Record<string, number[]> | null = null
+
+function extras() {
+  if (!extrasCache) extrasCache = readExtras()
+  return extrasCache
+}
+
+/** 첫 번째 담당자는 서버가 갖고 있으니, 두 번째부터만 여기 남긴다. */
+export function rememberExtraAssignees(actionItemId: number, ids: number[]) {
+  const next = { ...extras() }
+  const rest = ids.slice(1)
+  if (rest.length) next[String(actionItemId)] = rest
+  else delete next[String(actionItemId)]
+  extrasCache = next
+  try {
+    localStorage.setItem(EXTRA_KEY, JSON.stringify(next))
+  } catch {
+    // 저장이 막혀도 이번 세션에는 반영된다.
+  }
+  listeners.forEach((fn) => fn())
+}
+
+export function subscribeExtraAssignees(fn: () => void) {
+  listeners.add(fn)
+  return () => listeners.delete(fn)
+}
+
+export function extraAssigneesVersion() {
+  return extras()
+}
 
 export function noteAssigneeSupport(item?: unknown) {
   if (item && Array.isArray((item as WithAssignees).assigneeUserIds)) serverKnowsMany = true

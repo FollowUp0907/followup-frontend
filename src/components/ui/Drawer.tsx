@@ -131,7 +131,7 @@ export function Drawer({
             그래도 넘치는 화면(아주 낮은 창, 수정 폼)에서는 내용이 닿지 않으면 안 되니
             넘칠 때만 스크롤을 허용하고, 그때는 아래 그라데이션으로 알린다.
           */}
-          <div ref={bodyRef} onScroll={measure} className="thin-scroll h-full overflow-y-auto px-lg py-lg">
+          <div ref={bodyRef} onScroll={measure} className="thin-scroll h-full overflow-y-auto overflow-x-hidden px-lg py-lg">
             {children}
           </div>
           {/* 아래에 더 있을 때만 — 내용이 끊긴 게 아니라 이어진다는 표시 */}

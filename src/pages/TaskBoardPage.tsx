@@ -8,7 +8,13 @@ import { Button } from '@/components/ui/Button'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
 import { Dropdown } from '@/components/ui/Dropdown'
 import { MultiDropdown } from '@/components/ui/MultiDropdown'
-import { assigneeIdsOf, assigneeLabel, assigneePatch, serverSupportsManyAssignees } from '@/features/actionItems/assignees'
+import {
+  assigneeIdsOf,
+  assigneeLabel,
+  assigneePatch,
+  rememberExtraAssignees,
+  serverSupportsManyAssignees,
+} from '@/features/actionItems/assignees'
 import { Pager, usePager } from '@/components/ui/Pager'
 import { RowMenu } from '@/components/ui/RowMenu'
 import type { RowMenuItem } from '@/components/ui/RowMenu'
@@ -509,9 +515,11 @@ export default function TaskBoardPage() {
       <CreateTaskModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        onSubmit={async (values) => {
+        onSubmit={async (values, allAssigneeIds) => {
           try {
-            await createItem.mutateAsync(values)
+            const created = await createItem.mutateAsync(values)
+            // 서버가 첫 번째만 받으므로 나머지는 이 브라우저에 남긴다.
+            if (created?.id && !serverSupportsManyAssignees()) rememberExtraAssignees(created.id, allAssigneeIds)
             toast.success('업무를 추가했습니다.')
             setCreateOpen(false)
           } catch (e) {
@@ -747,13 +755,17 @@ function CreateTaskModal({
 }: {
   open: boolean
   onClose: () => void
-  onSubmit: (values: {
-    title: string
-    description?: string
-    assigneeUserId?: number
-    dueDate?: string
-    priority?: ActionItemPriority
-  }) => void
+  onSubmit: (
+    values: {
+      title: string
+      description?: string
+      assigneeUserId?: number | null
+      assigneeUserIds?: number[]
+      dueDate?: string
+      priority?: ActionItemPriority
+    },
+    allAssigneeIds: number[],
+  ) => void
   pending: boolean
   members: Array<{ userId: number; name: string }>
 }) {
@@ -798,13 +810,16 @@ function CreateTaskModal({
             onClick={() => {
               setTouched(true)
               if (!title.trim()) return
-              onSubmit({
-                title: title.trim(),
-                description: description.trim() || undefined,
-                ...assigneePatch(assigneeIds),
-                dueDate: dueDate || undefined,
-                priority: priority || undefined,
-              })
+              onSubmit(
+                {
+                  title: title.trim(),
+                  description: description.trim() || undefined,
+                  ...assigneePatch(assigneeIds),
+                  dueDate: dueDate || undefined,
+                  priority: priority || undefined,
+                },
+                assigneeIds,
+              )
               reset()
             }}
           >

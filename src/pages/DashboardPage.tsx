@@ -125,7 +125,7 @@ export default function DashboardPage() {
         <StatTile label="완료" value={s.done} to={`${base}/tasks?status=DONE`} dot={STATUS_DOT_COLOR.DONE} />
       </div>
 
-      <div className="mt-lg grid gap-lg lg:grid-cols-[1.2fr_1fr]">
+      <div className="mt-lg grid gap-lg lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         {/* 마감 임박 업무 */}
         <SurfaceCard className="p-xl">
           <SectionTitle

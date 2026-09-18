@@ -16,6 +16,7 @@ import {
   assigneeIdsOf,
   assigneePatch,
   noteAssigneeSupport,
+  rememberExtraAssignees,
   serverSupportsManyAssignees,
 } from '@/features/actionItems/assignees'
 import { useProjectContext } from '@/features/projects/ProjectContext'
@@ -108,6 +109,8 @@ export function TaskDetailDrawer({
           priority: priority || undefined,
         },
       })
+      // 서버가 첫 번째만 받으므로 나머지는 이 브라우저에 남긴다.
+      if (!serverSupportsManyAssignees()) rememberExtraAssignees(item.id, assigneeIds)
       toast.success('업무를 수정했습니다.')
       setEditing(false)
     } catch (e) {
@@ -299,9 +302,17 @@ export function TaskDetailDrawer({
           <div className="flex min-h-[92px] flex-1 flex-col">
             <p className="mb-xs shrink-0 text-caption text-body">설명</p>
             {item.description ? (
-              <p className="thin-scroll min-h-[64px] flex-1 overflow-y-auto whitespace-pre-wrap rounded-md bg-surface-card p-md leading-relaxed text-body-sm text-body">
-                {item.description}
-              </p>
+              // 스크롤 없이 남는 높이만큼만 보여 준다. 넘치면 아래를 흐리게 덮고,
+              // 전문은 "전체 화면에서 열기" 로 본다.
+              <div className="relative min-h-[64px] flex-1 overflow-hidden rounded-md bg-surface-card">
+                <p className="h-full overflow-hidden whitespace-pre-wrap p-md leading-relaxed text-body-sm text-body">
+                  {item.description}
+                </p>
+                <div
+                  className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-surface-card to-transparent"
+                  aria-hidden
+                />
+              </div>
             ) : (
               <p className="shrink-0 rounded-md bg-surface-soft px-md py-md text-center text-body-sm text-muted">
                 설명이 없습니다.

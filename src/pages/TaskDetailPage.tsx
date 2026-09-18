@@ -13,7 +13,13 @@ import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { SegmentedControl } from '@/components/ui/NavPillGroup'
 import { useToast } from '@/components/ui/Toast'
 import { useActionItem, useDeleteActionItem, useUpdateActionItem } from '@/features/actionItems/queries'
-import { assigneeIdsOf, assigneePatch, noteAssigneeSupport, serverSupportsManyAssignees } from '@/features/actionItems/assignees'
+import {
+  assigneeIdsOf,
+  assigneePatch,
+  noteAssigneeSupport,
+  rememberExtraAssignees,
+  serverSupportsManyAssignees,
+} from '@/features/actionItems/assignees'
 import { useMeeting } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { PRIORITY_ICON_COLOR, PRIORITY_LABEL, PRIORITY_ORDER, STATUS_LABEL, STATUS_ORDER } from '@/lib/constants'
@@ -119,7 +125,9 @@ export default function TaskDetailPage() {
       if (kept.length) {
         toast.error(`${kept.join(' · ')}는 지금 비울 수 없어 이전 값이 유지됐습니다. 나머지는 저장했습니다.`)
       } else {
-        toast.success('업무를 수정했습니다.')
+        // 서버가 첫 번째만 받으므로 나머지는 이 브라우저에 남긴다.
+      if (!serverSupportsManyAssignees()) rememberExtraAssignees(item.id, assigneeIds)
+      toast.success('업무를 수정했습니다.')
       }
       setEditing(false)
     } catch (e) {

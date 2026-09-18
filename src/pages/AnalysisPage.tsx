@@ -401,7 +401,7 @@ export default function AnalysisPage() {
                       />
                     </FormRow>
 
-                    <div className="grid gap-md sm:grid-cols-[1fr_minmax(170px,1fr)_1fr]">
+                    <div className="grid gap-md sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)]">
                       <FormRow
                         label="담당자"
                         hint={!row.matched && row.aiAssigneeName ? `AI: ${row.aiAssigneeName}` : undefined}
