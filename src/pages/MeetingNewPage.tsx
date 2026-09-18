@@ -18,6 +18,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useActionItems } from '@/features/actionItems/queries'
 import { useCreateMeeting } from '@/features/meetings/queries'
 import { useAddMember } from '@/features/members/queries'
+import { MAX_MEMBERS, isMemberLimitReached, memberLimitMessage } from '@/features/members/limit'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { useAuth } from '@/features/auth/AuthContext'
 import { dayjs, fromDateTimeLocalInput } from '@/lib/date'
@@ -40,6 +41,8 @@ export default function MeetingNewPage() {
   const openItems = useMemo(() => (allItems ?? []).filter((i) => i.status !== 'DONE'), [allItems])
   // 목록이 길어지면 스크롤 대신 페이지로 넘긴다.
   const carryOverPage = usePager(openItems, 5)
+  // 참여자도 5명씩 끊어 보여 준다.
+  const memberPage = usePager(members, 5)
 
   const [participantIds, setParticipantIds] = useState<number[]>(() => (user ? [user.userId] : []))
   const [carryOverIds, setCarryOverIds] = useState<number[]>([])
@@ -90,6 +93,10 @@ export default function MeetingNewPage() {
     setList(list.includes(id) ? list.filter((v) => v !== id) : [...list, id])
 
   const invite = async () => {
+    if (isMemberLimitReached(members.length)) {
+      setInviteError(memberLimitMessage)
+      return
+    }
     const value = inviteEmail.trim()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
       setInviteError('이메일 형식이 올바르지 않습니다.')
@@ -254,7 +261,14 @@ export default function MeetingNewPage() {
                 전체 해제
               </Button>
               {isOwner && (
-                <Button type="button" variant="ghost" size="sm" className="ml-auto" onClick={() => setInviteOpen(true)}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto"
+                  disabled={isMemberLimitReached(members.length)}
+                  onClick={() => setInviteOpen(true)}
+                >
                   <UserPlus size={14} /> 구성원 추가
                 </Button>
               )}
@@ -262,8 +276,8 @@ export default function MeetingNewPage() {
             {members.length === 0 ? (
               <p className="text-body-sm text-muted">구성원 정보를 불러오는 중입니다.</p>
             ) : (
-              <ul className="space-y-xxs">
-                {members.map((m) => (
+              <ul key={memberPage.page} className="animate-page-in space-y-xxs">
+                {memberPage.visible.map((m) => (
                   <li key={m.userId}>
                     <label className="flex cursor-pointer items-center gap-sm rounded-md px-xs py-xs transition-colors hover:bg-surface-card">
                       <input
@@ -282,6 +296,7 @@ export default function MeetingNewPage() {
                 ))}
               </ul>
             )}
+            <Pager page={memberPage.page} pageCount={memberPage.pageCount} onChange={memberPage.setPage} />
           </SurfaceCard>
 
           <SurfaceCard className="p-xl">
@@ -344,14 +359,23 @@ export default function MeetingNewPage() {
           setInviteError(null)
         }}
         title="구성원 추가"
-        description="이미 FollowUp에 가입한 계정의 이메일을 입력해 주세요. 추가하면 이 회의 참여자로도 바로 선택됩니다."
+        description={
+          isMemberLimitReached(members.length)
+            ? memberLimitMessage
+            : `이미 FollowUp에 가입한 계정의 이메일을 입력해 주세요. 추가하면 이 회의 참여자로도 바로 선택됩니다. (${members.length}/${MAX_MEMBERS}명)`
+        }
         width="sm"
         footer={
           <>
             <Button type="button" variant="secondary" onClick={() => setInviteOpen(false)}>
               취소
             </Button>
-            <Button type="button" onClick={invite} loading={addMember.isPending}>
+            <Button
+              type="button"
+              onClick={invite}
+              loading={addMember.isPending}
+              disabled={isMemberLimitReached(members.length)}
+            >
               추가
             </Button>
           </>

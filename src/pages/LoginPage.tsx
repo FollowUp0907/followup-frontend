@@ -25,7 +25,6 @@ export default function LoginPage() {
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: { email: '', password: '' } })
 
@@ -40,11 +39,6 @@ export default function LoginPage() {
       setServerError(errorMessage(e))
     }
   })
-
-  const fillDemo = () => {
-    setValue('email', 'test@followup.com')
-    setValue('password', '1111qqqq!')
-  }
 
   return (
     <AuthLayout
@@ -89,9 +83,6 @@ export default function LoginPage() {
 
         <Button type="submit" size="lg" fullWidth loading={isSubmitting}>
           로그인
-        </Button>
-        <Button type="button" variant="secondary" size="md" fullWidth onClick={fillDemo}>
-          테스트 계정 채우기
         </Button>
       </form>
 

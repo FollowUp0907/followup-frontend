@@ -11,6 +11,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useAuth } from '@/features/auth/AuthContext'
 import { AvatarColorPicker } from '@/features/members/AvatarColorPicker'
 import { useAddMember, useRemoveMember } from '@/features/members/queries'
+import { MAX_MEMBERS, isMemberLimitReached, memberLimitMessage } from '@/features/members/limit'
 import { useActionItems } from '@/features/actionItems/queries'
 import { assigneeIdsOf } from '@/features/actionItems/assignees'
 import { useProjectContext } from '@/features/projects/ProjectContext'
@@ -46,7 +47,13 @@ export function MembersSection() {
     }
   }
 
+  const limitReached = isMemberLimitReached(members.length)
+
   const invite = async () => {
+    if (limitReached) {
+      setEmailError(memberLimitMessage)
+      return
+    }
     const value = email.trim()
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
       setEmailError('이메일 형식이 올바르지 않습니다.')
@@ -84,7 +91,14 @@ export function MembersSection() {
           </p>
         </div>
         {isOwner ? (
-          <Button onClick={() => setInviteOpen(true)}>구성원 추가</Button>
+          <span className="flex items-center gap-sm">
+            <span className="text-caption font-normal text-muted-soft">
+              {members.length}/{MAX_MEMBERS}명
+            </span>
+            <Button onClick={() => setInviteOpen(true)} disabled={limitReached}>
+              구성원 추가
+            </Button>
+          </span>
         ) : (
           <Badge tone="neutral">MEMBER 권한</Badge>
         )}
@@ -143,14 +157,18 @@ export function MembersSection() {
           setEmailError(null)
         }}
         title="구성원 추가"
-        description="이미 FollowUp에 가입한 계정의 이메일을 입력해 주세요."
+        description={
+          limitReached
+            ? memberLimitMessage
+            : `이미 FollowUp에 가입한 계정의 이메일을 입력해 주세요. (${members.length}/${MAX_MEMBERS}명)`
+        }
         width="sm"
         footer={
           <>
             <Button variant="secondary" onClick={() => setInviteOpen(false)}>
               취소
             </Button>
-            <Button onClick={invite} loading={addMember.isPending}>
+            <Button onClick={invite} loading={addMember.isPending} disabled={limitReached}>
               추가
             </Button>
           </>

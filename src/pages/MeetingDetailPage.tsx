@@ -167,6 +167,7 @@ export default function MeetingDetailPage() {
                 <FormRow label="회의록" htmlFor="edit-content">
                   <Textarea
                     id="edit-content"
+                    autoGrow
                     className="min-h-[320px]"
                     value={content}
                     onChange={(e) => setContent(e.target.value)}
@@ -175,7 +176,7 @@ export default function MeetingDetailPage() {
                 </FormRow>
               </div>
             ) : hasContent ? (
-              <p className="thin-scroll overflow-y-auto whitespace-pre-wrap rounded-lg bg-surface-card p-md text-body-md leading-relaxed text-body">
+              <p className="whitespace-pre-wrap rounded-lg bg-surface-card p-lg text-body-md leading-relaxed text-body">
                 {meeting.content}
               </p>
             ) : (

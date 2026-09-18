@@ -1,4 +1,4 @@
-import { forwardRef } from 'react'
+import { forwardRef, useCallback, useLayoutEffect, useRef } from 'react'
 import type { InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes, ReactNode } from 'react'
 import { cn } from '@/lib/cn'
 
@@ -54,16 +54,48 @@ export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputE
   },
 )
 
+/**
+ * autoGrow 를 켜면 입력한 만큼 칸이 늘어난다.
+ *
+ * 높이를 재기 전에 auto 로 한 번 되돌려야 한다. 안 그러면 scrollHeight 가
+ * 지금 높이에 갇혀서 글을 지워도 줄어들지 않는다.
+ * value 가 밖에서 바뀌는 경우(받아쓰기 등)도 있어 레이아웃 시점마다 다시 잰다.
+ */
 export const Textarea = forwardRef<
   HTMLTextAreaElement,
-  TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean }
->(function Textarea({ className, invalid, ...rest }, ref) {
+  TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean; autoGrow?: boolean }
+>(function Textarea({ className, invalid, autoGrow, onChange, value, ...rest }, ref) {
+  const innerRef = useRef<HTMLTextAreaElement | null>(null)
+
+  const fit = useCallback(() => {
+    const el = innerRef.current
+    if (!el || !autoGrow) return
+    el.style.height = 'auto'
+    el.style.height = `${el.scrollHeight}px`
+  }, [autoGrow])
+
+  useLayoutEffect(fit, [fit, value])
+
   return (
     <textarea
-      ref={ref}
+      ref={(el) => {
+        innerRef.current = el
+        if (typeof ref === 'function') ref(el)
+        else if (ref) ref.current = el
+      }}
+      value={value}
+      onChange={(e) => {
+        onChange?.(e)
+        fit()
+      }}
       className={cn(
         CONTROL,
-        'min-h-[160px] resize-y px-sm py-sm leading-relaxed',
+        // cn 은 단순 join 이라 같은 속성을 두 번 주면 어느 쪽이 이길지 알 수 없다.
+        // 호출부가 min-h 를 정했으면 기본값을 아예 넣지 않는다.
+        !className?.includes('min-h-') && 'min-h-[160px]',
+        'px-sm py-sm leading-relaxed',
+        // 자동으로 늘어나면 사용자가 크기를 끌 이유가 없다. 스크롤바도 안 생기게.
+        autoGrow ? 'resize-none overflow-hidden' : 'resize-y',
         invalid && 'border-error',
         className,
       )}

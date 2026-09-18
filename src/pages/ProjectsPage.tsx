@@ -9,6 +9,7 @@ import { TopNav } from '@/components/layout/TopNav'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/Button'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
+import { Pager, usePager } from '@/components/ui/Pager'
 import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
@@ -23,6 +24,8 @@ type FormValues = z.infer<typeof schema>
 
 export default function ProjectsPage() {
   const { data: projects, isLoading, isError, error, refetch } = useProjects()
+  // 4개까지는 그냥 보이고, 그 이상이면 인디케이터로 넘긴다.
+  const page = usePager(projects ?? [], 4)
   const createProject = useCreateProject()
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
@@ -98,8 +101,9 @@ export default function ProjectsPage() {
           )}
 
           {!!projects?.length && (
-            <ul className="flex flex-col gap-sm">
-              {projects.map((p) => (
+            <>
+              <ul key={page.page} className="flex animate-page-in flex-col gap-sm">
+                {page.visible.map((p) => (
                 <SurfaceCard as="li" key={p.id} className="shadow-none transition-shadow hover:shadow-card">
                   <Link to={`/projects/${p.id}`} className="flex items-center justify-between gap-md p-xl">
                     <div className="min-w-0">
@@ -114,8 +118,10 @@ export default function ProjectsPage() {
                     <ChevronRight size={18} className="shrink-0 text-muted" />
                   </Link>
                 </SurfaceCard>
-              ))}
-            </ul>
+                ))}
+              </ul>
+              <Pager page={page.page} pageCount={page.pageCount} onChange={page.setPage} />
+            </>
           )}
 
           <Modal
