@@ -246,9 +246,11 @@ function DetailView({
         <Button size="sm" fullWidth className="min-w-0" onClick={onOpenTask}>
           업무 보기
         </Button>
-        <Button size="sm" variant="secondary" className="shrink-0 whitespace-nowrap" onClick={onRemove}>
-          삭제
-        </Button>
+        {notification.kind !== 'OVERDUE' && (
+          <Button size="sm" variant="secondary" className="shrink-0 whitespace-nowrap" onClick={onRemove}>
+            삭제
+          </Button>
+        )}
       </div>
     </div>
   )
@@ -269,13 +271,16 @@ function NotificationRow({
   onRemove: () => void
 }) {
   const Icon = KIND_ICON[n.kind]
+  // 지연은 상시 알림이라 지울 수 없다. 업무를 끝내거나 마감을 옮겨야 사라진다.
+  const removable = n.kind !== 'OVERDUE'
   return (
     <li className="group relative">
       <button
         type="button"
         onClick={onOpen}
         className={cn(
-          'flex w-full items-start gap-xs rounded-sm py-xs pl-sm pr-xl text-left transition-colors hover:bg-surface-card',
+          'flex w-full items-start gap-xs rounded-sm py-xs pl-sm text-left transition-colors hover:bg-surface-card',
+          removable ? 'pr-xl' : 'pr-sm',
           !n.read && 'bg-canvas',
         )}
       >
@@ -313,14 +318,16 @@ function NotificationRow({
           </span>
         </span>
       </button>
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label={`${n.taskTitle} 알림 삭제`}
-        className="absolute right-xxs top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-sm text-muted-soft opacity-0 transition-opacity hover:bg-surface-strong hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
-      >
-        <X size={13} />
-      </button>
+      {removable && (
+        <button
+          type="button"
+          onClick={onRemove}
+          aria-label={`${n.taskTitle} 알림 삭제`}
+          className="absolute right-xxs top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-sm text-muted-soft opacity-0 transition-opacity hover:bg-surface-strong hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
+        >
+          <X size={13} />
+        </button>
+      )}
     </li>
   )
 }

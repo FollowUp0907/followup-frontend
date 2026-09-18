@@ -191,8 +191,15 @@ export function useNotifications(userId?: number, { active = true }: { active?: 
     staleTime: 60_000,
   })
 
+  // 같은 프로젝트가 두 번 오면 업무도 두 번 세어져서 알림이 겹친다. 먼저 접어 둔다.
+  const uniqueProjects = useMemo(() => {
+    const seen = new Map<number, NonNullable<typeof projects>[number]>()
+    for (const p of projects ?? []) if (!seen.has(p.id)) seen.set(p.id, p)
+    return [...seen.values()]
+  }, [projects])
+
   const itemQueries = useQueries({
-    queries: (deriveLocally ? (projects ?? []) : []).map((p) => ({
+    queries: (deriveLocally ? uniqueProjects : []).map((p) => ({
       queryKey: qk.actionItems(p.id),
       queryFn: () => actionItemApi.listActionItems(p.id),
       refetchInterval: TASK_POLL_MS,
@@ -252,11 +259,27 @@ export function useNotifications(userId?: number, { active = true }: { active?: 
     [server],
   )
 
-  // 마감 예고·지연을 먼저, 그다음 서버 알림을 최신순으로
-  const all = useMemo(
-    () => [...fromMyTasks, ...fromServer.sort((a, b) => b.at.localeCompare(a.at))],
-    [fromMyTasks, fromServer],
-  )
+  /**
+   * 마감 예고·지연을 먼저, 그다음 서버 알림을 최신순으로.
+   *
+   * 같은 업무에 같은 종류가 두 번 뜨지 않게 (종류 + 업무) 로 한 번 접는다.
+   * 겹치는 경로가 둘 있다.
+   *   - 서버가 마감/지연을 내려 주기 시작하는 전환 구간: 프론트 계산분과 겹친다
+   *   - 서버가 같은 사건을 두 행으로 만든 경우 (재시도·중복 저장 등)
+   * 겹치면 **서버 것을 남긴다.** 읽음 상태와 삭제할 id 를 갖고 있어서
+   * 사용자가 할 수 있는 일이 더 많다.
+   */
+  const all = useMemo(() => {
+    const merged = [...fromMyTasks, ...fromServer.sort((a, b) => b.at.localeCompare(a.at))]
+    const byKind = new Map<string, AppNotification>()
+    for (const n of merged) {
+      const id = `${n.kind}:${n.actionItemId}`
+      const seen = byKind.get(id)
+      if (!seen || (!seen.serverId && n.serverId)) byKind.set(id, n)
+    }
+    // Map 은 먼저 넣은 순서를 지키므로 위에서 정한 정렬이 그대로 남는다.
+    return [...byKind.values()]
+  }, [fromMyTasks, fromServer])
 
   const invalidate = () => void qc.invalidateQueries({ queryKey: qk.notifications })
   const readMutation = useMutation({
@@ -289,10 +312,14 @@ export function useNotifications(userId?: number, { active = true }: { active?: 
     if (all.some((n) => n.serverId && !n.read)) await readAllMutation.mutateAsync()
   }, [all, readAllMutation])
 
-  /** 서버 알림은 서버에서 지우고, 프론트가 만든 것은 이 브라우저에서 숨긴다. */
+  /**
+   * 서버 알림은 서버에서 지우고, 프론트가 만든 것은 이 브라우저에서 숨긴다.
+   * 지연은 상시 알림이라 지우지 않는다 — 업무를 끝내야 사라진다. (UI 에도 삭제가 없다)
+   */
   const remove = useCallback(
     (n: AppNotification) => {
       if (n.serverId) return deleteMutation.mutateAsync(n.serverId)
+      if (n.kind === 'OVERDUE') return Promise.resolve()
       setHidden((prev) => (prev.includes(n.key) ? prev : saveKeys(LOCAL_HIDDEN_KEY, [...prev, n.key])))
       return Promise.resolve()
     },
