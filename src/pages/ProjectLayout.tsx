@@ -27,15 +27,15 @@ export default function ProjectLayout() {
   ]
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-canvas">
+    <div className="flex min-h-screen flex-col bg-canvas">
       {/* 시안: 64px 한 줄에 심볼 · 구분선 · 탭 · 아바타 */}
       <TopNav variant="app">
         <NavPillGroup items={items} />
       </TopNav>
 
       {/* 본문만 안에서 스크롤한다. 바깥(페이지 전체) 스크롤바는 생기지 않는다. */}
-      <main className="page-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="mx-auto w-full max-w-[1200px] px-lg pb-xxl pt-lg">
+      <main className="flex-1">
+        <div className="mx-auto w-full max-w-[1200px] px-lg py-xxl">
           {isLoading && (
             <div className="space-y-lg">
               <Skeleton className="h-10 w-64" />

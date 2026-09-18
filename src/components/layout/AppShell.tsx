@@ -7,10 +7,10 @@ import { TopNav } from './TopNav'
  */
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-canvas">
+    <div className="flex min-h-screen flex-col bg-canvas">
       <TopNav />
-      <main className="page-scroll min-h-0 flex-1 overflow-y-auto overflow-x-hidden">
-        <div className="container-content pb-xxl pt-lg">{children}</div>
+      <main className="flex-1">
+        <div className="container-content py-xxl">{children}</div>
       </main>
     </div>
   )
