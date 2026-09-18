@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as actionItemApi from '@/api/actionItemApi'
 import * as notificationApi from '@/api/notificationApi'
@@ -89,7 +89,13 @@ function saveKeys(storageKey: string, keys: string[]) {
   return kept
 }
 
-const POLL_MS = 30_000
+/**
+ * 서버가 밀어 주지 않아서 주기적으로 물어본다.
+ * 여기에 더해 (1) 창으로 돌아올 때 (2) 탭이 다시 보일 때 (3) 종을 열 때
+ * 즉시 한 번 더 받아 온다. 그래서 새로고침 없이도 바로 반영된다.
+ * 진짜 즉시 전달은 SSE 가 필요하다 — NOTIFICATIONS.md 3부 ② 참고.
+ */
+const POLL_MS = 15_000
 
 /**
  * 백엔드가 type 을 단계적으로 올리는 중이라 없을 수도 있고, 예전 REMINDER 행이
@@ -103,9 +109,36 @@ function kindOf(n: NotificationResDto): NotificationKind {
   return (SERVER_KINDS as readonly string[]).includes(t ?? '') ? (t as NotificationKind) : 'UNKNOWN'
 }
 
-export function useNotifications(userId?: number) {
+export function useNotifications(userId?: number, { active = true }: { active?: boolean } = {}) {
   const qc = useQueryClient()
   const enabled = !!userId
+
+  /** 알림에 영향을 주는 질의를 전부 다시 받아 온다. */
+  const refresh = useCallback(() => {
+    void qc.invalidateQueries({ queryKey: qk.notifications })
+    void qc.invalidateQueries({ queryKey: ['project'], predicate: (q) => q.queryKey[2] === 'action-items' })
+  }, [qc])
+
+  // 탭이 다시 보이거나 네트워크가 돌아오면 기다리지 않고 바로 확인한다.
+  useEffect(() => {
+    if (!enabled) return
+    const onWake = () => {
+      if (document.visibilityState === 'visible') refresh()
+    }
+    document.addEventListener('visibilitychange', onWake)
+    window.addEventListener('focus', onWake)
+    window.addEventListener('online', onWake)
+    return () => {
+      document.removeEventListener('visibilitychange', onWake)
+      window.removeEventListener('focus', onWake)
+      window.removeEventListener('online', onWake)
+    }
+  }, [enabled, refresh])
+
+  // 종을 열면 그 순간 최신으로 맞춘다.
+  useEffect(() => {
+    if (enabled && active) refresh()
+  }, [enabled, active, refresh])
 
   // 1) 서버가 만들어 준 알림
   const { data: server } = useQuery({
@@ -114,6 +147,7 @@ export function useNotifications(userId?: number) {
     enabled,
     refetchInterval: POLL_MS,
     refetchOnWindowFocus: true,
+    staleTime: 0,
   })
 
   // 2) 내가 담당인 지연 업무 — 프론트에서 계산한다
@@ -130,6 +164,9 @@ export function useNotifications(userId?: number) {
       queryFn: () => actionItemApi.listActionItems(p.id),
       enabled,
       refetchInterval: POLL_MS,
+      // 창으로 돌아왔을 때 기다리지 않고 바로 맞춘다.
+      refetchOnWindowFocus: true,
+      staleTime: 0,
     })),
   })
 
@@ -238,6 +275,7 @@ export function useNotifications(userId?: number) {
     markRead,
     markAllRead,
     remove,
+    refresh,
   }
 }
 

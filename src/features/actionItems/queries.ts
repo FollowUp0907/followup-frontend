@@ -24,6 +24,8 @@ export function useActionItem(actionItemId: number) {
 function invalidateProjectScope(qc: ReturnType<typeof useQueryClient>, projectId: number) {
   qc.invalidateQueries({ queryKey: ['project', projectId, 'action-items'] })
   qc.invalidateQueries({ queryKey: qk.dashboard(projectId) })
+  // 마감·지연 알림은 업무에서 계산하므로 같이 다시 받아야 종이 바로 바뀐다.
+  qc.invalidateQueries({ queryKey: qk.notifications })
 }
 
 export function useCreateActionItem(projectId: number) {

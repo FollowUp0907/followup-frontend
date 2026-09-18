@@ -6,11 +6,13 @@ import { PageWidth } from '@/components/layout/PageWidth'
 import { Avatar, Badge } from '@/components/ui/Badge'
 import { Button, ButtonLink, Spinner } from '@/components/ui/Button'
 import { EmptyState, SurfaceCard } from '@/components/ui/Card'
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { Dropdown } from '@/components/ui/Dropdown'
 import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { useToast } from '@/components/ui/Toast'
 import { useAnalysis, useConfirmAnalysis, useRequestAnalysis } from '@/features/analysis/queries'
+import { ConfirmAnalysisDialog } from '@/features/analysis/ConfirmAnalysisDialog'
+import { useActionItems, useDeleteActionItem } from '@/features/actionItems/queries'
+import { useActionItemOrigins } from '@/features/actionItems/useActionItemOrigins'
 import { useMeeting } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { PRIORITY_ICON_COLOR, PRIORITY_LABEL, PRIORITY_ORDER } from '@/lib/constants'
@@ -35,7 +37,7 @@ let rowSeq = 0
 const nextKey = () => `row-${(rowSeq += 1)}`
 
 export default function AnalysisPage() {
-  const { projectId, members, matchMemberByName } = useProjectContext()
+  const { projectId, members, memberName, matchMemberByName } = useProjectContext()
   const params = useParams()
   const meetingId = Number(params.meetingId)
   const navigate = useNavigate()
@@ -47,11 +49,21 @@ export default function AnalysisPage() {
   const [requestError, setRequestError] = useState<string | null>(null)
   const { data: analysis } = useAnalysis(analysisId)
   const confirmAnalysis = useConfirmAnalysis(projectId, meetingId)
+  const deleteActionItem = useDeleteActionItem(projectId)
 
   const [decisions, setDecisions] = useState<Array<{ key: string; content: string }>>([])
   const [rows, setRows] = useState<DraftRow[]>([])
   const [hydratedFor, setHydratedFor] = useState<number | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
+
+  // 확정 직전에만 켠다. 항목마다 상세를 부르는 비싼 조회라서.
+  const { data: allItems } = useActionItems(projectId)
+  const { originByItemId, isLoading: originsLoading } = useActionItemOrigins(projectId, confirmOpen)
+  // 이 회의에서 이미 만들어진 업무 — 재분석하면 이것들과 겹치는 업무가 또 생긴다.
+  const existingFromMeeting = useMemo(
+    () => (allItems ?? []).filter((i) => originByItemId.get(i.id) === meetingId),
+    [allItems, originByItemId, meetingId],
+  )
   const requestedRef = useRef(false)
 
   const base = `/projects/${projectId}`
@@ -129,9 +141,13 @@ export default function AnalysisPage() {
       },
     ])
 
-  const onConfirm = async () => {
+  const onConfirm = async (removeExistingIds: number[], keepNewKeys: string[]) => {
     if (!analysis) return
     try {
+      // 겹친다고 표시한 기존 업무를 먼저 치운다. 확정이 실패해도 여기까지는 사용자가 원한 것이다.
+      for (const id of removeExistingIds) {
+        await deleteActionItem.mutateAsync(id)
+      }
       await confirmAnalysis.mutateAsync({
         analysisId: analysis.id,
         data: {
@@ -140,7 +156,7 @@ export default function AnalysisPage() {
             .filter(Boolean)
             .map((content) => ({ content })),
           actionItems: rows
-            .filter((r) => r.title.trim())
+            .filter((r) => r.title.trim() && keepNewKeys.includes(r.key))
             .map((r) => ({
               title: r.title.trim(),
               description: r.description.trim() || undefined,
@@ -151,7 +167,11 @@ export default function AnalysisPage() {
             })),
         },
       })
-      toast.success('확정했습니다. 후속 업무가 생성되었습니다.')
+      toast.success(
+        removeExistingIds.length
+          ? `기존 업무 ${removeExistingIds.length}건을 지우고 후속 업무를 만들었습니다.`
+          : '확정했습니다. 후속 업무가 생성되었습니다.',
+      )
       setConfirmOpen(false)
       navigate(`${base}/tasks`)
     } catch (e) {
@@ -490,15 +510,23 @@ export default function AnalysisPage() {
         </div>
       )}
 
-      <ConfirmDialog
+      <ConfirmAnalysisDialog
         open={confirmOpen}
-        title="이 내용으로 확정할까요?"
-        description="확정하면 후속 업무가 생성되고 회의 상태가 분석 완료로 바뀝니다."
-        confirmLabel="확정"
-        destructive={false}
-        loading={confirmAnalysis.isPending}
-        onConfirm={onConfirm}
         onClose={() => setConfirmOpen(false)}
+        existing={existingFromMeeting}
+        existingLoading={originsLoading}
+        newTasks={rows
+          .filter((r) => r.title.trim())
+          .map((r) => ({
+            key: r.key,
+            title: r.title.trim(),
+            assigneeUserId: r.assigneeUserId,
+            dueDate: r.dueDate,
+            priority: r.priority,
+          }))}
+        memberName={memberName}
+        pending={confirmAnalysis.isPending || deleteActionItem.isPending}
+        onConfirm={onConfirm}
       />
     </PageWidth>
   )

@@ -50,11 +50,11 @@ function DDay({ dueDate, kind }: { dueDate?: string; kind: NotificationKind }) {
 export function NotificationBell() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { all, unreadCount, markRead, markAllRead, remove } = useNotifications(user?.userId)
-
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<AppNotification | null>(null)
   const ref = useRef<HTMLDivElement>(null)
+
+  const { all, unreadCount, markRead, markAllRead, remove } = useNotifications(user?.userId, { active: open })
 
   useEffect(() => {
     if (!open) return

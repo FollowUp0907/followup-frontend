@@ -3,11 +3,12 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
-import { Mic, Square } from 'lucide-react'
+import { Mic, Square, UserPlus } from 'lucide-react'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageWidth } from '@/components/layout/PageWidth'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { Modal } from '@/components/ui/Modal'
 import { Pager, usePager } from '@/components/ui/Pager'
 import { Avatar, DueBadge, PriorityBadge, StatusBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -16,6 +17,7 @@ import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { useToast } from '@/components/ui/Toast'
 import { useActionItems } from '@/features/actionItems/queries'
 import { useCreateMeeting } from '@/features/meetings/queries'
+import { useAddMember } from '@/features/members/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { useAuth } from '@/features/auth/AuthContext'
 import { dayjs, fromDateTimeLocalInput } from '@/lib/date'
@@ -28,7 +30,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>
 
 export default function MeetingNewPage() {
-  const { projectId, members } = useProjectContext()
+  const { projectId, members, isOwner } = useProjectContext()
   const { user } = useAuth()
   const navigate = useNavigate()
   const toast = useToast()
@@ -42,6 +44,11 @@ export default function MeetingNewPage() {
   const [participantIds, setParticipantIds] = useState<number[]>(() => (user ? [user.userId] : []))
   const [carryOverIds, setCarryOverIds] = useState<number[]>([])
   const [confirmOpen, setConfirmOpen] = useState(false)
+  // 회의를 만들다가 빠진 사람이 보이면 여기서 바로 추가할 수 있게 한다.
+  const addMember = useAddMember(projectId)
+  const [inviteOpen, setInviteOpen] = useState(false)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteError, setInviteError] = useState<string | null>(null)
   const [pendingValues, setPendingValues] = useState<FormValues | null>(null)
 
   const {
@@ -81,6 +88,25 @@ export default function MeetingNewPage() {
 
   const toggle = (list: number[], setList: (v: number[]) => void, id: number) =>
     setList(list.includes(id) ? list.filter((v) => v !== id) : [...list, id])
+
+  const invite = async () => {
+    const value = inviteEmail.trim()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+      setInviteError('이메일 형식이 올바르지 않습니다.')
+      return
+    }
+    setInviteError(null)
+    try {
+      const added = await addMember.mutateAsync(value)
+      // 방금 넣은 사람은 이 회의 참여자로도 바로 체크해 둔다.
+      if (added?.userId) setParticipantIds((prev) => (prev.includes(added.userId) ? prev : [...prev, added.userId]))
+      toast.success('구성원을 추가했습니다.')
+      setInviteEmail('')
+      setInviteOpen(false)
+    } catch (e) {
+      setInviteError(errorMessage(e))
+    }
+  }
 
   const onSubmit = handleSubmit(async (values) => {
     if (!content.trim()) {
@@ -203,8 +229,36 @@ export default function MeetingNewPage() {
 
         <div className="space-y-lg lg:col-span-5">
           <SurfaceCard className="p-xl">
-            <h2 className="mb-sm text-title-md text-ink">참여자</h2>
-            <p className="mb-md text-body-sm text-muted">이 회의에 참여한 구성원을 선택하세요.</p>
+            <div className="mb-sm flex items-center justify-between gap-md">
+              <h2 className="text-title-md text-ink">참여자</h2>
+              <span className="text-caption font-normal text-muted-soft">{participantIds.length}명 선택됨</span>
+            </div>
+            <p className="mb-sm text-body-sm text-muted">이 회의에 참여한 구성원을 선택하세요.</p>
+            <div className="mb-md flex flex-wrap items-center gap-xs">
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() => setParticipantIds(members.map((m) => m.userId))}
+                disabled={members.length === 0 || participantIds.length === members.length}
+              >
+                전체 선택
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setParticipantIds([])}
+                disabled={participantIds.length === 0}
+              >
+                전체 해제
+              </Button>
+              {isOwner && (
+                <Button type="button" variant="ghost" size="sm" className="ml-auto" onClick={() => setInviteOpen(true)}>
+                  <UserPlus size={14} /> 구성원 추가
+                </Button>
+              )}
+            </div>
             {members.length === 0 ? (
               <p className="text-body-sm text-muted">구성원 정보를 불러오는 중입니다.</p>
             ) : (
@@ -282,6 +336,43 @@ export default function MeetingNewPage() {
           </SurfaceCard>
         </div>
       </form>
+
+      <Modal
+        open={inviteOpen}
+        onClose={() => {
+          setInviteOpen(false)
+          setInviteError(null)
+        }}
+        title="구성원 추가"
+        description="이미 FollowUp에 가입한 계정의 이메일을 입력해 주세요. 추가하면 이 회의 참여자로도 바로 선택됩니다."
+        width="sm"
+        footer={
+          <>
+            <Button type="button" variant="secondary" onClick={() => setInviteOpen(false)}>
+              취소
+            </Button>
+            <Button type="button" onClick={invite} loading={addMember.isPending}>
+              추가
+            </Button>
+          </>
+        }
+      >
+        <FormRow label="이메일" error={inviteError ?? undefined}>
+          <Input
+            type="email"
+            value={inviteEmail}
+            placeholder="teammate@example.com"
+            invalid={!!inviteError}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                void invite()
+              }
+            }}
+          />
+        </FormRow>
+      </Modal>
 
       <ConfirmDialog
         open={confirmOpen}
