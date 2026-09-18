@@ -3,7 +3,7 @@ import { cn } from '@/lib/cn'
 import { PRIORITY_LABEL, STATUS_LABEL, avatarColor } from '@/lib/constants'
 import { useAvatarColors } from '@/features/members/avatarColor'
 import type { ActionItemPriority, ActionItemStatus, MeetingStatus } from '@/types/api'
-import { dDayLabel } from '@/lib/date'
+import { DUE_SOON_DAYS, dDayLabel, daysUntil } from '@/lib/date'
 
 type Tone =
   | 'neutral'
@@ -85,17 +85,19 @@ export function MeetingStatusBadge({ status }: { status: MeetingStatus }) {
 }
 
 /**
- * 마감 뱃지 — D-3 / D-day / D+2 만 보여 준다.
+ * 마감 뱃지 — D-3 / D-day / D+2 만 보여 준다. 글자는 안 붙인다.
  *
- * "지연" "마감 임박" 같은 말과 빨강·주황은 뺐다. 목록에 뱃지가 여러 개
- * 나란히 서면 색이 서로 싸워서, 마감은 무채색으로 통일하고 급한 정도는
- * D-day 숫자 자체가 말하게 둔다. 완료 업무에는 붙지 않는다.
+ * 색은 급한 정도만 말한다. 지난 것은 빨강, 오늘·임박은 주황, 그 밖은 무채색.
+ * 세 단계뿐이라 다른 뱃지와 나란히 서도 시끄럽지 않다.
+ * 완료 업무에는 붙지 않는다.
  */
 export function DueBadge({ dueDate, status }: { dueDate?: string | null; status?: ActionItemStatus }) {
   if (!dueDate || status === 'DONE') return null
   const label = dDayLabel(dueDate)
   if (!label) return null
-  return <Badge tone="neutral">{label}</Badge>
+  const left = daysUntil(dueDate)
+  const tone: Tone = left === null ? 'neutral' : left < 0 ? 'error' : left <= DUE_SOON_DAYS ? 'warning' : 'neutral'
+  return <Badge tone={tone}>{label}</Badge>
 }
 
 export function Avatar({ name, size = 36, className }: { name?: string | null; size?: number; className?: string }) {

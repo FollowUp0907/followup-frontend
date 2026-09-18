@@ -45,6 +45,33 @@
   border-radius: 9999px;
 }
 
+/* 본문 스크롤 영역.
+   스크롤바 자리를 늘 비워 둬서(gutter) 내용이 있고 없고에 따라 폭이 움찔거리지 않고,
+   막대가 화면 오른쪽에 분명히 보인다.
+   헤더는 이 영역 밖이라 같은 폭만큼 오른쪽을 비워 줘야 로고·프로필이 본문과 맞는다. */
+:root {
+  --page-scrollbar: 10px;
+}
+.page-scroll {
+  scrollbar-gutter: stable;
+}
+.page-scroll-gutter {
+  padding-right: var(--page-scrollbar);
+}
+.page-scroll::-webkit-scrollbar {
+  width: var(--page-scrollbar);
+}
+.page-scroll::-webkit-scrollbar-thumb {
+  background: #d4d4d8;
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 9999px;
+}
+.page-scroll::-webkit-scrollbar-thumb:hover {
+  background: #a1a1aa;
+  background-clip: content-box;
+}
+
 /* 한국어 본문·제목은 어절 단위로 끊는다. 기본값(break-word)은 낱말 중간에서 잘린다.
    다만 keep-all 만 주면 칸보다 긴 한 덩어리(긴 이메일·URL·공백 없는 제목)를
    아예 못 끊어서 밖으로 삐져나온다. 그때만 강제로 자르도록 overflow-wrap 을 함께 준다. */

@@ -57,8 +57,8 @@ export default function ProjectsPage() {
     <div className="flex h-screen flex-col overflow-hidden bg-canvas">
       <TopNav variant="plain" />
 
-      <main className="thin-scroll min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-[800px] px-lg py-[64px]">
+      <main className="page-scroll min-h-0 flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-[800px] px-lg pb-[64px] pt-lg">
           <PageHeader
             title="프로젝트"
             description="참여 중인 프로젝트를 선택하세요."
