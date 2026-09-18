@@ -239,18 +239,17 @@ function DetailView({
       )}
       {notification.kind === 'OVERDUE' && (
         <p className="mt-xs text-caption font-normal text-muted-soft">
-          업무를 끝내거나 마감일을 옮기면 이 알림은 사라집니다.
+          업무를 끝내거나 마감일을 옮기면 사라집니다. 지금 지우면 이 브라우저에서만 접히고, 마감일을 옮기면 다시
+          뜹니다.
         </p>
       )}
       <div className="mt-lg flex gap-xs">
         <Button size="sm" fullWidth className="min-w-0" onClick={onOpenTask}>
           업무 보기
         </Button>
-        {notification.kind !== 'OVERDUE' && (
-          <Button size="sm" variant="secondary" className="shrink-0 whitespace-nowrap" onClick={onRemove}>
-            삭제
-          </Button>
-        )}
+        <Button size="sm" variant="secondary" className="shrink-0 whitespace-nowrap" onClick={onRemove}>
+          삭제
+        </Button>
       </div>
     </div>
   )
@@ -271,7 +270,7 @@ function NotificationRow({
   onRemove: () => void
 }) {
   const Icon = KIND_ICON[n.kind]
-  // 지연은 상시 알림이라 지울 수 없다. 업무를 끝내거나 마감을 옮겨야 사라진다.
+  // 지연은 상시 표시라 줄에서는 X 를 빼 둔다. 지우려면 눌러서 상세로 들어간다.
   const removable = n.kind !== 'OVERDUE'
   return (
     <li className="group relative">

@@ -314,12 +314,13 @@ export function useNotifications(userId?: number, { active = true }: { active?: 
 
   /**
    * 서버 알림은 서버에서 지우고, 프론트가 만든 것은 이 브라우저에서 숨긴다.
-   * 지연은 상시 알림이라 지우지 않는다 — 업무를 끝내야 사라진다. (UI 에도 삭제가 없다)
+   *
+   * 지연도 지울 수 있다. 다만 키에 마감일이 들어 있어서(`overdue-<업무>-<마감일>`)
+   * 마감일을 옮기면 새 키가 되어 다시 뜬다. "지금은 접어 두기" 에 가깝다.
    */
   const remove = useCallback(
     (n: AppNotification) => {
       if (n.serverId) return deleteMutation.mutateAsync(n.serverId)
-      if (n.kind === 'OVERDUE') return Promise.resolve()
       setHidden((prev) => (prev.includes(n.key) ? prev : saveKeys(LOCAL_HIDDEN_KEY, [...prev, n.key])))
       return Promise.resolve()
     },
