@@ -13,13 +13,7 @@ import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { SegmentedControl } from '@/components/ui/NavPillGroup'
 import { useToast } from '@/components/ui/Toast'
 import { useActionItem, useDeleteActionItem, useUpdateActionItem } from '@/features/actionItems/queries'
-import {
-  assigneeIdsOf,
-  assigneePatch,
-  noteAssigneeSupport,
-  rememberExtraAssignees,
-  serverSupportsManyAssignees,
-} from '@/features/actionItems/assignees'
+import { assigneeIdsOf, assigneePatch } from '@/features/actionItems/assignees'
 import { useMeeting } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { PRIORITY_ICON_COLOR, PRIORITY_LABEL, PRIORITY_ORDER, STATUS_LABEL, STATUS_ORDER } from '@/lib/constants'
@@ -54,7 +48,6 @@ export default function TaskDetailPage() {
     if (!item) return
     setTitle(item.title)
     setDescription(item.description ?? '')
-    noteAssigneeSupport(item)
     setAssigneeIds(assigneeIdsOf(item))
     setDueDate(toDateInput(item.dueDate))
     setPriority(item.priority ?? '')
@@ -125,9 +118,7 @@ export default function TaskDetailPage() {
       if (kept.length) {
         toast.error(`${kept.join(' · ')}는 지금 비울 수 없어 이전 값이 유지됐습니다. 나머지는 저장했습니다.`)
       } else {
-        // 서버가 첫 번째만 받으므로 나머지는 이 브라우저에 남긴다.
-      if (!serverSupportsManyAssignees()) rememberExtraAssignees(item.id, assigneeIds)
-      toast.success('업무를 수정했습니다.')
+        toast.success('업무를 수정했습니다.')
       }
       setEditing(false)
     } catch (e) {
@@ -188,7 +179,6 @@ export default function TaskDetailPage() {
                   {/* 보드 필터와 같은 드롭다운 — 아바타·우선순위 점까지 그대로 보인다. */}
                   <FormRow
                     label="담당자"
-                    hint={assigneeIds.length > 1 && !serverSupportsManyAssignees() ? '첫 번째만 저장됨' : undefined}
                   >
                     <MultiDropdown
                       ariaLabel="담당자"
@@ -200,13 +190,6 @@ export default function TaskDetailPage() {
                         adornment: <Avatar name={m.name} size={20} />,
                         description: m.email,
                       }))}
-                      footer={
-                        assigneeIds.length > 1 && !serverSupportsManyAssignees() ? (
-                          <p className="border-t border-hairline-soft px-sm py-xs text-caption font-normal text-muted-soft">
-                            서버가 아직 담당자 한 명만 받습니다. 지금은 첫 번째만 저장됩니다.
-                          </p>
-                        ) : null
-                      }
                     />
                   </FormRow>
                   <FormRow label="마감일" hint={dueDate ? undefined : '없음'}>

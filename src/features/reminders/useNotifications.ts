@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as actionItemApi from '@/api/actionItemApi'
+import { assigneeIdsOf } from '@/features/actionItems/assignees'
 import * as notificationApi from '@/api/notificationApi'
 import { qk } from '@/lib/queryKeys'
 import { dayjs, daysUntil } from '@/lib/date'
@@ -217,7 +218,7 @@ export function useNotifications(userId?: number, { active = true }: { active?: 
     const today = dayjs().format('YYYY-MM-DD')
     return itemQueries
       .flatMap((q) => q.data ?? [])
-      .filter((i) => i.assigneeUserId === userId && i.status !== 'DONE' && i.dueDate)
+      .filter((i) => assigneeIdsOf(i).includes(userId) && i.status !== 'DONE' && i.dueDate)
       .flatMap<AppNotification>((i) => {
         const left = daysUntil(i.dueDate)
         if (left === null) return []

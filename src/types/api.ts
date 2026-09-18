@@ -99,6 +99,9 @@ export interface CarryOverActionItemResDto {
   actionItemId: number
   title: string
   status: ActionItemStatus
+  /** 담당자 여러 명. 백엔드 2026-09-18 스펙. */
+  assigneeUserIds?: number[]
+  /** @deprecated assigneeUserIds 로 대체됨. */
   assigneeUserId?: number
   dueDate?: string
   priority?: ActionItemPriority
@@ -127,6 +130,9 @@ export interface MeetingDetailResDto {
 export interface ActionItemCreateReqDto {
   title: string
   description?: string
+  /** 담당자 여러 명. 백엔드 2026-09-18 스펙. */
+  assigneeUserIds?: number[]
+  /** @deprecated assigneeUserIds 로 통합됨. 구버전 서버를 위해 당분간 같이 보낸다. */
   assigneeUserId?: number | null
   /** YYYY-MM-DD */
   dueDate?: string | null
@@ -135,6 +141,9 @@ export interface ActionItemCreateReqDto {
 export interface ActionItemUpdateReqDto {
   title?: string
   description?: string
+  /** 담당자 여러 명. 백엔드 2026-09-18 스펙. */
+  assigneeUserIds?: number[]
+  /** @deprecated assigneeUserIds 로 통합됨. 구버전 서버를 위해 당분간 같이 보낸다. */
   assigneeUserId?: number | null
   dueDate?: string | null
   status?: ActionItemStatus
@@ -150,6 +159,9 @@ export interface ActionItemListResDto {
   title: string
   status: ActionItemStatus
   priority?: ActionItemPriority
+  /** 담당자 여러 명. 백엔드 2026-09-18 스펙. */
+  assigneeUserIds?: number[]
+  /** @deprecated assigneeUserIds 로 대체됨. 구버전 서버 응답을 위해 남겨 둔다. */
   assigneeUserId?: number
   dueDate?: string
   projectId: number
@@ -159,6 +171,9 @@ export interface ActionItemDetailResDto {
   projectId: number
   title: string
   description?: string
+  /** 담당자 여러 명. 백엔드 2026-09-18 스펙. */
+  assignees?: ActionItemAssigneeResDto[]
+  /** @deprecated assignees 로 대체됨. 구버전 서버 응답을 위해 남겨 둔다. */
   assignee?: ActionItemAssigneeResDto
   dueDate?: string
   status: ActionItemStatus
@@ -208,6 +223,9 @@ export interface DecisionConfirmItem {
 export interface ActionItemConfirmItem {
   title: string
   description?: string
+  /** 담당자 여러 명. 백엔드 2026-09-18 스펙. */
+  assigneeUserIds?: number[]
+  /** @deprecated assigneeUserIds 로 통합됨. 구버전 서버를 위해 당분간 같이 보낸다. */
   assigneeUserId?: number | null
   dueDate?: string | null
   priority?: ActionItemPriority
@@ -232,7 +250,12 @@ export interface DueSoonActionItem {
   status: ActionItemStatus
   priority?: ActionItemPriority
   dueDate?: string
+  /** 담당자 여러 명. 백엔드 2026-09-18 스펙. */
+  assigneeUserIds?: number[]
+  assigneeNames?: string[]
+  /** @deprecated 배열로 대체됨. */
   assigneeUserId?: number
+  /** @deprecated 배열로 대체됨. */
   assigneeName?: string
 }
 export interface RecentMeeting {

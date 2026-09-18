@@ -7,12 +7,14 @@ import { Avatar, Badge } from '@/components/ui/Badge'
 import { Button, ButtonLink, Spinner } from '@/components/ui/Button'
 import { EmptyState, SurfaceCard } from '@/components/ui/Card'
 import { Dropdown } from '@/components/ui/Dropdown'
+import { MultiDropdown } from '@/components/ui/MultiDropdown'
 import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { useToast } from '@/components/ui/Toast'
 import { useAnalysis, useConfirmAnalysis, useRequestAnalysis } from '@/features/analysis/queries'
 import { ConfirmAnalysisDialog } from '@/features/analysis/ConfirmAnalysisDialog'
 import { useActionItems, useDeleteActionItem } from '@/features/actionItems/queries'
 import { useActionItemOrigins } from '@/features/actionItems/useActionItemOrigins'
+import { assigneePatch } from '@/features/actionItems/assignees'
 import { useMeeting } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { PRIORITY_ICON_COLOR, PRIORITY_LABEL, PRIORITY_ORDER } from '@/lib/constants'
@@ -24,7 +26,7 @@ interface DraftRow {
   key: string
   title: string
   description: string
-  assigneeUserId: number | null
+  assigneeUserIds: number[]
   dueDate: string
   priority: ActionItemPriority | ''
   priorityReason: string
@@ -108,7 +110,7 @@ export default function AnalysisPage() {
           key: nextKey(),
           title: a.title ?? '',
           description: a.description ?? '',
-          assigneeUserId: matchedMember?.userId ?? null,
+          assigneeUserIds: matchedMember?.userId ? [matchedMember.userId] : [],
           dueDate: toDateInput(a.dueDate),
           priority: a.priority ?? '',
           priorityReason: a.priorityReason ?? '',
@@ -120,7 +122,10 @@ export default function AnalysisPage() {
     setHydratedFor(analysis.id)
   }, [analysis, hydratedFor, matchMemberByName])
 
-  const unmatchedCount = useMemo(() => rows.filter((r) => !r.assigneeUserId && r.aiAssigneeName).length, [rows])
+  const unmatchedCount = useMemo(
+    () => rows.filter((r) => r.assigneeUserIds.length === 0 && r.aiAssigneeName).length,
+    [rows],
+  )
   const invalidRows = useMemo(() => rows.filter((r) => !r.title.trim()).length, [rows])
 
   const patchRow = (key: string, patch: Partial<DraftRow>) =>
@@ -133,7 +138,7 @@ export default function AnalysisPage() {
         key: nextKey(),
         title: '',
         description: '',
-        assigneeUserId: null,
+        assigneeUserIds: [],
         dueDate: '',
         priority: 'MEDIUM',
         priorityReason: '',
@@ -160,7 +165,7 @@ export default function AnalysisPage() {
             .map((r) => ({
               title: r.title.trim(),
               description: r.description.trim() || undefined,
-              assigneeUserId: r.assigneeUserId ?? undefined,
+              ...assigneePatch(r.assigneeUserIds),
               dueDate: r.dueDate || undefined,
               priority: r.priority || undefined,
               priorityReason: r.priorityReason.trim() || undefined,
@@ -406,26 +411,17 @@ export default function AnalysisPage() {
                         label="담당자"
                         hint={!row.matched && row.aiAssigneeName ? `AI: ${row.aiAssigneeName}` : undefined}
                       >
-                        <Dropdown
+                        <MultiDropdown
                           ariaLabel="담당자"
-                          value={row.assigneeUserId ? String(row.assigneeUserId) : ''}
+                          values={row.assigneeUserIds}
                           disabled={isConfirmed}
-                          invalid={!row.assigneeUserId && !!row.aiAssigneeName}
                           placeholder="미지정"
-                          onChange={(v) =>
-                            patchRow(row.key, {
-                              assigneeUserId: v ? Number(v) : null,
-                              matched: true,
-                            })
-                          }
-                          options={[
-                            { value: '', label: '미지정' },
-                            ...members.map((m) => ({
-                              value: String(m.userId),
-                              label: m.name,
-                              adornment: <Avatar name={m.name} size={20} />,
-                            })),
-                          ]}
+                          onChange={(ids) => patchRow(row.key, { assigneeUserIds: ids, matched: true })}
+                          options={members.map((m) => ({
+                            value: m.userId,
+                            label: m.name,
+                            adornment: <Avatar name={m.name} size={20} />,
+                          }))}
                         />
                       </FormRow>
 
@@ -520,7 +516,7 @@ export default function AnalysisPage() {
           .map((r) => ({
             key: r.key,
             title: r.title.trim(),
-            assigneeUserId: r.assigneeUserId,
+            assigneeUserIds: r.assigneeUserIds,
             dueDate: r.dueDate,
             priority: r.priority,
           }))}

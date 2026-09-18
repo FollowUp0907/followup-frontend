@@ -15,6 +15,7 @@ import { useMeetingActionItems } from '@/features/actionItems/useMeetingActionIt
 import { useMeeting, useUpdateMeeting } from '@/features/meetings/queries'
 import { useCascadeDelete } from '@/features/projects/useCascadeDelete'
 import { useProjectContext } from '@/features/projects/ProjectContext'
+import { assigneeIdsOf, assigneeLabel } from '@/features/actionItems/assignees'
 import {
   formatDate,
   formatDateTime,
@@ -220,11 +221,14 @@ export default function MeetingDetailPage() {
                       className="flex flex-wrap items-center justify-between gap-sm py-sm"
                     >
                       <div className="flex min-w-0 items-center gap-sm">
-                        <Avatar name={item.assignee?.name} size={28} />
+                        <Avatar
+                          name={assigneeIdsOf(item)[0] ? memberName(assigneeIdsOf(item)[0]) : undefined}
+                          size={28}
+                        />
                         <div className="min-w-0">
                           <p className="truncate text-title-sm text-ink">{item.title}</p>
                           <p className="text-caption font-normal text-muted">
-                            {item.assignee?.name || '담당자 미지정'} · {formatDate(item.dueDate)}
+                            {assigneeLabel(assigneeIdsOf(item), memberName)} · {formatDate(item.dueDate)}
                           </p>
                         </div>
                       </div>
@@ -282,7 +286,7 @@ export default function MeetingDetailPage() {
                         <DueBadge dueDate={item.dueDate} status={item.status} />
                       </p>
                       <p className="mt-xs text-caption font-normal text-muted">
-                        담당 {memberName(item.assigneeUserId)}
+                        담당 {assigneeLabel(assigneeIdsOf(item), memberName)}
                       </p>
                     </Link>
                   </li>

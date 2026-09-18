@@ -12,13 +12,7 @@ import { Skeleton } from '@/components/ui/Card'
 import { SegmentedControl } from '@/components/ui/NavPillGroup'
 import { useToast } from '@/components/ui/Toast'
 import { useActionItem, useUpdateActionItem } from '@/features/actionItems/queries'
-import {
-  assigneeIdsOf,
-  assigneePatch,
-  noteAssigneeSupport,
-  rememberExtraAssignees,
-  serverSupportsManyAssignees,
-} from '@/features/actionItems/assignees'
+import { assigneeIdsOf, assigneePatch } from '@/features/actionItems/assignees'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import {
   PRIORITY_ICON_COLOR,
@@ -76,7 +70,6 @@ export function TaskDetailDrawer({
     if (!item) return
     setTitle(item.title)
     setDescription(item.description ?? '')
-    noteAssigneeSupport(item)
     setAssigneeIds(assigneeIdsOf(item))
     setDueDate(toDateInput(item.dueDate))
     setPriority(item.priority ?? '')
@@ -109,8 +102,6 @@ export function TaskDetailDrawer({
           priority: priority || undefined,
         },
       })
-      // 서버가 첫 번째만 받으므로 나머지는 이 브라우저에 남긴다.
-      if (!serverSupportsManyAssignees()) rememberExtraAssignees(item.id, assigneeIds)
       toast.success('업무를 수정했습니다.')
       setEditing(false)
     } catch (e) {
@@ -176,7 +167,6 @@ export function TaskDetailDrawer({
           </FormRow>
           <FormRow
             label="담당자"
-            hint={assigneeIds.length > 1 && !serverSupportsManyAssignees() ? '첫 번째만 저장됨' : undefined}
           >
             <MultiDropdown
               ariaLabel="담당자"
@@ -187,13 +177,6 @@ export function TaskDetailDrawer({
                 label: m.name,
                 adornment: <Avatar name={m.name} size={20} />,
               }))}
-              footer={
-                assigneeIds.length > 1 && !serverSupportsManyAssignees() ? (
-                  <p className="border-t border-hairline-soft px-sm py-xs text-caption font-normal text-muted-soft">
-                    서버가 아직 담당자 한 명만 받습니다. 지금은 첫 번째만 저장됩니다.
-                  </p>
-                ) : null
-              }
             />
           </FormRow>
           <FormRow label="마감일" hint={dueDate ? undefined : '없음'}>

@@ -12,8 +12,6 @@ import {
   assigneeIdsOf,
   assigneeLabel,
   assigneePatch,
-  rememberExtraAssignees,
-  serverSupportsManyAssignees,
 } from '@/features/actionItems/assignees'
 import { Pager, usePager } from '@/components/ui/Pager'
 import { RowMenu } from '@/components/ui/RowMenu'
@@ -515,11 +513,9 @@ export default function TaskBoardPage() {
       <CreateTaskModal
         open={createOpen}
         onClose={() => setCreateOpen(false)}
-        onSubmit={async (values, allAssigneeIds) => {
+        onSubmit={async (values) => {
           try {
-            const created = await createItem.mutateAsync(values)
-            // 서버가 첫 번째만 받으므로 나머지는 이 브라우저에 남긴다.
-            if (created?.id && !serverSupportsManyAssignees()) rememberExtraAssignees(created.id, allAssigneeIds)
+            await createItem.mutateAsync(values)
             toast.success('업무를 추가했습니다.')
             setCreateOpen(false)
           } catch (e) {
@@ -755,17 +751,14 @@ function CreateTaskModal({
 }: {
   open: boolean
   onClose: () => void
-  onSubmit: (
-    values: {
-      title: string
-      description?: string
-      assigneeUserId?: number | null
-      assigneeUserIds?: number[]
-      dueDate?: string
-      priority?: ActionItemPriority
-    },
-    allAssigneeIds: number[],
-  ) => void
+  onSubmit: (values: {
+    title: string
+    description?: string
+    assigneeUserId?: number | null
+    assigneeUserIds?: number[]
+    dueDate?: string
+    priority?: ActionItemPriority
+  }) => void
   pending: boolean
   members: Array<{ userId: number; name: string }>
 }) {
@@ -810,16 +803,13 @@ function CreateTaskModal({
             onClick={() => {
               setTouched(true)
               if (!title.trim()) return
-              onSubmit(
-                {
-                  title: title.trim(),
-                  description: description.trim() || undefined,
-                  ...assigneePatch(assigneeIds),
-                  dueDate: dueDate || undefined,
-                  priority: priority || undefined,
-                },
-                assigneeIds,
-              )
+              onSubmit({
+                title: title.trim(),
+                description: description.trim() || undefined,
+                ...assigneePatch(assigneeIds),
+                dueDate: dueDate || undefined,
+                priority: priority || undefined,
+              })
               reset()
             }}
           >
@@ -844,7 +834,6 @@ function CreateTaskModal({
           {/* 위쪽 필터와 같은 드롭다운으로 맞춘다. 업무 상세의 수정 폼도 같다. */}
           <FormRow
             label="담당자"
-            hint={assigneeIds.length > 1 && !serverSupportsManyAssignees() ? '첫 번째만 저장됨' : undefined}
           >
             <MultiDropdown
               ariaLabel="담당자"
@@ -855,13 +844,6 @@ function CreateTaskModal({
                 label: m.name,
                 adornment: <Avatar name={m.name} size={20} />,
               }))}
-              footer={
-                assigneeIds.length > 1 && !serverSupportsManyAssignees() ? (
-                  <p className="border-t border-hairline-soft px-sm py-xs text-caption font-normal text-muted-soft">
-                    서버가 아직 담당자 한 명만 받습니다. 지금은 첫 번째만 저장됩니다.
-                  </p>
-                ) : null
-              }
             />
           </FormRow>
           <FormRow label="마감일">

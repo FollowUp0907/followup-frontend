@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Skeleton } from '@/components/ui/Card'
 import { cn } from '@/lib/cn'
+import { assigneeIdsOf, assigneeLabel } from '@/features/actionItems/assignees'
 import { formatDate } from '@/lib/date'
 import type { ActionItemListResDto, ActionItemPriority } from '@/types/api'
 
@@ -12,7 +13,7 @@ import type { ActionItemListResDto, ActionItemPriority } from '@/types/api'
 export interface NewTaskPreview {
   key: string
   title: string
-  assigneeUserId: number | null
+  assigneeUserIds: number[]
   dueDate: string
   priority: ActionItemPriority | ''
 }
@@ -115,9 +116,9 @@ export function ConfirmAnalysisDialog({
                   <div className="min-w-0 flex-1">
                     <p className={cn('truncate text-body-sm text-ink', marked && 'line-through')}>{item.title}</p>
                     <div className="mt-xxs flex flex-wrap items-center gap-xxs">
-                      <Avatar name={item.assigneeUserId ? memberName(item.assigneeUserId) : undefined} size={18} />
+                      <Avatar name={assigneeIdsOf(item)[0] ? memberName(assigneeIdsOf(item)[0]) : undefined} size={18} />
                       <span className="text-caption font-normal text-muted">
-                        {item.assigneeUserId ? memberName(item.assigneeUserId) : '미지정'}
+                        {assigneeLabel(assigneeIdsOf(item), memberName)}
                       </span>
                       <StatusBadge status={item.status} />
                       <DueBadge dueDate={item.dueDate} status={item.status} />
@@ -169,9 +170,9 @@ export function ConfirmAnalysisDialog({
                   <div className="min-w-0 flex-1">
                     <p className={cn('truncate text-body-sm text-ink', dropped && 'line-through')}>{t.title}</p>
                     <div className="mt-xxs flex flex-wrap items-center gap-xxs">
-                      <Avatar name={t.assigneeUserId ? memberName(t.assigneeUserId) : undefined} size={18} />
+                      <Avatar name={t.assigneeUserIds[0] ? memberName(t.assigneeUserIds[0]) : undefined} size={18} />
                       <span className="text-caption font-normal text-muted">
-                        {t.assigneeUserId ? memberName(t.assigneeUserId) : '미지정'}
+                        {assigneeLabel(t.assigneeUserIds, memberName)}
                       </span>
                       {t.priority && <PriorityBadge priority={t.priority} />}
                       {t.dueDate && (

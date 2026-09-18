@@ -59,7 +59,12 @@ export function useUpdateActionItem(projectId: number) {
                   ...(data.priority ? { priority: data.priority } : {}),
                   ...(data.title ? { title: data.title } : {}),
                   ...(data.dueDate !== undefined ? { dueDate: data.dueDate ?? undefined } : {}),
-                  ...(data.assigneeUserId !== undefined ? { assigneeUserId: data.assigneeUserId ?? undefined } : {}),
+                  // 담당자는 새 필드(배열)와 구 필드를 같이 맞춰 둔다. 서버 응답이
+                  // 어느 모양으로 오든 화면이 바로 바뀌게.
+                  ...(data.assigneeUserIds !== undefined ? { assigneeUserIds: data.assigneeUserIds } : {}),
+                  ...(data.assigneeUserId !== undefined
+                    ? { assigneeUserId: data.assigneeUserId ?? undefined }
+                    : {}),
                 }
               : item,
           ),

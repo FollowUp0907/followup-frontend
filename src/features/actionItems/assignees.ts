@@ -1,27 +1,51 @@
 import type { ActionItemDetailResDto, ActionItemListResDto } from '@/types/api'
 
 /**
- * 업무의 담당자 id 목록.
+ * 담당자는 여러 명이다.
  *
- * 백엔드는 아직 `assigneeUserId` 하나만 준다. 여러 명을 담으려면 서버에
- * 목록 필드가 있어야 해서(BACKEND_NOTES "담당자 여러 명" 참고), 화면은 먼저
- * 목록으로 다룰 수 있게 해 두고 필드가 생기면 그대로 이어 받는다.
+ * 백엔드가 2026-09-18 에 필드를 갈아 끼운다.
+ *   응답  assignee / assigneeUserId  ->  assignees[] / assigneeUserIds[]
+ *   요청  assigneeUserId             ->  assigneeUserIds[]
  *
- * `assigneeUserIds` 가 오면 그걸 쓰고, 없으면 단수 필드를 한 명짜리 목록으로 본다.
+ * 배포 순서를 맞출 필요가 없도록 **양쪽 모양을 다 읽고, 요청에는 둘 다 실어 보낸다.**
+ * 새 서버는 모르는 필드를 무시하고, 구 서버도 모르는 필드를 무시한다.
+ * 백엔드 배포가 끝나면 @deprecated 표시된 것들을 지우면 된다.
  */
-type WithAssignees = { assigneeUserIds?: number[] }
 
-export function assigneeIdsOf(item?: (ActionItemListResDto | ActionItemDetailResDto) | null): number[] {
+/** 응답에 들어올 수 있는 모든 담당자 모양 */
+type AnyAssigneeShape = {
+  id?: number
+  assignees?: Array<{ userId: number }>
+  assigneeUserIds?: number[]
+  assigneeUserId?: number | null
+  assignee?: { userId: number } | null
+}
+
+export function assigneeIdsOf(
+  item?: (ActionItemListResDto | ActionItemDetailResDto | AnyAssigneeShape) | null,
+): number[] {
   if (!item) return []
-  const many = (item as WithAssignees).assigneeUserIds
-  if (many?.length) return [...new Set(many)]
-  // 목록 DTO 는 assigneeUserId, 상세 DTO 는 assignee.userId 로 준다.
-  const one =
-    'assigneeUserId' in item ? item.assigneeUserId : 'assignee' in item ? item.assignee?.userId : undefined
+  const v = item as AnyAssigneeShape
+
+  // 새 스펙 — 이게 오면 그대로 쓴다.
+  if (v.assignees?.length) return [...new Set(v.assignees.map((a) => a.userId))]
+  if (v.assigneeUserIds?.length) return [...new Set(v.assigneeUserIds)]
+  // 새 스펙이지만 비어 있는 경우(담당자 없음)와 구 스펙을 구분한다.
+  if (Array.isArray(v.assignees) || Array.isArray(v.assigneeUserIds)) return []
+
+  // 구 스펙 — 한 명뿐이다. 그동안 브라우저에 적어 둔 나머지를 뒤에 붙인다.
+  const one = v.assigneeUserId ?? v.assignee?.userId
   if (!one) return []
-  // 서버가 목록을 못 받는 동안 이 브라우저에 적어 둔 나머지 담당자를 뒤에 붙인다.
-  const rest = extras()[String((item as { id?: number }).id)] ?? []
+  const rest = v.id ? (readExtras()[String(v.id)] ?? []) : []
   return [...new Set([one, ...rest])]
+}
+
+/** 이름만 오는 응답(대시보드 마감 임박)용 */
+export function assigneeNamesOf(item?: { assigneeNames?: string[]; assigneeName?: string } | null): string[] {
+  if (!item) return []
+  if (item.assigneeNames?.length) return item.assigneeNames
+  if (Array.isArray(item.assigneeNames)) return []
+  return item.assigneeName ? [item.assigneeName] : []
 }
 
 /** "반서현" / "반서현 외 2명" / "미지정" */
@@ -31,45 +55,45 @@ export function assigneeLabel(ids: number[], nameOf: (userId?: number) => string
   return ids.length === 1 ? first : `${first} 외 ${ids.length - 1}명`
 }
 
-/**
- * 서버가 `assigneeUserIds` 를 다룰 줄 아는지.
- *
- * 응답에 한 번이라도 실려 오면 그때부터 요청에도 같이 보낸다. 지원하기 전에
- * 보내면 백엔드 설정에 따라 400 이 날 수 있어서, **받아 본 뒤에만** 보낸다.
- * (한 번 확인하면 계속 기억한다)
- */
-let serverKnowsMany = false
+/** 이름 배열로 같은 문구를 만든다. */
+export function assigneeLabelFromNames(names: string[]) {
+  if (names.length === 0) return '담당자 미지정'
+  return names.length === 1 ? names[0] : `${names[0]} 외 ${names.length - 1}명`
+}
 
 /**
- * 서버가 담당자 목록을 받기 전까지, 두 번째 담당자부터는 **이 브라우저에** 적어 둔다.
- *
- * 백엔드에 자리가 없어서 다른 기기·다른 사람에게는 안 보인다. 그래도 화면에서는
- * 여러 명으로 다룰 수 있어야 해서 임시로 둔다. 서버가 assigneeUserIds 를 주기
- * 시작하면 이 저장소는 무시되고(위 래치), 그때 지우면 된다.
+ * 담당자 목록을 요청 모양으로.
+ * 새 필드와 구 필드를 같이 보내서 어느 서버에 붙어도 동작하게 한다.
  */
+export function assigneePatch(ids: number[]) {
+  return { assigneeUserIds: ids, assigneeUserId: ids[0] ?? null }
+}
+
+/* ------------------------------------------------------------------ *
+ * 아래는 백엔드가 여러 명을 못 받던 동안 쓰던 임시 저장소다.
+ * 새 스펙이 배포되면 응답에 배열이 실려 오므로 위에서 더 이상 읽지 않는다.
+ * 배포 확인 후 이 블록과 호출부를 지우면 된다.
+ * ------------------------------------------------------------------ */
+
 const EXTRA_KEY = 'followup.actionItem.extraAssignees'
+let extrasCache: Record<string, number[]> | null = null
 
 function readExtras(): Record<string, number[]> {
+  if (extrasCache) return extrasCache
   try {
     const raw = localStorage.getItem(EXTRA_KEY)
     const parsed: unknown = raw ? JSON.parse(raw) : {}
-    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, number[]>) : {}
+    extrasCache =
+      parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, number[]>) : {}
   } catch {
-    return {}
+    extrasCache = {}
   }
-}
-
-const listeners = new Set<() => void>()
-let extrasCache: Record<string, number[]> | null = null
-
-function extras() {
-  if (!extrasCache) extrasCache = readExtras()
   return extrasCache
 }
 
-/** 첫 번째 담당자는 서버가 갖고 있으니, 두 번째부터만 여기 남긴다. */
+/** @deprecated 백엔드가 assigneeUserIds 를 받기 시작하면 필요 없다. */
 export function rememberExtraAssignees(actionItemId: number, ids: number[]) {
-  const next = { ...extras() }
+  const next = { ...readExtras() }
   const rest = ids.slice(1)
   if (rest.length) next[String(actionItemId)] = rest
   else delete next[String(actionItemId)]
@@ -79,28 +103,4 @@ export function rememberExtraAssignees(actionItemId: number, ids: number[]) {
   } catch {
     // 저장이 막혀도 이번 세션에는 반영된다.
   }
-  listeners.forEach((fn) => fn())
-}
-
-export function subscribeExtraAssignees(fn: () => void) {
-  listeners.add(fn)
-  return () => listeners.delete(fn)
-}
-
-export function extraAssigneesVersion() {
-  return extras()
-}
-
-export function noteAssigneeSupport(item?: unknown) {
-  if (item && Array.isArray((item as WithAssignees).assigneeUserIds)) serverKnowsMany = true
-}
-
-export function serverSupportsManyAssignees() {
-  return serverKnowsMany
-}
-
-/** 담당자 목록을 서버가 받는 모양으로 바꾼다. */
-export function assigneePatch(ids: number[]) {
-  const first = ids[0] ?? null
-  return serverKnowsMany ? { assigneeUserId: first, assigneeUserIds: ids } : { assigneeUserId: first }
 }

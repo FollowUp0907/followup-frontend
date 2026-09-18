@@ -10,6 +10,12 @@ import { useActionItems } from '@/features/actionItems/queries'
 import { useDashboard } from '@/features/dashboard/queries'
 import { useMeetingStatuses } from '@/features/meetings/useMeetingStatuses'
 import { useProjectContext } from '@/features/projects/ProjectContext'
+import {
+  assigneeIdsOf,
+  assigneeLabel,
+  assigneeLabelFromNames,
+  assigneeNamesOf,
+} from '@/features/actionItems/assignees'
 import { STATUS_DOT_COLOR } from '@/lib/constants'
 import { formatDate, formatDateTime, isOverdue, progressPercent } from '@/lib/date'
 
@@ -155,11 +161,11 @@ export default function DashboardPage() {
                     className="flex flex-wrap items-center justify-between gap-sm rounded-md px-xs py-xs transition-colors hover:bg-surface-soft"
                   >
                     <div className="flex min-w-0 items-center gap-sm">
-                      <Avatar name={item.assigneeName ?? undefined} size={32} />
+                      <Avatar name={assigneeNamesOf(item)[0]} size={32} />
                       <div className="min-w-0">
                         <p className="truncate text-title-sm text-ink">{item.title}</p>
                         <p className="text-caption font-normal text-muted">
-                          {item.assigneeName || '담당자 미지정'} · {formatDate(item.dueDate)}
+                          {assigneeLabelFromNames(assigneeNamesOf(item))} · {formatDate(item.dueDate)}
                         </p>
                       </div>
                     </div>
@@ -245,13 +251,16 @@ export default function DashboardPage() {
                     className="flex items-center justify-between gap-sm rounded-md px-xs py-xs transition-colors hover:bg-surface-soft"
                   >
                     <div className="flex min-w-0 items-center gap-sm">
-                      <Avatar name={item.assigneeUserId ? memberName(item.assigneeUserId) : undefined} size={28} />
+                      <Avatar
+                        name={assigneeIdsOf(item)[0] ? memberName(assigneeIdsOf(item)[0]) : undefined}
+                        size={28}
+                      />
                       <div className="min-w-0">
                         <p className="truncate text-title-sm text-ink" title={item.title}>
                           {item.title}
                         </p>
                         <p className="text-caption font-normal text-muted">
-                          {item.assigneeUserId ? memberName(item.assigneeUserId) : '담당자 미지정'} ·{' '}
+                          {assigneeLabel(assigneeIdsOf(item), memberName)} ·{' '}
                           {formatDate(item.dueDate)}
                         </p>
                       </div>

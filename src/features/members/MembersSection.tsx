@@ -11,6 +11,7 @@ import { useAuth } from '@/features/auth/AuthContext'
 import { AvatarColorPicker } from '@/features/members/AvatarColorPicker'
 import { useAddMember, useRemoveMember } from '@/features/members/queries'
 import { useActionItems } from '@/features/actionItems/queries'
+import { assigneeIdsOf } from '@/features/actionItems/assignees'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { ROLE_LABEL } from '@/lib/constants'
 import { formatServerDate } from '@/lib/date'
@@ -34,7 +35,7 @@ export function MembersSection() {
   const [target, setTarget] = useState<ProjectMemberResDto | null>(null)
 
   const countFor = (userId: number) => {
-    const mine = (actionItems ?? []).filter((i) => i.assigneeUserId === userId)
+    const mine = (actionItems ?? []).filter((i) => assigneeIdsOf(i).includes(userId))
     return {
       total: mine.length,
       done: mine.filter((i) => i.status === 'DONE').length,
