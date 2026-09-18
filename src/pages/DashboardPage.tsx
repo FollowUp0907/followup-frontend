@@ -36,12 +36,12 @@ function StatTile({
   dot?: string
 }) {
   return (
-    <Link to={to} className="block rounded-lg bg-surface-card p-xl transition-colors active:bg-surface-strong">
+    <Link to={to} className="block rounded-lg bg-surface-card p-sm transition-colors active:bg-surface-strong">
       <span className="flex items-center gap-xs text-caption font-normal text-muted">
         {dot && <span className="h-2 w-2 shrink-0 rounded-pill" style={{ background: dot }} aria-hidden />}
         {label}
       </span>
-      <span className="mt-sm block text-display-sm tabular-nums text-ink">{value}</span>
+      <span className="mt-xxs block text-title-lg tabular-nums text-ink">{value}</span>
     </Link>
   )
 }
@@ -60,7 +60,7 @@ export default function DashboardPage() {
     return (
       <div className="space-y-lg">
         <Skeleton className="h-12 w-72" />
-        <div className="grid gap-lg sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-md sm:grid-cols-2 lg:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-[104px]" />
           ))}
@@ -119,7 +119,7 @@ export default function DashboardPage() {
     <>
       {header}
 
-      <div className="grid gap-lg sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-md sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="전체 업무" value={s.total} to={`${base}/tasks`} />
         <StatTile label="예정" value={s.todo} to={`${base}/tasks?status=TODO`} dot={STATUS_DOT_COLOR.TODO} />
         <StatTile
@@ -131,9 +131,9 @@ export default function DashboardPage() {
         <StatTile label="완료" value={s.done} to={`${base}/tasks?status=DONE`} dot={STATUS_DOT_COLOR.DONE} />
       </div>
 
-      <div className="mt-lg grid gap-lg lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+      <div className="mt-md grid gap-md lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
         {/* 마감 임박 업무 */}
-        <SurfaceCard className="p-xl">
+        <SurfaceCard className="p-md">
           <SectionTitle
             title="마감 임박 업무"
             description={
@@ -149,11 +149,11 @@ export default function DashboardPage() {
             }
           />
           {!data.dueSoonActionItems?.length ? (
-            <p className="rounded-md bg-surface-soft px-md py-lg text-center text-body-sm text-muted">
+            <p className="rounded-md bg-surface-soft px-md py-md text-center text-body-sm text-muted">
               마감이 임박한 업무가 없습니다.
             </p>
           ) : (
-            <ul className="space-y-xxs">
+            <ul className="thin-scroll max-h-[124px] space-y-xxs overflow-y-auto pr-xxs">
               {data.dueSoonActionItems.map((item) => (
                 <li key={item.actionItemId}>
                   <Link
@@ -181,7 +181,7 @@ export default function DashboardPage() {
         </SurfaceCard>
 
         {/* 최근 회의 */}
-        <SurfaceCard className="p-xl">
+        <SurfaceCard className="p-md">
           <SectionTitle
             title="최근 회의"
             className="mb-md"
@@ -199,7 +199,7 @@ export default function DashboardPage() {
               </ButtonLink>
             </div>
           ) : (
-            <ul className="space-y-xxs">
+            <ul className="thin-scroll max-h-[124px] space-y-xxs overflow-y-auto pr-xxs">
               {data.recentMeetings.map((m) => (
                 <li key={m.meetingId}>
                   <Link
@@ -223,8 +223,8 @@ export default function DashboardPage() {
       </div>
 
       {/* 아래 행 — 왼쪽: 바로 손봐야 할 지연 업무 / 오른쪽: 담당자별 진행률 */}
-      <div className="mt-lg grid gap-lg lg:grid-cols-2">
-        <SurfaceCard className="p-xl">
+      <div className="mt-md grid gap-md lg:grid-cols-2">
+        <SurfaceCard className="p-md">
           <SectionTitle
             title="지연된 업무"
             description={s.overdue > 0 ? `기한이 지난 업무 ${s.overdue}건` : undefined}
@@ -239,11 +239,11 @@ export default function DashboardPage() {
             }
           />
           {!overdueItems.length ? (
-            <p className="rounded-md bg-surface-soft px-md py-lg text-center text-body-sm text-muted">
+            <p className="rounded-md bg-surface-soft px-md py-md text-center text-body-sm text-muted">
               지연된 업무가 없습니다.
             </p>
           ) : (
-            <ul className="thin-scroll max-h-[260px] space-y-xxs overflow-y-auto pr-xxs">
+            <ul className="thin-scroll max-h-[124px] space-y-xxs overflow-y-auto pr-xxs">
               {overdueItems.map((item) => (
                 <li key={item.id}>
                   <Link
@@ -273,14 +273,14 @@ export default function DashboardPage() {
           )}
         </SurfaceCard>
 
-        <SurfaceCard className="p-xl">
+        <SurfaceCard className="p-md">
           <SectionTitle title="담당자별 진행률" className="mb-md" />
           {!data.memberProgress?.length ? (
-            <p className="rounded-md bg-surface-soft px-md py-lg text-center text-body-sm text-muted">
+            <p className="rounded-md bg-surface-soft px-md py-md text-center text-body-sm text-muted">
               구성원 정보가 없습니다.
             </p>
           ) : (
-            <ul className="space-y-sm">
+            <ul className="thin-scroll max-h-[124px] space-y-sm overflow-y-auto pr-xxs">
               {data.memberProgress.slice(0, 5).map((m) => {
                 const rate = progressPercent(m.doneCount, m.totalCount, m.completionRate)
                 return (

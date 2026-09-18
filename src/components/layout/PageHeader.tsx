@@ -12,12 +12,12 @@ export function PageHeader({
   breadcrumb?: ReactNode
 }) {
   return (
-    <div className="mb-xl">
+    <div className="mb-lg">
       {breadcrumb && <div className="mb-sm">{breadcrumb}</div>}
       <div className="flex flex-wrap items-start justify-between gap-md">
         <div className="min-w-0">
-          <h1 className="text-display-sm text-ink md:text-display-md">{title}</h1>
-          {description && <p className="mt-xs max-w-2xl text-body-md text-muted">{description}</p>}
+          <h1 className="text-display-sm text-ink">{title}</h1>
+          {description && <p className="mt-xxs max-w-2xl text-body-sm text-muted">{description}</p>}
         </div>
         {actions && <div className="flex flex-wrap items-center gap-sm">{actions}</div>}
       </div>
