@@ -100,25 +100,27 @@ export function DueBadge({ dueDate, status }: { dueDate?: string | null; status?
 
 export function Avatar({ name, size = 36, className }: { name?: string | null; size?: number; className?: string }) {
   const overrides = useAvatarColors()
-  const label = (name ?? '?').trim()
-  const initials = label ? label.slice(0, 2) : '?'
+  const label = (name ?? '').trim()
   // 구성원 페이지에서 고른 색이 있으면 그걸, 없으면 이름으로 고른 기본색을 쓴다.
-  const background = name ? (overrides[label] ?? avatarColor(label)) : '#e5e7eb'
+  const background = label ? (overrides[label] ?? avatarColor(label)) : '#e5e7eb'
   return (
     <span
-      className={cn('inline-flex shrink-0 items-center justify-center rounded-pill font-semibold', className)}
-      style={{
-        width: size,
-        height: size,
-        // 아바타 바탕이 아주 흐려서 이름 글자는 잉크색으로 얹는다.
-        background,
-        color: name ? '#111111' : '#6b7280',
-        fontSize: Math.max(11, Math.round(size * 0.36)),
-      }}
-      title={label}
+      className={cn('inline-flex shrink-0 items-center justify-center overflow-hidden rounded-pill', className)}
+      style={{ width: size, height: size, background }}
+      title={label || '미지정'}
       aria-hidden
     >
-      {initials}
+      {/* 이니셜 대신 사람 실루엣. 바탕이 아주 흐려서 실루엣은 잉크를 옅게 얹는다. */}
+      <svg
+        viewBox="0 0 24 24"
+        width={Math.round(size * 0.62)}
+        height={Math.round(size * 0.62)}
+        fill={label ? 'rgba(17,17,17,0.55)' : 'rgba(17,17,17,0.28)'}
+        aria-hidden
+      >
+        <circle cx="12" cy="8.2" r="3.9" />
+        <path d="M12 13.4c-4 0-7.2 2.3-7.2 5.2 0 .8.7 1.4 1.6 1.4h11.2c.9 0 1.6-.6 1.6-1.4 0-2.9-3.2-5.2-7.2-5.2Z" />
+      </svg>
     </span>
   )
 }

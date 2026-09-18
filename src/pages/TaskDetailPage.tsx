@@ -8,10 +8,12 @@ import { Button, ButtonLink } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
 import { Dropdown } from '@/components/ui/Dropdown'
+import { MultiDropdown } from '@/components/ui/MultiDropdown'
 import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { SegmentedControl } from '@/components/ui/NavPillGroup'
 import { useToast } from '@/components/ui/Toast'
 import { useActionItem, useDeleteActionItem, useUpdateActionItem } from '@/features/actionItems/queries'
+import { assigneeIdsOf, assigneePatch, noteAssigneeSupport, serverSupportsManyAssignees } from '@/features/actionItems/assignees'
 import { useMeeting } from '@/features/meetings/queries'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { PRIORITY_ICON_COLOR, PRIORITY_LABEL, PRIORITY_ORDER, STATUS_LABEL, STATUS_ORDER } from '@/lib/constants'
@@ -37,7 +39,7 @@ export default function TaskDetailPage() {
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [assigneeUserId, setAssigneeUserId] = useState('')
+  const [assigneeIds, setAssigneeIds] = useState<number[]>([])
   const [dueDate, setDueDate] = useState('')
   const [priority, setPriority] = useState<ActionItemPriority | ''>('')
   const [confirmDelete, setConfirmDelete] = useState(false)
@@ -46,7 +48,8 @@ export default function TaskDetailPage() {
     if (!item) return
     setTitle(item.title)
     setDescription(item.description ?? '')
-    setAssigneeUserId(item.assignee?.userId ? String(item.assignee.userId) : '')
+    noteAssigneeSupport(item)
+    setAssigneeIds(assigneeIdsOf(item))
     setDueDate(toDateInput(item.dueDate))
     setPriority(item.priority ?? '')
   }, [item])
@@ -96,7 +99,7 @@ export default function TaskDetailPage() {
     }
     // 백엔드가 null 을 "값 지우기" 로 처리하지 않고 무시한다(2026-09-10 확인).
     // 그래서 비우려 한 필드는 따로 기억해 두고, 저장 결과를 보고 사용자에게 알려 준다.
-    const clearingAssignee = !assigneeUserId && !!item.assignee
+    const clearingAssignee = assigneeIds.length === 0 && !!item.assignee
     const clearingDueDate = !dueDate && !!item.dueDate
     try {
       const saved = await updateItem.mutateAsync({
@@ -104,7 +107,7 @@ export default function TaskDetailPage() {
         data: {
           title: title.trim(),
           description: description.trim() || undefined,
-          assigneeUserId: assigneeUserId ? Number(assigneeUserId) : null,
+          ...assigneePatch(assigneeIds),
           dueDate: dueDate || null,
           priority: priority || undefined,
         },
@@ -175,21 +178,27 @@ export default function TaskDetailPage() {
                 </FormRow>
                 <div className="grid gap-md sm:grid-cols-3">
                   {/* 보드 필터와 같은 드롭다운 — 아바타·우선순위 점까지 그대로 보인다. */}
-                  <FormRow label="담당자">
-                    <Dropdown
+                  <FormRow
+                    label="담당자"
+                    hint={assigneeIds.length > 1 && !serverSupportsManyAssignees() ? '첫 번째만 저장됨' : undefined}
+                  >
+                    <MultiDropdown
                       ariaLabel="담당자"
-                      value={assigneeUserId}
-                      onChange={setAssigneeUserId}
-                      placeholder="미지정"
-                      options={[
-                        { value: '', label: '미지정' },
-                        ...members.map((m) => ({
-                          value: String(m.userId),
-                          label: m.name,
-                          adornment: <Avatar name={m.name} size={20} />,
-                          description: m.email,
-                        })),
-                      ]}
+                      values={assigneeIds}
+                      onChange={setAssigneeIds}
+                      options={members.map((m) => ({
+                        value: m.userId,
+                        label: m.name,
+                        adornment: <Avatar name={m.name} size={20} />,
+                        description: m.email,
+                      }))}
+                      footer={
+                        assigneeIds.length > 1 && !serverSupportsManyAssignees() ? (
+                          <p className="border-t border-hairline-soft px-sm py-xs text-caption font-normal text-muted-soft">
+                            서버가 아직 담당자 한 명만 받습니다. 지금은 첫 번째만 저장됩니다.
+                          </p>
+                        ) : null
+                      }
                     />
                   </FormRow>
                   <FormRow label="마감일" hint={dueDate ? undefined : '없음'}>

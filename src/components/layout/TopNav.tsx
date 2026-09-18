@@ -56,7 +56,8 @@ export function TopNav({
 
   return (
     <header className="sticky top-0 z-40 border-b border-hairline bg-canvas/90 backdrop-blur">
-      <div className={cn('relative flex h-16 items-center gap-sm px-lg', isApp ? 'w-full' : 'container-content')}>
+      {/* 헤더 안쪽 너비를 본문과 같게 맞춘다 — 로고와 프로필이 페이지 내용의 좌우 끝에 선다. */}
+      <div className="container-content relative flex h-16 items-center gap-sm">
         {isApp ? (
           <>
             <Logo variant="symbol" height={22} to="/projects" />

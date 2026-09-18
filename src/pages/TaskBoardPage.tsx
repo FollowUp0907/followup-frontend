@@ -7,7 +7,8 @@ import { Avatar, DueBadge, PriorityBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
 import { Dropdown } from '@/components/ui/Dropdown'
-import { assigneeIdsOf, assigneeLabel } from '@/features/actionItems/assignees'
+import { MultiDropdown } from '@/components/ui/MultiDropdown'
+import { assigneeIdsOf, assigneeLabel, assigneePatch, serverSupportsManyAssignees } from '@/features/actionItems/assignees'
 import { Pager, usePager } from '@/components/ui/Pager'
 import { RowMenu } from '@/components/ui/RowMenu'
 import type { RowMenuItem } from '@/components/ui/RowMenu'
@@ -756,7 +757,7 @@ function CreateTaskModal({
 }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [assigneeUserId, setAssigneeUserId] = useState('')
+  const [assigneeIds, setAssigneeIds] = useState<number[]>([])
   const [dueDate, setDueDate] = useState('')
   const [priority, setPriority] = useState<ActionItemPriority | ''>('MEDIUM')
   const [touched, setTouched] = useState(false)
@@ -764,7 +765,7 @@ function CreateTaskModal({
   const reset = () => {
     setTitle('')
     setDescription('')
-    setAssigneeUserId('')
+    setAssigneeIds([])
     setDueDate('')
     setPriority('MEDIUM')
     setTouched(false)
@@ -798,7 +799,7 @@ function CreateTaskModal({
               onSubmit({
                 title: title.trim(),
                 description: description.trim() || undefined,
-                assigneeUserId: assigneeUserId ? Number(assigneeUserId) : undefined,
+                ...assigneePatch(assigneeIds),
                 dueDate: dueDate || undefined,
                 priority: priority || undefined,
               })
@@ -824,20 +825,26 @@ function CreateTaskModal({
         </FormRow>
         <div className="grid gap-md sm:grid-cols-3">
           {/* 위쪽 필터와 같은 드롭다운으로 맞춘다. 업무 상세의 수정 폼도 같다. */}
-          <FormRow label="담당자">
-            <Dropdown
+          <FormRow
+            label="담당자"
+            hint={assigneeIds.length > 1 && !serverSupportsManyAssignees() ? '첫 번째만 저장됨' : undefined}
+          >
+            <MultiDropdown
               ariaLabel="담당자"
-              value={assigneeUserId}
-              onChange={setAssigneeUserId}
-              placeholder="미지정"
-              options={[
-                { value: '', label: '미지정' },
-                ...members.map((m) => ({
-                  value: String(m.userId),
-                  label: m.name,
-                  adornment: <Avatar name={m.name} size={20} />,
-                })),
-              ]}
+              values={assigneeIds}
+              onChange={setAssigneeIds}
+              options={members.map((m) => ({
+                value: m.userId,
+                label: m.name,
+                adornment: <Avatar name={m.name} size={20} />,
+              }))}
+              footer={
+                assigneeIds.length > 1 && !serverSupportsManyAssignees() ? (
+                  <p className="border-t border-hairline-soft px-sm py-xs text-caption font-normal text-muted-soft">
+                    서버가 아직 담당자 한 명만 받습니다. 지금은 첫 번째만 저장됩니다.
+                  </p>
+                ) : null
+              }
             />
           </FormRow>
           <FormRow label="마감일">

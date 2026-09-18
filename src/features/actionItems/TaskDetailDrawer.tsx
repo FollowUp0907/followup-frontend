@@ -6,12 +6,18 @@ import { Avatar, DueBadge, PriorityBadge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { Drawer } from '@/components/ui/Drawer'
 import { Dropdown } from '@/components/ui/Dropdown'
+import { MultiDropdown } from '@/components/ui/MultiDropdown'
 import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { Skeleton } from '@/components/ui/Card'
 import { SegmentedControl } from '@/components/ui/NavPillGroup'
 import { useToast } from '@/components/ui/Toast'
 import { useActionItem, useUpdateActionItem } from '@/features/actionItems/queries'
-import { assigneeIdsOf } from '@/features/actionItems/assignees'
+import {
+  assigneeIdsOf,
+  assigneePatch,
+  noteAssigneeSupport,
+  serverSupportsManyAssignees,
+} from '@/features/actionItems/assignees'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import {
   PRIORITY_ICON_COLOR,
@@ -56,7 +62,7 @@ export function TaskDetailDrawer({
   const [editing, setEditing] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [assigneeUserId, setAssigneeUserId] = useState('')
+  const [assigneeIds, setAssigneeIds] = useState<number[]>([])
   const [dueDate, setDueDate] = useState('')
   const [priority, setPriority] = useState<ActionItemPriority | ''>('')
 
@@ -69,7 +75,8 @@ export function TaskDetailDrawer({
     if (!item) return
     setTitle(item.title)
     setDescription(item.description ?? '')
-    setAssigneeUserId(item.assignee?.userId ? String(item.assignee.userId) : '')
+    noteAssigneeSupport(item)
+    setAssigneeIds(assigneeIdsOf(item))
     setDueDate(toDateInput(item.dueDate))
     setPriority(item.priority ?? '')
     setEditing(true)
@@ -96,7 +103,7 @@ export function TaskDetailDrawer({
         data: {
           title: title.trim(),
           description: description.trim() || undefined,
-          assigneeUserId: assigneeUserId ? Number(assigneeUserId) : null,
+          ...assigneePatch(assigneeIds),
           dueDate: dueDate || null,
           priority: priority || undefined,
         },
@@ -164,19 +171,26 @@ export function TaskDetailDrawer({
               onChange={(e) => setDescription(e.target.value)}
             />
           </FormRow>
-          <FormRow label="담당자">
-            <Dropdown
+          <FormRow
+            label="담당자"
+            hint={assigneeIds.length > 1 && !serverSupportsManyAssignees() ? '첫 번째만 저장됨' : undefined}
+          >
+            <MultiDropdown
               ariaLabel="담당자"
-              value={assigneeUserId}
-              onChange={setAssigneeUserId}
-              options={[
-                { value: '', label: '미지정' },
-                ...members.map((m) => ({
-                  value: String(m.userId),
-                  label: m.name,
-                  adornment: <Avatar name={m.name} size={20} />,
-                })),
-              ]}
+              values={assigneeIds}
+              onChange={setAssigneeIds}
+              options={members.map((m) => ({
+                value: m.userId,
+                label: m.name,
+                adornment: <Avatar name={m.name} size={20} />,
+              }))}
+              footer={
+                assigneeIds.length > 1 && !serverSupportsManyAssignees() ? (
+                  <p className="border-t border-hairline-soft px-sm py-xs text-caption font-normal text-muted-soft">
+                    서버가 아직 담당자 한 명만 받습니다. 지금은 첫 번째만 저장됩니다.
+                  </p>
+                ) : null
+              }
             />
           </FormRow>
           <FormRow label="마감일" hint={dueDate ? undefined : '없음'}>

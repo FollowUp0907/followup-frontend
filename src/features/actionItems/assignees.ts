@@ -27,3 +27,26 @@ export function assigneeLabel(ids: number[], nameOf: (userId?: number) => string
   const first = nameOf(ids[0])
   return ids.length === 1 ? first : `${first} 외 ${ids.length - 1}명`
 }
+
+/**
+ * 서버가 `assigneeUserIds` 를 다룰 줄 아는지.
+ *
+ * 응답에 한 번이라도 실려 오면 그때부터 요청에도 같이 보낸다. 지원하기 전에
+ * 보내면 백엔드 설정에 따라 400 이 날 수 있어서, **받아 본 뒤에만** 보낸다.
+ * (한 번 확인하면 계속 기억한다)
+ */
+let serverKnowsMany = false
+
+export function noteAssigneeSupport(item?: unknown) {
+  if (item && Array.isArray((item as WithAssignees).assigneeUserIds)) serverKnowsMany = true
+}
+
+export function serverSupportsManyAssignees() {
+  return serverKnowsMany
+}
+
+/** 담당자 목록을 서버가 받는 모양으로 바꾼다. */
+export function assigneePatch(ids: number[]) {
+  const first = ids[0] ?? null
+  return serverKnowsMany ? { assigneeUserId: first, assigneeUserIds: ids } : { assigneeUserId: first }
+}
