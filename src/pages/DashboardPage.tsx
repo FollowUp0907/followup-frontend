@@ -88,6 +88,11 @@ export default function DashboardPage() {
   const overdueItems = (allItems ?? [])
     .filter((i) => isOverdue(i.dueDate, i.status))
     .sort((a, b) => (a.dueDate ?? '').localeCompare(b.dueDate ?? ''))
+
+  // 대시보드는 훑어보는 화면이라 급한 것 3개만 보여 준다. 나머지는 "전체 보기" 로.
+  const PREVIEW_COUNT = 3
+  const dueSoonPreview = (data.dueSoonActionItems ?? []).slice(0, PREVIEW_COUNT)
+  const overduePreview = overdueItems.slice(0, PREVIEW_COUNT)
   const header = (
     <PageHeader
       title="대시보드"
@@ -153,7 +158,7 @@ export default function DashboardPage() {
             </p>
           ) : (
             <ul className="space-y-xxs">
-              {data.dueSoonActionItems.map((item) => (
+              {dueSoonPreview.map((item) => (
                 <li key={item.actionItemId}>
                   <Link
                     to={`${base}/tasks/${item.actionItemId}`}
@@ -243,7 +248,7 @@ export default function DashboardPage() {
             </p>
           ) : (
             <ul className="space-y-xxs">
-              {overdueItems.map((item) => (
+              {overduePreview.map((item) => (
                 <li key={item.id}>
                   <Link
                     to={`${base}/tasks/${item.id}`}
