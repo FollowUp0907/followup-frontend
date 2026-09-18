@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
@@ -19,6 +19,9 @@ const EXIT_MS = 200
  *
  * Esc 와 바깥 클릭으로 닫히고, 열릴 때 패널로 포커스를 옮겼다가
  * 닫히면 열기 전에 보던 요소로 되돌린다.
+ *
+ * 내용이 넘치면 본문만 스크롤하는데, 얇은 스크롤바만으로는 "잘린 것" 처럼 보여서
+ * 아래에 더 있을 때 옅은 그라데이션을 깔아 이어진다는 걸 알린다.
  */
 export function Drawer({
   open,
@@ -34,8 +37,27 @@ export function Drawer({
   footer?: ReactNode
 }) {
   const [mounted, setMounted] = useState(open)
+  const [moreBelow, setMoreBelow] = useState(false)
   const panelRef = useRef<HTMLDivElement>(null)
+  const bodyRef = useRef<HTMLDivElement>(null)
   const restoreTo = useRef<HTMLElement | null>(null)
+
+  // 아래에 더 있는지 — 내용이 바뀌거나 스크롤할 때마다 다시 잰다.
+  const measure = useCallback(() => {
+    const el = bodyRef.current
+    if (!el) return
+    setMoreBelow(el.scrollTop + el.clientHeight < el.scrollHeight - 2)
+  }, [])
+
+  useEffect(() => {
+    const el = bodyRef.current
+    if (!mounted || !el) return
+    measure()
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    for (const child of Array.from(el.children)) ro.observe(child)
+    return () => ro.disconnect()
+  }, [mounted, measure, children])
 
   // 열리면 바로 붙이고, 닫히면 미끄러져 나갈 시간을 준 뒤 뗀다.
   useEffect(() => {
@@ -89,7 +111,9 @@ export function Drawer({
         aria-label={title}
         tabIndex={-1}
         className={cn(
-          'absolute right-0 top-0 flex h-full w-full flex-col border-l border-hairline bg-canvas shadow-card outline-none sm:w-[440px]',
+          'absolute right-0 top-0 flex h-full w-full flex-col border-l border-hairline bg-canvas shadow-card outline-none',
+          // 좁으면 내용이 잘려 보인다. 화면이 커질수록 넉넉하게.
+          'sm:w-[440px] md:w-[520px] lg:w-[580px]',
           'motion-reduce:animate-none',
           open ? 'animate-slide-in-right' : 'animate-slide-out-right',
         )}
@@ -101,7 +125,19 @@ export function Drawer({
           </IconButton>
         </div>
 
-        <div className="thin-scroll flex-1 overflow-y-auto px-lg py-lg">{children}</div>
+        <div className="relative min-h-0 flex-1">
+          <div ref={bodyRef} onScroll={measure} className="thin-scroll h-full overflow-y-auto px-lg pb-xxl pt-lg">
+            {children}
+          </div>
+          {/* 아래에 더 있을 때만 — 내용이 끊긴 게 아니라 이어진다는 표시 */}
+          <div
+            className={cn(
+              'pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-canvas to-transparent transition-opacity',
+              moreBelow ? 'opacity-100' : 'opacity-0',
+            )}
+            aria-hidden
+          />
+        </div>
 
         {footer && <div className="flex gap-sm border-t border-hairline-soft px-lg py-md">{footer}</div>}
       </div>
