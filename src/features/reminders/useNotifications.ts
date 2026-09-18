@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as actionItemApi from '@/api/actionItemApi'
 import * as notificationApi from '@/api/notificationApi'
@@ -90,12 +90,23 @@ function saveKeys(storageKey: string, keys: string[]) {
 }
 
 /**
- * 서버가 밀어 주지 않아서 주기적으로 물어본다.
- * 여기에 더해 (1) 창으로 돌아올 때 (2) 탭이 다시 보일 때 (3) 종을 열 때
- * 즉시 한 번 더 받아 온다. 그래서 새로고침 없이도 바로 반영된다.
+ * 폴링 간격을 두 갈래로 나눈다. 비용이 아주 다르기 때문이다.
+ *
+ *   알림 목록   요청 1개          -> 짧게 (15초)
+ *   업무 목록   요청 N개(프로젝트) -> 길게 (60초)
+ *
+ * 둘을 같은 15초로 두면 분당 요청이 4 x (1 + N) 이 된다. 프로젝트 10개면 44회다.
+ * 나눠 두면 4 + N 으로 떨어진다 — 같은 조건에서 14회. 30초로 균일하게 돌리던
+ * 때(22회)보다도 적으면서, 종은 더 빨리 갱신된다.
+ *
+ * 업무 쪽이 느려도 체감이 안 나는 이유는, 아래에서 (1) 창으로 돌아올 때
+ * (2) 탭이 다시 보일 때 (3) 네트워크가 돌아올 때 (4) 종을 열 때 즉시 한 번 더
+ * 받아 오기 때문이다. 마감/지연은 하루 단위로 변하는 값이라 주기가 길어도 된다.
+ *
  * 진짜 즉시 전달은 SSE 가 필요하다 — NOTIFICATIONS.md 3부 ② 참고.
  */
-const POLL_MS = 15_000
+const NOTIFICATION_POLL_MS = 15_000
+const TASK_POLL_MS = 60_000
 
 /**
  * 백엔드가 type 을 단계적으로 올리는 중이라 없을 수도 있고, 예전 REMINDER 행이
@@ -113,10 +124,16 @@ export function useNotifications(userId?: number, { active = true }: { active?: 
   const qc = useQueryClient()
   const enabled = !!userId
 
-  /** 알림에 영향을 주는 질의를 전부 다시 받아 온다. */
+  // 서버가 마감/지연까지 내려 주면(아래 래치) 업무 목록은 알림과 상관이 없어진다.
+  const derivingRef = useRef(true)
+
+  /** 알림에 영향을 주는 질의를 다시 받아 온다. */
   const refresh = useCallback(() => {
     void qc.invalidateQueries({ queryKey: qk.notifications })
-    void qc.invalidateQueries({ queryKey: ['project'], predicate: (q) => q.queryKey[2] === 'action-items' })
+    // 마감·지연을 프론트가 계산하는 동안에만 업무 목록까지 함께 당겨 온다.
+    if (derivingRef.current) {
+      void qc.invalidateQueries({ queryKey: ['project'], predicate: (q) => q.queryKey[2] === 'action-items' })
+    }
   }, [qc])
 
   // 탭이 다시 보이거나 네트워크가 돌아오면 기다리지 않고 바로 확인한다.
@@ -145,26 +162,41 @@ export function useNotifications(userId?: number, { active = true }: { active?: 
     queryKey: qk.notifications,
     queryFn: () => notificationApi.listNotifications(),
     enabled,
-    refetchInterval: POLL_MS,
+    refetchInterval: NOTIFICATION_POLL_MS,
     refetchOnWindowFocus: true,
     staleTime: 0,
   })
 
-  // 2) 내가 담당인 지연 업무 — 프론트에서 계산한다
+  /**
+   * 서버가 마감/지연을 직접 내려 주기 시작하면 프론트 계산을 접는다.
+   * 그 순간 프로젝트 수만큼 나가던 요청이 통째로 사라진다. (N+1 -> 1)
+   *
+   * 한 번이라도 봤으면 계속 서버를 믿는다 — "지금 지연된 업무가 없어서 안 온 것"
+   * 과 "서버가 아직 안 만드는 것" 을 응답만으로는 구분할 수 없어서, 왔다 갔다
+   * 하지 않도록 래치로 잡아 둔다. 서버가 지원하기 전에는 양쪽 결과가 같으므로
+   * 사용자에게는 차이가 보이지 않는다.
+   */
+  const serverSendsDueKinds = useRef(false)
+  if ((server ?? []).some((n) => kindOf(n) === 'DUE_SOON' || kindOf(n) === 'OVERDUE')) {
+    serverSendsDueKinds.current = true
+  }
+  const deriveLocally = enabled && !serverSendsDueKinds.current
+  derivingRef.current = deriveLocally
+
+  // 2) 내가 담당인 마감·지연 업무 — 서버가 안 주는 동안만 프론트에서 계산한다
   const { data: projects } = useQuery({
     queryKey: qk.projects,
     queryFn: projectApi.listProjects,
-    enabled,
+    enabled: deriveLocally,
     staleTime: 60_000,
   })
 
   const itemQueries = useQueries({
-    queries: (projects ?? []).map((p) => ({
+    queries: (deriveLocally ? (projects ?? []) : []).map((p) => ({
       queryKey: qk.actionItems(p.id),
       queryFn: () => actionItemApi.listActionItems(p.id),
-      enabled,
-      refetchInterval: POLL_MS,
-      // 창으로 돌아왔을 때 기다리지 않고 바로 맞춘다.
+      refetchInterval: TASK_POLL_MS,
+      // 창으로 돌아왔을 때는 주기를 기다리지 않고 바로 맞춘다.
       refetchOnWindowFocus: true,
       staleTime: 0,
     })),
