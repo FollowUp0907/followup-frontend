@@ -672,14 +672,7 @@ function TaskCard({
         {item.title}
       </span>
 
-      {/* 좌측 상단 상태 인디케이터 — 예정 회색 / 진행 중 파랑 / 완료 초록 */}
-      <span
-        className="absolute left-md top-md h-2.5 w-2.5 rounded-pill"
-        style={{ background: STATUS_DOT_COLOR[item.status] }}
-        aria-label={STATUS_LABEL[item.status]}
-      />
-
-      <div className="flex items-start justify-between gap-xs pl-md">
+      <div className="flex items-start justify-between gap-xs">
         {/* 한 줄로 자르고, 카드에 올리면 제목 전체가 말풍선으로 뜬다 */}
         <p className="min-w-0 flex-1 truncate pt-[1px] text-title-sm leading-snug text-ink">{item.title}</p>
         <RowMenu items={menuItems} label={`${item.title} 메뉴`} />

@@ -132,7 +132,7 @@ export default function MeetingDetailPage() {
               {editing ? '편집 취소' : '회의 수정'}
             </Button>
             <ButtonLink to={`${base}/meetings/${meetingId}/analysis`}>
-              {effectiveStatus === 'CONFIRMED' ? 'AI 재분석하기' : 'AI 분석하기'}
+              {effectiveStatus === 'CONFIRMED' ? '결과 보기' : 'AI 분석하기'}
             </ButtonLink>
           </>
         }
@@ -327,7 +327,7 @@ export default function MeetingDetailPage() {
         open={reanalyzeOpen}
         title="회의록이 바뀌었습니다. 다시 분석할까요?"
         description={
-          '바뀐 내용으로 새 초안을 만듭니다. 확정하기 전까지는 기존 후속 업무가 그대로 유지됩니다.\n나중에 회의 상세에서 "AI 재분석하기" 로 다시 할 수도 있습니다.'
+          '바뀐 내용으로 새 초안을 만듭니다. 확정하기 전까지는 기존 후속 업무가 그대로 유지됩니다.\n지금 안 해도, 회의록을 고쳐 저장할 때마다 다시 물어봅니다.'
         }
         confirmLabel="다시 분석"
         cancelLabel="나중에"
@@ -345,7 +345,9 @@ export default function MeetingDetailPage() {
       <ConfirmDialog
         open={confirmDelete}
         title="회의를 삭제할까요?"
-        description="회의록과 결정 사항이 삭제됩니다. 이 회의에서 만들어진 후속 업무는 그대로 남습니다.\n되돌릴 수 없습니다."
+        description={
+          '회의록과 결정 사항이 삭제됩니다. 이 회의에서 만들어진 후속 업무는 그대로 남습니다.\n되돌릴 수 없습니다.'
+        }
         loading={deleting}
         onConfirm={onDelete}
         onClose={() => setConfirmDelete(false)}

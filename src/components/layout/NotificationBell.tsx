@@ -83,8 +83,11 @@ export function NotificationBell() {
     if (!n.read) void markRead(n)
   }
 
-  // 지연은 읽음이 없으니 "모두 읽음" 대상에서 뺀다.
-  const hasServerUnread = all.some((n) => !n.read && n.kind !== 'OVERDUE')
+  // 지연은 읽음이 없으니 "모두 읽음" 대상에서 뺀다. (지우는 건 된다)
+  const hasUnread = all.some((n) => !n.read && n.kind !== 'OVERDUE')
+  // 지난 업무는 맨 위에 따로 모아 상시 표시한다.
+  const overdue = all.filter((n) => n.kind === 'OVERDUE')
+  const rest = all.filter((n) => n.kind !== 'OVERDUE')
 
   return (
     <div className="relative" ref={ref}>
@@ -116,12 +119,17 @@ export function NotificationBell() {
               </button>
             ) : (
               <>
-                <span className="text-title-sm text-ink">알림</span>
-                {hasServerUnread && (
+                <span className="min-w-0 flex-1">
+                  <span className="block text-title-sm text-ink">알림</span>
+                  <span className="block text-caption font-normal text-muted-soft">
+                    {unreadCount > 0 ? `${unreadCount}개의 알림이 있습니다` : '모두 확인했습니다'}
+                  </span>
+                </span>
+                {hasUnread && (
                   <button
                     type="button"
                     onClick={() => void markAllRead()}
-                    className="ml-auto text-caption font-normal text-muted transition-colors hover:text-ink"
+                    className="shrink-0 text-caption font-normal text-muted transition-colors hover:text-ink"
                   >
                     모두 읽음
                   </button>
@@ -133,8 +141,8 @@ export function NotificationBell() {
               onClick={() => setOpen(false)}
               aria-label="알림 닫기"
               className={cn(
-                'inline-flex h-6 w-6 items-center justify-center rounded-sm text-muted',
-                (selected || !hasServerUnread) && 'ml-auto',
+                'inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-muted',
+                selected && 'ml-auto',
               )}
             >
               <X size={15} />
@@ -154,44 +162,42 @@ export function NotificationBell() {
               }}
             />
           ) : (
-            <ul className="max-h-[360px] overflow-y-auto p-xxs">
+            <div className="max-h-[360px] overflow-y-auto">
               {all.length === 0 && (
-                <li className="px-md py-xl text-center text-body-sm text-muted">새로운 알림이 없습니다.</li>
+                <p className="px-md py-xl text-center text-body-sm text-muted">새로운 알림이 없습니다.</p>
               )}
-              {all.map((n) => {
-                const Icon = KIND_ICON[n.kind]
-                return (
-                  <li key={n.key}>
-                    <button
-                      type="button"
-                      onClick={() => openDetail(n)}
-                      className="flex w-full items-start gap-xs rounded-sm px-sm py-xs text-left transition-colors hover:bg-surface-card"
-                    >
-                      <span
-                        className="mt-[2px] flex h-5 w-5 shrink-0 items-center justify-center rounded-sm"
-                        style={{ background: `${KIND_COLOR[n.kind]}1a`, color: KIND_COLOR[n.kind] }}
-                        aria-hidden
-                      >
-                        <Icon size={12} />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-xs">
-                          <span className={cn('min-w-0 flex-1 truncate text-body-sm', n.read ? 'text-body' : 'text-ink')}>
-                            {n.taskTitle}
-                          </span>
-                          <DDay dueDate={n.dueDate} kind={n.kind} />
-                        </span>
-                        <span className="block truncate text-caption font-normal text-muted-soft">
-                          {KIND_LABEL[n.kind]}
-                          {n.at ? ` · ${n.dueDate ? formatDate(n.at) : dayjs(n.at).fromNow()}` : ''}
-                        </span>
-                      </span>
-                      {!n.read && <span className="mt-[7px] h-1.5 w-1.5 shrink-0 rounded-pill bg-error" aria-hidden />}
-                    </button>
-                  </li>
-                )
-              })}
-            </ul>
+
+              {overdue.length > 0 && (
+                <section className="border-b border-hairline-soft bg-error/[0.04]">
+                  <p className="flex items-center gap-xxs px-md pb-xxs pt-sm text-caption font-semibold text-error">
+                    <AlertTriangle size={12} aria-hidden /> 지난 업무 {overdue.length}건
+                  </p>
+                  <ul className="p-xxs pt-0">
+                    {overdue.map((n) => (
+                      <NotificationRow
+                        key={n.key}
+                        notification={n}
+                        onOpen={() => openDetail(n)}
+                        onRemove={() => void remove(n)}
+                      />
+                    ))}
+                  </ul>
+                </section>
+              )}
+
+              {rest.length > 0 && (
+                <ul className="p-xxs">
+                  {rest.map((n) => (
+                    <NotificationRow
+                      key={n.key}
+                      notification={n}
+                      onOpen={() => openDetail(n)}
+                      onRemove={() => void remove(n)}
+                    />
+                  ))}
+                </ul>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -240,12 +246,81 @@ function DetailView({
         <Button size="sm" fullWidth className="min-w-0" onClick={onOpenTask}>
           업무 보기
         </Button>
-        {notification.serverId && (
-          <Button size="sm" variant="secondary" className="shrink-0 whitespace-nowrap" onClick={onRemove}>
-            삭제
-          </Button>
-        )}
+        <Button size="sm" variant="secondary" className="shrink-0 whitespace-nowrap" onClick={onRemove}>
+          삭제
+        </Button>
       </div>
     </div>
+  )
+}
+
+/**
+ * 알림 한 줄.
+ * 안 읽은 것은 흰 바탕 + 진한 글씨 + 왼쪽 표시줄, 읽은 것은 흐리게 눕힌다.
+ * 마우스를 올리면 오른쪽에 삭제가 나온다.
+ */
+function NotificationRow({
+  notification: n,
+  onOpen,
+  onRemove,
+}: {
+  notification: AppNotification
+  onOpen: () => void
+  onRemove: () => void
+}) {
+  const Icon = KIND_ICON[n.kind]
+  return (
+    <li className="group relative">
+      <button
+        type="button"
+        onClick={onOpen}
+        className={cn(
+          'flex w-full items-start gap-xs rounded-sm py-xs pl-sm pr-xl text-left transition-colors hover:bg-surface-card',
+          !n.read && 'bg-canvas',
+        )}
+      >
+        {/* 안 읽음 표시줄 */}
+        <span
+          className={cn('absolute bottom-xxs left-0 top-xxs w-[3px] rounded-pill', !n.read && 'bg-error')}
+          aria-hidden
+        />
+        <span
+          className={cn(
+            'mt-[2px] flex h-5 w-5 shrink-0 items-center justify-center rounded-sm',
+            n.read && 'opacity-50',
+          )}
+          style={{ background: `${KIND_COLOR[n.kind]}1a`, color: KIND_COLOR[n.kind] }}
+          aria-hidden
+        >
+          <Icon size={12} />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex items-center gap-xs">
+            <span
+              className={cn(
+                'min-w-0 flex-1 truncate text-body-sm',
+                n.read ? 'font-normal text-muted' : 'font-semibold text-ink',
+              )}
+            >
+              {n.taskTitle}
+            </span>
+            <DDay dueDate={n.dueDate} kind={n.kind} />
+          </span>
+          <span className={cn('block truncate text-caption font-normal', n.read ? 'text-muted-soft' : 'text-muted')}>
+            {KIND_LABEL[n.kind]}
+            {n.at ? ` · ${n.dueDate ? formatDate(n.at) : dayjs(n.at).fromNow()}` : ''}
+            {n.read && n.kind !== 'OVERDUE' ? ' · 읽음' : ''}
+          </span>
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={onRemove}
+        aria-label={`${n.taskTitle} 알림 삭제`}
+        className="absolute right-xxs top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-sm text-muted-soft opacity-0 transition-opacity hover:bg-surface-strong hover:text-ink focus-visible:opacity-100 group-hover:opacity-100"
+      >
+        <X size={13} />
+      </button>
+    </li>
   )
 }

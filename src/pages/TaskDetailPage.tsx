@@ -192,8 +192,27 @@ export default function TaskDetailPage() {
                       ]}
                     />
                   </FormRow>
-                  <FormRow label="마감일">
-                    <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                  <FormRow label="마감일" hint={dueDate ? undefined : '없음'}>
+                    <div className="flex items-center gap-xs">
+                      <Input
+                        type="date"
+                        className="min-w-0 flex-1"
+                        value={dueDate}
+                        onChange={(e) => setDueDate(e.target.value)}
+                      />
+                      {/* 날짜 입력은 브라우저마다 비우기가 까다로워서 버튼을 따로 둔다. */}
+                      {dueDate && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          className="shrink-0 whitespace-nowrap"
+                          onClick={() => setDueDate('')}
+                        >
+                          지우기
+                        </Button>
+                      )}
+                    </div>
                   </FormRow>
                   <FormRow label="우선순위">
                     <Dropdown

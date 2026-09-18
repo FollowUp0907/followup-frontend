@@ -484,7 +484,7 @@ export default function AnalysisPage() {
             </div>
           </div>
           <p className="mt-xs text-caption font-normal text-muted-soft">
-            다시 분석하려면 회의 상세에서 회의록을 고친 뒤 <strong className="text-muted">AI 재분석하기</strong> 를 눌러
+            다시 분석하려면 회의 상세에서 회의록을 고친 뒤 <strong className="text-muted">저장</strong> 할 때 나오는 안내에서 다시 분석을 눌러
             주세요.
           </p>
         </div>

@@ -53,18 +53,23 @@ export interface AppNotification {
 }
 
 /**
- * 마감 예고를 "하루 한 번" 으로 만드는 장치.
+ * 프론트가 계산한 알림(마감 예고·지연)의 읽음/지움 상태.
  *
- * 키에 날짜가 들어 있어서 자정이 지나면 **저절로 새 키**가 된다.
+ * 마감 예고 키에는 날짜가 들어 있어서 자정이 지나면 **저절로 새 키**가 된다.
  * 그래서 오늘 읽고 넘겨도 내일 다시 뜬다. 따로 만료 처리를 하지 않아도 된다.
- * 이 브라우저에만 저장한다 — 서버가 만든 알림이 아니라 화면이 계산한 것이라
+ *
+ * 지연 알림은 상시라 읽음이 없지만, 손으로 지울 수는 있어야 해서 지움 목록을
+ * 따로 둔다. 지워도 마감일이 바뀌면(= 키가 바뀌면) 다시 뜬다.
+ *
+ * 둘 다 이 브라우저에만 저장한다 — 서버가 만든 알림이 아니라 화면이 계산한 것이라
  * 기기마다 따로 읽어도 문제가 없다.
  */
 const LOCAL_READ_KEY = 'followup.notifications.read'
+const LOCAL_HIDDEN_KEY = 'followup.notifications.hidden'
 
-function loadLocalRead(): string[] {
+function loadKeys(storageKey: string): string[] {
   try {
-    const raw = localStorage.getItem(LOCAL_READ_KEY)
+    const raw = localStorage.getItem(storageKey)
     const parsed: unknown = raw ? JSON.parse(raw) : []
     return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === 'string') : []
   } catch {
@@ -72,14 +77,14 @@ function loadLocalRead(): string[] {
   }
 }
 
-function saveLocalRead(keys: string[]) {
-  // 키 끝의 날짜로 지난 것을 떨군다. 안 그러면 계속 쌓인다.
+function saveKeys(storageKey: string, keys: string[]) {
+  // 마감 예고 키는 끝이 날짜라 지난 것을 떨군다. 안 그러면 계속 쌓인다.
   const cutoff = dayjs().subtract(2, 'day').format('YYYY-MM-DD')
-  const kept = keys.filter((k) => k.slice(-10) >= cutoff)
+  const kept = keys.filter((k) => !/\d{4}-\d{2}-\d{2}$/.test(k) || k.slice(-10) >= cutoff)
   try {
-    localStorage.setItem(LOCAL_READ_KEY, JSON.stringify(kept))
+    localStorage.setItem(storageKey, JSON.stringify(kept))
   } catch {
-    // 시크릿 모드 등 저장이 막힌 경우 — 읽음 처리는 이번 세션에만 남는다.
+    // 시크릿 모드 등 저장이 막힌 경우 — 이번 세션에만 남는다.
   }
   return kept
 }
@@ -128,7 +133,8 @@ export function useNotifications(userId?: number) {
     })),
   })
 
-  const [localRead, setLocalRead] = useState<string[]>(loadLocalRead)
+  const [localRead, setLocalRead] = useState<string[]>(() => loadKeys(LOCAL_READ_KEY))
+  const [hidden, setHidden] = useState<string[]>(() => loadKeys(LOCAL_HIDDEN_KEY))
 
   const fromMyTasks = useMemo<AppNotification[]>(() => {
     if (!userId) return []
@@ -148,7 +154,8 @@ export function useNotifications(userId?: number) {
         }
         if (left < 0) {
           // 지연은 해결될 때까지 계속 떠 있어야 해서 읽음 처리를 두지 않는다.
-          return [{ ...common, key: `overdue-${i.id}`, kind: 'OVERDUE' as const, read: false }]
+          // 키에 마감일을 넣는다. 마감을 옮기면 지웠던 알림도 새 알림으로 다시 뜬다.
+          return [{ ...common, key: `overdue-${i.id}-${i.dueDate}`, kind: 'OVERDUE' as const, read: false }]
         }
         if (left <= DUE_SOON_NOTICE_DAYS) {
           // 키에 오늘 날짜가 들어가서, 읽고 넘겨도 내일 새 알림으로 다시 뜬다.
@@ -157,8 +164,9 @@ export function useNotifications(userId?: number) {
         }
         return []
       })
+      .filter((n) => !hidden.includes(n.key))
       .sort((a, b) => a.at.localeCompare(b.at))
-  }, [itemQueries, userId, localRead])
+  }, [itemQueries, userId, localRead, hidden])
 
   const fromServer = useMemo<AppNotification[]>(
     () =>
@@ -199,7 +207,8 @@ export function useNotifications(userId?: number) {
     (n: AppNotification) => {
       if (n.serverId) return readMutation.mutateAsync(n.serverId)
       // 지연은 상시 알림이라 읽음이 없다. 마감 예고만 오늘 하루 접어 둔다.
-      if (n.kind === 'DUE_SOON') setLocalRead((prev) => (prev.includes(n.key) ? prev : saveLocalRead([...prev, n.key])))
+      if (n.kind === 'DUE_SOON')
+        setLocalRead((prev) => (prev.includes(n.key) ? prev : saveKeys(LOCAL_READ_KEY, [...prev, n.key])))
       return Promise.resolve()
     },
     [readMutation],
@@ -207,9 +216,19 @@ export function useNotifications(userId?: number) {
 
   const markAllRead = useCallback(async () => {
     const localKeys = all.filter((n) => n.kind === 'DUE_SOON' && !n.read).map((n) => n.key)
-    if (localKeys.length) setLocalRead((prev) => saveLocalRead([...prev, ...localKeys]))
+    if (localKeys.length) setLocalRead((prev) => saveKeys(LOCAL_READ_KEY, [...prev, ...localKeys]))
     if (all.some((n) => n.serverId && !n.read)) await readAllMutation.mutateAsync()
   }, [all, readAllMutation])
+
+  /** 서버 알림은 서버에서 지우고, 프론트가 만든 것은 이 브라우저에서 숨긴다. */
+  const remove = useCallback(
+    (n: AppNotification) => {
+      if (n.serverId) return deleteMutation.mutateAsync(n.serverId)
+      setHidden((prev) => (prev.includes(n.key) ? prev : saveKeys(LOCAL_HIDDEN_KEY, [...prev, n.key])))
+      return Promise.resolve()
+    },
+    [deleteMutation],
+  )
 
   const unreadCount = all.filter((n) => !n.read).length
 
@@ -218,7 +237,7 @@ export function useNotifications(userId?: number) {
     unreadCount,
     markRead,
     markAllRead,
-    remove: (n: AppNotification) => (n.serverId ? deleteMutation.mutateAsync(n.serverId) : Promise.resolve()),
+    remove,
   }
 }
 
