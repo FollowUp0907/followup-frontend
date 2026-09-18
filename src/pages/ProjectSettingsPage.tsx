@@ -126,9 +126,9 @@ export default function ProjectSettingsPage() {
             </dl>
           </SurfaceCard>
 
-          {/* 삭제는 오른쪽 아래 끝에 둔다 — 실수로 먼저 눈에 띄지 않게. */}
+          {/* 프로젝트 정보 바로 아래에 붙인다. */}
           {isOwner && (
-            <SurfaceCard className="mt-auto border-error/30 p-lg">
+            <SurfaceCard className="border-error/30 p-lg">
               <h2 className="text-title-sm text-error">프로젝트 삭제</h2>
               <p className="mt-xxs text-caption font-normal text-muted">
                 회의·회의록·결정 사항·후속 업무가 모두 삭제됩니다. 되돌릴 수 없습니다.
