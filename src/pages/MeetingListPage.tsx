@@ -3,7 +3,8 @@ import { Link } from 'react-router-dom'
 import { errorMessage } from '@/api/client'
 import { Plus, Search } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { PageWidth } from '@/components/layout/PageWidth'
+import { FitPage } from '@/components/layout/FitPage'
+import { Pager, usePager } from '@/components/ui/Pager'
 import { MeetingStatusBadge } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
@@ -28,8 +29,11 @@ export default function MeetingListPage() {
     .filter((m) => !keyword || m.title.toLowerCase().includes(keyword))
     .sort((a, b) => dayjs(b.scheduledAt).valueOf() - dayjs(a.scheduledAt).valueOf())
 
+  // 한 화면에 들어오도록 5개씩 끊는다.
+  const page = usePager(meetings, 5)
+
   return (
-    <PageWidth size={1120}>
+    <FitPage>
       <PageHeader
         title="회의"
         description="회의록을 작성하고 과거 회의를 확인하세요."
@@ -90,12 +94,13 @@ export default function MeetingListPage() {
       )}
 
       {meetings.length > 0 && (
-        <ul className="space-y-sm">
-          {meetings.map((m) => (
+        <div className="flex min-h-0 flex-1 flex-col">
+          <ul key={page.page} className="animate-page-in space-y-sm">
+            {page.visible.map((m) => (
             <SurfaceCard as="li" key={m.id} className="shadow-none transition-shadow hover:shadow-card">
               <Link
                 to={`${base}/meetings/${m.id}`}
-                className="flex flex-wrap items-center justify-between gap-md px-xl py-lg"
+                className="flex flex-wrap items-center justify-between gap-md px-lg py-md"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-sm">
@@ -107,9 +112,11 @@ export default function MeetingListPage() {
                 <span className="text-nav-link text-muted">상세 보기 →</span>
               </Link>
             </SurfaceCard>
-          ))}
-        </ul>
+            ))}
+          </ul>
+          <Pager page={page.page} pageCount={page.pageCount} onChange={page.setPage} className="mt-auto pt-sm" />
+        </div>
       )}
-    </PageWidth>
+    </FitPage>
   )
 }

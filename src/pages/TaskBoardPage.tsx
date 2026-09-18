@@ -2,6 +2,7 @@ import { useId, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { CalendarClock, ChevronDown, ChevronsUp, Equal, ExternalLink, GripVertical, Plus, Search, Trash2 } from 'lucide-react'
 import { errorMessage } from '@/api/client'
+import { FitPage } from '@/components/layout/FitPage'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar, DueBadge, PriorityBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -128,7 +129,7 @@ export default function TaskBoardPage() {
   const byStatus = (status: ActionItemStatus) => filtered.filter((i) => i.status === status)
 
   // 목록 뷰도 한 화면에 들어오도록 끊어 보여 준다. 보드 컬럼과 같은 Pager 를 쓴다.
-  const listPage = usePager(filtered, 6)
+  const listPage = usePager(filtered, 5)
 
   const changeStatus = async (item: ActionItemListResDto, status: ActionItemStatus) => {
     if (item.status === status) return
@@ -169,7 +170,7 @@ export default function TaskBoardPage() {
   )
 
   return (
-    <>
+    <FitPage>
       <PageHeader
         title="후속 업무"
         description="회의에서 확정된 업무와 직접 추가한 업무를 함께 관리합니다."
@@ -191,7 +192,7 @@ export default function TaskBoardPage() {
       />
 
       {/* 검색 + 필터를 한 카드에 담는다. 줄 수를 줄여 페이지가 화면 안에 들어오게. */}
-      <SurfaceCard className="mb-sm p-sm">
+      <SurfaceCard className="mb-sm shrink-0 p-sm">
         {/* 업무명 검색 — 백엔드에 검색 파라미터가 없어 받아 온 목록에서 거른다 */}
         <div className="relative mb-xs">
           <Search size={16} className="pointer-events-none absolute left-sm top-1/2 -translate-y-1/2 text-muted" />
@@ -330,7 +331,7 @@ export default function TaskBoardPage() {
       </SurfaceCard>
 
       {isLoading && (
-        <div className="grid gap-lg md:grid-cols-3">
+        <div className="grid min-h-0 flex-1 gap-md md:grid-cols-3">
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-[240px]" />
           ))}
@@ -362,7 +363,7 @@ export default function TaskBoardPage() {
       )}
 
       {!isLoading && !isError && filtered.length > 0 && view === 'board' && (
-        <div className="grid gap-lg md:grid-cols-3">
+        <div className="grid min-h-0 flex-1 gap-md md:grid-cols-3">
           {STATUS_ORDER.map((status) => (
             <BoardColumn
               key={status}
@@ -535,7 +536,7 @@ export default function TaskBoardPage() {
         pending={createItem.isPending}
         members={members}
       />
-    </>
+    </FitPage>
   )
 }
 
@@ -580,8 +581,8 @@ function BoardColumn({
   onCardDragStart: (id: number) => void
   onCardDragEnd: () => void
 }) {
-  // 한 화면에 들어오도록 컬럼당 4개씩.
-  const pager = usePager(items, 4)
+  // 한 화면에 5개씩 보인다. 넘치면 페이지로 넘긴다.
+  const pager = usePager(items, 5)
 
   return (
     <section
@@ -605,7 +606,7 @@ function BoardColumn({
         isDropTarget ? 'bg-surface-card ring-[1.5px] ring-inset ring-ink' : 'bg-surface-soft',
       )}
     >
-      <div className="flex items-center gap-xs px-xs pb-sm pt-xxs">
+      <div className="flex items-center gap-xs px-xs pb-xs pt-xxs">
         <span className="h-2 w-2 shrink-0 rounded-pill" style={{ background: STATUS_DOT_COLOR[status] }} aria-hidden />
         <h2 className="text-title-sm text-ink">{STATUS_LABEL[status]}</h2>
         <span className="ml-auto rounded-pill bg-canvas px-xs py-[1px] text-caption tabular-nums text-muted">
@@ -613,7 +614,7 @@ function BoardColumn({
         </span>
       </div>
 
-      <ul key={pager.page} className="flex-1 animate-page-in space-y-xs" {...pager.swipe}>
+      <ul key={pager.page} className="flex-1 animate-page-in space-y-xxs" {...pager.swipe}>
         {pager.visible.map((item) => (
           <li key={item.id}>
             <TaskCard
@@ -631,7 +632,7 @@ function BoardColumn({
         {isDropTarget && (
           <li
             aria-hidden
-            className="h-[76px] animate-slot-in rounded-md border-[1.5px] border-dashed border-ink/40 bg-ink/[0.04]"
+            className="h-[68px] animate-slot-in rounded-md border-[1.5px] border-dashed border-ink/40 bg-ink/[0.04]"
           />
         )}
         {items.length === 0 && !isDropTarget && (
@@ -689,7 +690,7 @@ function TaskCard({
       onDragEnd={onDragEnd}
       className={cn(
         // 제목이 한 줄이라 높이가 같지만, 배지 유무로 어긋나지 않게 최소 높이를 고정한다.
-        'group relative flex h-[76px] flex-col justify-between cursor-grab rounded-md border bg-canvas px-md py-xs shadow-soft',
+        'group relative flex h-[68px] flex-col justify-between cursor-grab rounded-md border bg-canvas px-sm py-xs shadow-soft',
         'transition-[box-shadow,opacity,transform] hover:shadow-card active:cursor-grabbing',
         'focus-visible:outline-none focus-visible:ring-[1.5px] focus-visible:ring-ink',
         overdue ? 'border-error/40' : 'border-hairline',

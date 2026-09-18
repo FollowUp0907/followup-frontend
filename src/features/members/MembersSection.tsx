@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { EmptyState, Skeleton, SurfaceCard } from '@/components/ui/Card'
+import { Pager, usePager } from '@/components/ui/Pager'
 import { FormRow, Input } from '@/components/ui/Field'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
@@ -33,6 +34,9 @@ export function MembersSection() {
   const [email, setEmail] = useState('')
   const [emailError, setEmailError] = useState<string | null>(null)
   const [target, setTarget] = useState<ProjectMemberResDto | null>(null)
+
+  // 설정 화면이 한 페이지에 들어오도록 3명씩 끊는다.
+  const page = usePager(members, 3)
 
   const countFor = (userId: number) => {
     const mine = (actionItems ?? []).filter((i) => assigneeIdsOf(i).includes(userId))
@@ -71,12 +75,12 @@ export function MembersSection() {
   }
 
   return (
-    <section>
-      <div className="mb-md flex flex-wrap items-center justify-between gap-md">
+    <section className="flex min-h-0 flex-1 flex-col">
+      <div className="mb-sm flex flex-wrap items-center justify-between gap-md">
         <div>
           <h2 className="text-title-md text-ink">구성원</h2>
-          <p className="mt-xxs text-body-sm text-muted">
-            프로젝트를 만든 사람은 OWNER, 초대된 사람은 MEMBER 권한을 갖습니다.
+          <p className="mt-xxs text-caption font-normal text-muted">
+            만든 사람은 OWNER, 초대된 사람은 MEMBER 입니다.
           </p>
         </div>
         {isOwner ? (
@@ -93,12 +97,12 @@ export function MembersSection() {
       )}
 
       {members.length > 0 && (
-        <SurfaceCard className="overflow-hidden">
-          <ul className="divide-y divide-hairline-soft">
-            {members.map((m) => {
+        <SurfaceCard className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <ul key={page.page} className="animate-page-in divide-y divide-hairline-soft">
+            {page.visible.map((m) => {
               const stats = countFor(m.userId)
               return (
-                <li key={m.userId} className="flex flex-wrap items-center justify-between gap-md p-lg">
+                <li key={m.userId} className="flex flex-wrap items-center justify-between gap-md p-sm">
                   <div className="flex min-w-0 items-center gap-sm">
                     <AvatarColorPicker name={m.name} size={40} />
                     <div className="min-w-0">
@@ -128,6 +132,7 @@ export function MembersSection() {
               )
             })}
           </ul>
+          <Pager page={page.page} pageCount={page.pageCount} onChange={page.setPage} className="mt-auto py-sm" />
         </SurfaceCard>
       )}
 
