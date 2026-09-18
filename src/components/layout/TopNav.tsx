@@ -57,7 +57,7 @@ export function TopNav({
   return (
     <header className="sticky top-0 z-40 border-b border-hairline bg-canvas/90 backdrop-blur">
       {/* 헤더 안쪽 너비를 본문과 같게 맞춘다 — 로고와 프로필이 페이지 내용의 좌우 끝에 선다. */}
-      <div className="container-content relative flex h-16 items-center gap-sm">
+      <div className="container-content flex h-16 items-center gap-sm">
         {isApp ? (
           <>
             <Logo variant="symbol" height={22} to="/projects" />
@@ -77,20 +77,8 @@ export function TopNav({
           </nav>
         )}
 
-        {/*
-          프로젝트 탭 — 헤더의 정가운데에 놓는다.
-          양옆(로고·아바타) 너비가 달라서 flex 로는 가운데가 맞지 않아, 절대 위치로 띄우고
-          자리만 flex-1 로 잡아 둔다. 좁은 화면에서는 겹치지 않게 가운데 정렬을 푼다.
-        */}
-        {children && (
-          <>
-            <div className="flex min-w-0 flex-1 justify-center lg:hidden">{children}</div>
-            <div className="pointer-events-none absolute inset-x-0 hidden justify-center lg:flex">
-              <div className="pointer-events-auto">{children}</div>
-            </div>
-            <span className="hidden flex-1 lg:block" aria-hidden />
-          </>
-        )}
+        {/* 프로젝트 탭 — 로고 바로 옆에 붙인다. 남는 자리는 오른쪽 아바타가 가져간다. */}
+        {children && <div className="flex min-w-0 flex-1 items-center">{children}</div>}
 
         <div className={cn('flex items-center gap-sm', !children && 'ml-auto')}>
           {isAuthenticated && <NotificationBell />}
