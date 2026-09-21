@@ -7,6 +7,29 @@ import { GOOGLE_CLIENT_ID, isGoogleLoginEnabled, loadGoogleIdentity } from '@/li
 import type { GoogleCredentialResponse } from '@/lib/googleAuth'
 
 /**
+ * 백엔드가 내려주는 실패 코드를 사람 말로 바꾼다.
+ *
+ * 401 은 기본 문구가 "로그인이 필요합니다." 라서, 로그인을 시도하다 실패한 자리에
+ * 그대로 띄우면 무슨 말인지 알 수 없다. 그래서 코드별로 따로 적는다.
+ */
+function loginErrorMessage(e: unknown): string {
+  if (!(e instanceof ApiError)) return errorMessage(e)
+
+  switch (e.code) {
+    case 'INVALID_GOOGLE_TOKEN':
+      return '구글 인증 정보를 확인하지 못했습니다. 다시 시도해 주세요.'
+    case 'GOOGLE_EMAIL_NOT_VERIFIED':
+      return '구글 계정의 이메일이 인증되지 않았습니다. 구글에서 이메일 인증을 마친 뒤 다시 시도해 주세요.'
+  }
+
+  // 서버에 경로 자체가 없을 때. (우리 백엔드는 매핑 안 된 경로에 401 을 주기도 한다)
+  if (e.status === 404 || e.status === 405 || (e.status === 401 && !e.code)) {
+    return '구글 로그인을 지금 사용할 수 없습니다. 이메일 로그인을 사용해 주세요.'
+  }
+  return errorMessage(e)
+}
+
+/**
  * 구글 로그인 버튼.
  *
  * 구글이 렌더링하는 공식 버튼을 쓴다. (브랜드 가이드라인 준수 + 동작 신뢰성)
@@ -35,12 +58,7 @@ export function GoogleLoginButton({ redirectTo = '/projects' }: { redirectTo?: s
       await loginWithGoogle(res.credential)
       navigate(redirectTo, { replace: true })
     } catch (e) {
-      // 백엔드에 아직 /api/auth/google 이 없을 때를 구분해서 안내한다.
-      if (e instanceof ApiError && (e.status === 404 || e.status === 405)) {
-        setError('백엔드에 구글 로그인 API(/api/auth/google)가 아직 없습니다. 이메일 로그인을 사용해 주세요.')
-      } else {
-        setError(errorMessage(e))
-      }
+      setError(loginErrorMessage(e))
       setPending(false)
     }
   }
