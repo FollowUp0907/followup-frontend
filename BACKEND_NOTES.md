@@ -1358,18 +1358,42 @@ POST /api/invitations/{token}/accept
 `APP_ORIGIN` 은 환경변수로 빼 주세요. 지금 값은 **`https://followup-frontend-pied.vercel.app`** 입니다.
 로컬에서 확인하실 때는 `http://localhost:3000` 입니다.
 
-메일 문안 제안:
+## 메일 본문 — 그대로 쓰시면 됩니다
+
+저장소에 만들어 뒀습니다. 복사해서 쓰시고, 문구는 편한 대로 고치셔도 됩니다.
+
+| 파일 | 용도 |
+| --- | --- |
+| `docs/invite-email.html` | HTML 본문 |
+| `docs/invite-email.txt` | 제목 + 텍스트 본문 (HTML 을 못 읽는 클라이언트용) |
+
+**제목**
 
 ```
-제목: [FollowUp] 장은호 님이 "팔로우업" 프로젝트에 초대했습니다
-
-아래 버튼을 눌러 초대를 수락하세요.
-
-    [ 초대 수락하기 ]      ← {APP_ORIGIN}/invite/{token}
-
-FollowUp 계정이 없다면 가입만 하시면 자동으로 합류합니다.
-이 초대는 7일 뒤 만료됩니다.
+[FollowUp] {{inviterName}} 님이 "{{projectName}}" 프로젝트에 초대했습니다
 ```
+
+**치환할 값**
+
+| 자리 | 넣을 것 | 예 |
+| --- | --- | --- |
+| `{{projectName}}` | 프로젝트 이름 | 팔로우업 |
+| `{{inviterName}}` | 초대한 사람 이름 | 장은호 |
+| `{{inviteeEmail}}` | 초대받은 주소(수신자) | newbie@example.com |
+| `{{acceptUrl}}` | `{APP_ORIGIN}/invite/{token}` | https://followup-frontend-pied.vercel.app/invite/... |
+| `{{expiresDays}}` | 만료까지 일수 | 7 |
+
+Thymeleaf 를 쓰신다면 `{{...}}` 를 `th:text` 로 바꾸시면 됩니다.
+
+**HTML 을 손볼 때 주의할 것**
+
+- 표(table)와 인라인 스타일로 짜여 있습니다. 메일 클라이언트는 외부 CSS·클래스·flex·grid 를
+  자주 지웁니다. 보기 좋게 정리하려고 `<div>` + class 로 바꾸면 Outlook 에서 무너집니다.
+- 카드 폭은 `width="560"` 속성이 아니라 `max-width:560px` 로 줬습니다. 속성으로 박으면
+  휴대폰에서 오른쪽이 잘립니다. Outlook 용으로는 조건부 주석(`<!--[if mso]>`)이 대신 잡아 줍니다.
+- 텍스트 본문(`.txt`)도 함께 보내 주세요. 링크만 있고 HTML 이 없으면 스팸 점수가 올라갑니다.
+
+두 파일 모두 휴대폰(375px)·데스크톱에서 잘리는 곳 없이 보이는 것을 확인했습니다.
 
 ## 부탁드리는 안전장치
 
