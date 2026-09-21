@@ -241,6 +241,7 @@ export default function TaskBoardPage() {
                   ...members.map((m) => ({
                     value: String(m.userId),
                     label: m.name,
+                    description: m.email,
                     adornment: <Avatar name={m.name} size={20} />,
                   })),
                 ]}
@@ -772,7 +773,7 @@ function CreateTaskModal({
     priority?: ActionItemPriority
   }) => void
   pending: boolean
-  members: Array<{ userId: number; name: string }>
+  members: Array<{ userId: number; name: string; email: string }>
 }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -854,6 +855,7 @@ function CreateTaskModal({
               options={members.map((m) => ({
                 value: m.userId,
                 label: m.name,
+                description: m.email,
                 adornment: <Avatar name={m.name} size={20} />,
               }))}
             />

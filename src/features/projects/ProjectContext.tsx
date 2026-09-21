@@ -12,6 +12,8 @@ interface ProjectContextValue {
   /** 현재 로그인 사용자가 이 프로젝트의 OWNER 인지 */
   isOwner: boolean
   memberName: (userId?: number | null) => string
+  /** 담당자 옆에 곁들일 이메일. 모르면 빈 문자열. */
+  memberEmail: (userId?: number | null) => string
   /** AI가 뽑은 담당자 "이름"을 실제 멤버 userId 로 매칭 (완전일치 → 포함관계 순) */
   matchMemberByName: (name?: string | null) => ProjectMemberResDto | undefined
 }
@@ -40,6 +42,7 @@ export function ProjectProvider({ project, children }: { project: ProjectResDto;
       membersLoading: isLoading,
       isOwner: list.some((m) => m.userId === user?.userId && m.role === 'OWNER'),
       memberName: (userId) => (userId ? (byId.get(userId)?.name ?? '알 수 없음') : '미지정'),
+      memberEmail: (userId) => (userId ? (byId.get(userId)?.email ?? '') : ''),
       matchMemberByName: (name) => {
         const q = name?.trim()
         if (!q) return undefined

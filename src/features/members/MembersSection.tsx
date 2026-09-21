@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { errorMessage } from '@/api/client'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -36,8 +36,13 @@ export function MembersSection() {
   const [emailError, setEmailError] = useState<string | null>(null)
   const [target, setTarget] = useState<ProjectMemberResDto | null>(null)
 
+  // 소유자를 맨 위에 두고, 나머지는 원래 순서(참여 순)를 지킨다.
+  const ordered = useMemo(
+    () => [...members].sort((a, b) => Number(b.role === 'OWNER') - Number(a.role === 'OWNER')),
+    [members],
+  )
   // 설정 화면이 한 페이지에 들어오도록 3명씩 끊는다.
-  const page = usePager(members, 3)
+  const page = usePager(ordered, 3)
 
   const countFor = (userId: number) => {
     const mine = (actionItems ?? []).filter((i) => assigneeIdsOf(i).includes(userId))

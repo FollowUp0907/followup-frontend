@@ -49,7 +49,7 @@ export function TaskDetailDrawer({
     if (actionItemId !== null) setHeldId(actionItemId)
   }, [actionItemId])
 
-  const { members, memberName } = useProjectContext()
+  const { members, memberName, memberEmail } = useProjectContext()
   const { data: item, isLoading, isError, error } = useActionItem(heldId ?? 0)
   const updateItem = useUpdateActionItem(projectId)
   const toast = useToast()
@@ -175,6 +175,7 @@ export function TaskDetailDrawer({
               options={members.map((m) => ({
                 value: m.userId,
                 label: m.name,
+                description: m.email,
                 adornment: <Avatar name={m.name} size={20} />,
               }))}
             />
@@ -247,7 +248,14 @@ export function TaskDetailDrawer({
                     {assigneeIdsOf(item).map((id) => (
                       <li key={id} className="flex items-center justify-end gap-xs">
                         <Avatar name={memberName(id)} size={22} />
-                        <span className="truncate">{memberName(id)}</span>
+                        <span className="min-w-0 text-right">
+                          <span className="block truncate leading-tight">{memberName(id)}</span>
+                          {memberEmail(id) && (
+                            <span className="block truncate text-caption font-normal leading-tight text-muted">
+                              {memberEmail(id)}
+                            </span>
+                          )}
+                        </span>
                       </li>
                     ))}
                   </ul>

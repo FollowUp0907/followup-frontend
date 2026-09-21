@@ -21,7 +21,7 @@ import { formatDate, formatDateTime, formatServerDateTime, toDateInput } from '@
 import type { ActionItemPriority, ActionItemStatus } from '@/types/api'
 
 export default function TaskDetailPage() {
-  const { projectId, members, memberName } = useProjectContext()
+  const { projectId, members, memberName, memberEmail } = useProjectContext()
   const params = useParams()
   const actionItemId = Number(params.actionItemId)
   const navigate = useNavigate()
@@ -292,14 +292,24 @@ export default function TaskDetailPage() {
                   )}
                 </dd>
               </div>
-              <div className="flex items-center justify-between gap-md">
-                <dt className="text-muted">담당자</dt>
-                <dd className="flex items-center gap-xs text-ink">
+              <div className="flex items-start justify-between gap-md">
+                <dt className="pt-xxs text-muted">담당자</dt>
+                <dd className="flex min-w-0 items-center gap-xs text-ink">
                   <Avatar
                     name={assigneeIdsOf(item)[0] ? memberName(assigneeIdsOf(item)[0]) : undefined}
                     size={24}
                   />
-                  {assigneeLabel(assigneeIdsOf(item), memberName)}
+                  <span className="min-w-0 text-right">
+                    <span className="block truncate leading-tight">
+                      {assigneeLabel(assigneeIdsOf(item), memberName)}
+                    </span>
+                    {/* 여러 명이면 이메일을 다 쓸 수 없으니 첫 담당자 것만 곁들인다. */}
+                    {assigneeIdsOf(item).length === 1 && memberEmail(assigneeIdsOf(item)[0]) && (
+                      <span className="block truncate text-caption font-normal leading-tight text-muted">
+                        {memberEmail(assigneeIdsOf(item)[0])}
+                      </span>
+                    )}
+                  </span>
                 </dd>
               </div>
               <div className="flex items-center justify-between gap-md">

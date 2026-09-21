@@ -47,7 +47,7 @@ export function useAnchoredPanel(
     setBox({
       top: up ? r.top - gap : r.bottom + gap,
       left: Math.max(8, Math.min(raw, window.innerWidth - w - 8)),
-      width: width === 'anchor' ? r.width : width,
+      width: w,
     })
   }, [anchorRef, width, minWidth, align, estimatedHeight, gap])
 

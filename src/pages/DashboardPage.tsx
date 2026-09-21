@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { FileText, Plus, RefreshCw } from 'lucide-react'
+import { FileText, Plus } from 'lucide-react'
 import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Avatar, DueBadge, MeetingStatusBadge, PriorityBadge } from '@/components/ui/Badge'
@@ -48,7 +48,7 @@ function StatTile({
 
 export default function DashboardPage() {
   const { projectId, project, memberName } = useProjectContext()
-  const { data, isLoading, isError, error, refetch, isFetching } = useDashboard(projectId)
+  const { data, isLoading, isError, error, refetch } = useDashboard(projectId)
   const { statusById } = useMeetingStatuses(projectId)
   // dueSoonActionItems 에는 기한이 지난 업무가 빠져 있어서(2026-09-17 실측)
   // 지연 목록은 업무 목록에서 직접 고른다.
@@ -99,9 +99,6 @@ export default function DashboardPage() {
       description={`${project.name} — 전체 진행 상황`}
       actions={
         <>
-          <Button variant="secondary" onClick={() => refetch()} loading={isFetching}>
-            <RefreshCw size={15} /> 새로고침
-          </Button>
           <ButtonLink to={`${base}/meetings/new`}>
             <Plus size={16} /> 새 회의
           </ButtonLink>

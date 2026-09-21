@@ -89,17 +89,23 @@ export function TopNav({
                 onClick={() => setMenuOpen((v) => !v)}
                 className={cn(
                   'flex items-center gap-xs rounded-pill transition-colors active:bg-surface-card',
-                  isApp ? 'p-xxs' : 'border border-hairline py-xxs pl-xxs pr-sm',
+                  isApp ? 'p-xxs pr-sm' : 'border border-hairline py-xxs pl-xxs pr-sm',
                 )}
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
               >
                 <Avatar name={user?.name || user?.email || '?'} size={isApp ? 32 : 28} />
-                {!isApp && (
-                  <span className="hidden max-w-[140px] truncate text-nav-link text-ink sm:block">
-                    {user?.name || user?.email || '내 계정'}
+                {/* 누구로 로그인했는지 한눈에 — 좁은 화면에서는 아바타만 남긴다. */}
+                <span className="hidden min-w-0 max-w-[180px] text-left sm:block">
+                  <span className="block truncate text-nav-link leading-tight text-ink">
+                    {user?.name || '이름 미확인'}
                   </span>
-                )}
+                  {user?.email && (
+                    <span className="block truncate text-caption font-normal leading-tight text-muted">
+                      {user.email}
+                    </span>
+                  )}
+                </span>
               </button>
               {menuOpen && (
                 <div

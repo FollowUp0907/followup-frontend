@@ -419,6 +419,7 @@ export default function AnalysisPage() {
                           options={members.map((m) => ({
                             value: m.userId,
                             label: m.name,
+                            description: m.email,
                             adornment: <Avatar name={m.name} size={20} />,
                           }))}
                         />

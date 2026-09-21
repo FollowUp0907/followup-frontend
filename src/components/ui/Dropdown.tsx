@@ -71,7 +71,8 @@ export function Dropdown<T extends string>({
 
   const { dropUp, style: panelStyle } = useAnchoredPanel(open, triggerRef, {
     width: 'anchor',
-    minWidth: 180,
+    // 이메일 같은 설명줄이 붙으면 좁은 트리거에서도 읽히도록 더 넓게 편다.
+    minWidth: options.some((o) => o.description) ? 260 : 180,
     estimatedHeight: Math.min(options.length * 40 + 16, 280),
   })
 
