@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, Mail } from 'lucide-react'
 import * as invitationApi from '@/api/invitationApi'
 import { errorMessage } from '@/api/client'
 import { Button, ButtonLink, Spinner } from '@/components/ui/Button'
 import { useAuth } from '@/features/auth/AuthContext'
+import { clearPendingInvite, savePendingInvite } from '@/features/members/pendingInvite'
+import { qk } from '@/lib/queryKeys'
 import { AuthLayout } from './AuthLayout'
 
 /**
@@ -18,8 +20,14 @@ export default function InviteAcceptPage() {
   const { token = '' } = useParams()
   const { isAuthenticated, user } = useAuth()
   const navigate = useNavigate()
+  const qc = useQueryClient()
   const [error, setError] = useState<string | null>(null)
   const [accepting, setAccepting] = useState(false)
+
+  // 로그인하러 갔다가 다른 화면으로 떨어져도 수락할 수 있도록 토큰을 적어 둔다.
+  useEffect(() => {
+    if (token) savePendingInvite(token)
+  }, [token])
 
   const preview = useQuery({
     queryKey: ['invitation', token],
@@ -30,17 +38,37 @@ export default function InviteAcceptPage() {
 
   const back = `/invite/${token}`
 
-  const accept = async () => {
+  const accept = useCallback(async () => {
     setAccepting(true)
     setError(null)
     try {
       const res = await invitationApi.acceptInvitation(token)
-      navigate(res.projectId ? `/projects/${res.projectId}` : '/projects', { replace: true })
+      clearPendingInvite()
+      // 새로 들어간 프로젝트가 목록과 구성원에 바로 보이도록 캐시를 비운다.
+      await qc.invalidateQueries({ queryKey: qk.projects })
+      if (res?.projectId) await qc.invalidateQueries({ queryKey: qk.members(res.projectId) })
+      navigate(res?.projectId ? `/projects/${res.projectId}` : '/projects', { replace: true })
     } catch (e) {
       setError(errorMessage(e))
       setAccepting(false)
     }
-  }
+  }, [token, qc, navigate])
+
+  /*
+   * 로그인만 되어 있으면 버튼을 한 번 더 누르게 하지 않는다.
+   *
+   * 메일 링크로 들어와 가입·로그인을 마치고 돌아온 사람은 이미 "수락" 의 뜻을 밝힌 것이다.
+   * 초대받은 주소와 같은 계정일 때만 자동으로 수락하고, 다르면 아래에서 이유를 보여준다.
+   */
+  const data = preview.data
+  const autoRan = useRef(false)
+  useEffect(() => {
+    if (autoRan.current || !isAuthenticated || !data) return
+    if (data.status !== 'PENDING') return
+    if (user?.email && data.email && user.email.toLowerCase() !== data.email.toLowerCase()) return
+    autoRan.current = true
+    void accept()
+  }, [isAuthenticated, data, user?.email, accept])
 
   if (preview.isLoading) {
     return (
