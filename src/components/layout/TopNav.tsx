@@ -19,6 +19,13 @@ const MARKETING_LINKS = [
  *  - plain     : 프로젝트 목록처럼 내비게이션이 없는 화면. 전체 로고 + 로그아웃
  *  - app       : 프로젝트 안. 심볼 + 구분선 + 탭(ProjectLayout 이 children 으로 넘김) + 아바타
  */
+/** 이름을 아직 모르면 이메일 앞부분이라도 보여준다. (백엔드에 /me 가 없어 이름이 늦게 온다) */
+function displayName(user: { name?: string; email?: string } | null) {
+  if (user?.name) return user.name
+  const local = user?.email?.split('@')[0]
+  return local || '사용자'
+}
+
 export function TopNav({
   variant = 'plain',
   children,
@@ -98,7 +105,7 @@ export function TopNav({
                 {/* 누구로 로그인했는지 한눈에 — 좁은 화면에서는 아바타만 남긴다. */}
                 <span className="hidden min-w-0 max-w-[180px] text-left sm:block">
                   <span className="block truncate text-nav-link leading-tight text-ink">
-                    {user?.name || '이름 미확인'}
+                    {displayName(user)}
                   </span>
                   {user?.email && (
                     <span className="block truncate text-caption font-normal leading-tight text-muted">
@@ -113,7 +120,7 @@ export function TopNav({
                   className="absolute right-0 top-[calc(100%+8px)] w-[220px] animate-fade-in rounded-lg border border-hairline bg-canvas p-xxs shadow-card"
                 >
                   <div className="px-sm py-xs">
-                    <p className="truncate text-title-sm text-ink">{user?.name || '이름 미확인'}</p>
+                    <p className="truncate text-title-sm text-ink">{displayName(user)}</p>
                     <p className="truncate text-caption font-normal text-muted">{user?.email}</p>
                   </div>
                   <div className="my-xxs h-px bg-hairline-soft" />

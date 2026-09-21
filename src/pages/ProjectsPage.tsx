@@ -13,6 +13,7 @@ import { Pager, usePager } from '@/components/ui/Pager'
 import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { Modal } from '@/components/ui/Modal'
 import { useToast } from '@/components/ui/Toast'
+import { useProfileName } from '@/features/auth/useProfileName'
 import { useCreateProject, useProjects } from '@/features/projects/queries'
 import { formatServerRelative } from '@/lib/date'
 
@@ -24,6 +25,8 @@ type FormValues = z.infer<typeof schema>
 
 export default function ProjectsPage() {
   const { data: projects, isLoading, isError, error, refetch } = useProjects()
+  // 우측 상단에 "이름 미확인" 대신 실제 이름이 뜨도록, 이름을 모를 때만 한 번 알아낸다.
+  useProfileName(projects)
   // 4개까지는 그냥 보이고, 그 이상이면 인디케이터로 넘긴다.
   const page = usePager(projects ?? [], 4)
   const createProject = useCreateProject()
