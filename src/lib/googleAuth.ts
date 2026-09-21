@@ -16,6 +16,14 @@ export const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? ''
 /** 클라이언트 ID 가 설정돼 있어야만 구글 로그인 UI 를 노출한다. */
 export const isGoogleLoginEnabled = () => GOOGLE_CLIENT_ID.length > 0
 
+// 값이 비어 있으면 버튼이 조용히 사라진다. 개발 중에는 왜 없는지 알려 준다.
+if (import.meta.env.DEV && !GOOGLE_CLIENT_ID) {
+  console.info(
+    '[FollowUp] 구글 로그인 버튼이 표시되지 않습니다. .env 의 VITE_GOOGLE_CLIENT_ID 가 비어 있습니다.\n' +
+      '구글 클라우드 콘솔 > 사용자 인증 정보 > OAuth 2.0 클라이언트 ID(웹) 값을 넣고 dev 서버를 다시 시작하세요.',
+  )
+}
+
 export interface GoogleCredentialResponse {
   credential: string
   select_by?: string

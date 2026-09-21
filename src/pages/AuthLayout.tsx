@@ -31,15 +31,16 @@ export function AuthLayout({
             회의록을 붙여 넣으면 AI가 결정 사항과 할 일, 담당자, 마감일을 뽑아냅니다. 검토하고 확정하면 그대로 업무
             보드가 됩니다.
           </p>
+          {/* 예시에 사람 이름을 쓰지 않는다 — 실제 팀원으로 오해할 수 있다. */}
           <div className="mt-xl rounded-lg bg-surface-dark-elevated p-lg">
             <p className="text-caption text-on-dark-soft">회의록</p>
             <p className="mt-xs text-body-sm text-on-dark">
-              “로그인 오류는 서현님이 금요일까지 수정하기로 했다. 배포는 다음 주 월요일.”
+              “로그인 오류는 금요일까지 고치기로 했다. 배포는 다음 주 월요일.”
             </p>
             <div className="my-md h-px bg-white/10" />
             <p className="text-caption text-on-dark-soft">추출 결과</p>
             <ul className="mt-xs space-y-xxs text-body-sm text-on-dark">
-              <li>· 로그인 오류 수정 — 반서현 · 금요일 · HIGH</li>
+              <li>· 로그인 오류 수정 · 금요일 · HIGH</li>
               <li>· 다음 주 월요일 배포</li>
             </ul>
           </div>
