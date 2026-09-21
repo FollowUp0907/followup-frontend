@@ -8,7 +8,6 @@ import { errorMessage } from '@/api/client'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageWidth } from '@/components/layout/PageWidth'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
-import { Modal } from '@/components/ui/Modal'
 import { Pager, usePager } from '@/components/ui/Pager'
 import { Avatar, DueBadge, PriorityBadge, StatusBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -17,8 +16,8 @@ import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { useToast } from '@/components/ui/Toast'
 import { useActionItems } from '@/features/actionItems/queries'
 import { useCreateMeeting } from '@/features/meetings/queries'
-import { useAddMember } from '@/features/members/queries'
-import { MAX_MEMBERS, isMemberLimitReached, memberLimitMessage } from '@/features/members/limit'
+import { isMemberLimitReached } from '@/features/members/limit'
+import { MemberInviteModal } from '@/features/members/MemberInviteModal'
 import { useProjectContext } from '@/features/projects/ProjectContext'
 import { useAuth } from '@/features/auth/AuthContext'
 import { dayjs, fromDateTimeLocalInput } from '@/lib/date'
@@ -48,10 +47,7 @@ export default function MeetingNewPage() {
   const [carryOverIds, setCarryOverIds] = useState<number[]>([])
   const [confirmOpen, setConfirmOpen] = useState(false)
   // 회의를 만들다가 빠진 사람이 보이면 여기서 바로 추가할 수 있게 한다.
-  const addMember = useAddMember(projectId)
   const [inviteOpen, setInviteOpen] = useState(false)
-  const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteError, setInviteError] = useState<string | null>(null)
   const [pendingValues, setPendingValues] = useState<FormValues | null>(null)
 
   const {
@@ -119,29 +115,6 @@ export default function MeetingNewPage() {
 
   const toggle = (list: number[], setList: (v: number[]) => void, id: number) =>
     setList(list.includes(id) ? list.filter((v) => v !== id) : [...list, id])
-
-  const invite = async () => {
-    if (isMemberLimitReached(members.length)) {
-      setInviteError(memberLimitMessage)
-      return
-    }
-    const value = inviteEmail.trim()
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-      setInviteError('이메일 형식이 올바르지 않습니다.')
-      return
-    }
-    setInviteError(null)
-    try {
-      const added = await addMember.mutateAsync(value)
-      // 방금 넣은 사람은 이 회의 참여자로도 바로 체크해 둔다.
-      if (added?.userId) setParticipantIds((prev) => (prev.includes(added.userId) ? prev : [...prev, added.userId]))
-      toast.success('구성원을 추가했습니다.')
-      setInviteEmail('')
-      setInviteOpen(false)
-    } catch (e) {
-      setInviteError(errorMessage(e))
-    }
-  }
 
   const onSubmit = handleSubmit(async (values) => {
     if (!content.trim()) {
@@ -382,51 +355,17 @@ export default function MeetingNewPage() {
         </div>
       </form>
 
-      <Modal
+      <MemberInviteModal
         open={inviteOpen}
-        onClose={() => {
-          setInviteOpen(false)
-          setInviteError(null)
+        onClose={() => setInviteOpen(false)}
+        projectId={projectId}
+        members={members}
+        note="합류하면 이 회의 참여자로도 선택할 수 있습니다."
+        onAdded={(added) => {
+          // 예전 방식으로 바로 추가된 경우에만 참여자로 체크해 둘 수 있다.
+          if (added?.userId) setParticipantIds((prev) => (prev.includes(added.userId) ? prev : [...prev, added.userId]))
         }}
-        title="구성원 추가"
-        description={
-          isMemberLimitReached(members.length)
-            ? memberLimitMessage
-            : `이미 FollowUp에 가입한 계정의 이메일을 입력해 주세요. 추가하면 이 회의 참여자로도 바로 선택됩니다. (${members.length}/${MAX_MEMBERS}명)`
-        }
-        width="sm"
-        footer={
-          <>
-            <Button type="button" variant="secondary" onClick={() => setInviteOpen(false)}>
-              취소
-            </Button>
-            <Button
-              type="button"
-              onClick={invite}
-              loading={addMember.isPending}
-              disabled={isMemberLimitReached(members.length)}
-            >
-              추가
-            </Button>
-          </>
-        }
-      >
-        <FormRow label="이메일" error={inviteError ?? undefined}>
-          <Input
-            type="email"
-            value={inviteEmail}
-            placeholder="teammate@example.com"
-            invalid={!!inviteError}
-            onChange={(e) => setInviteEmail(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                void invite()
-              }
-            }}
-          />
-        </FormRow>
-      </Modal>
+      />
 
       <ConfirmDialog
         open={confirmOpen}

@@ -10,7 +10,7 @@ export function AuthLayout({
   title: string
   description: string
   children: ReactNode
-  footer: ReactNode
+  footer?: ReactNode
 }) {
   return (
     <div className="grid min-h-screen lg:grid-cols-[1fr_520px]">
@@ -49,7 +49,7 @@ export function AuthLayout({
           <h1 className="text-display-sm text-ink">{title}</h1>
           <p className="mt-xs text-body-md text-muted">{description}</p>
           <div className="mt-xl">{children}</div>
-          <div className="mt-lg text-center text-body-sm text-muted">{footer}</div>
+          {footer && <div className="mt-lg text-center text-body-sm text-muted">{footer}</div>}
         </div>
       </main>
     </div>

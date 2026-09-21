@@ -1,9 +1,5 @@
 import { api } from './client'
 import type {
-  EmailVerificationConfirmReqDto,
-  EmailVerificationConfirmResDto,
-  EmailVerificationSendReqDto,
-  EmailVerificationSendResDto,
   GoogleLoginReqDto,
   LoginReqDto,
   SignupReqDto,
@@ -12,18 +8,6 @@ import type {
 } from '@/types/api'
 
 export const signup = (data: SignupReqDto) => api.post<SignupResDto>('/api/auth/signup', data).then((r) => r.data)
-
-/**
- * 회원가입 전 이메일 인증.
- * 1) 메일로 6자리 인증번호를 보내고
- * 2) 그 번호를 확인해 일회용 verificationToken 을 받아
- * 3) 회원가입 요청에 실어 보낸다.
- */
-export const sendEmailVerification = (data: EmailVerificationSendReqDto) =>
-  api.post<EmailVerificationSendResDto>('/api/auth/email/verification-codes', data).then((r) => r.data ?? {})
-
-export const confirmEmailVerification = (data: EmailVerificationConfirmReqDto) =>
-  api.post<EmailVerificationConfirmResDto>('/api/auth/email/verification-codes/verify', data).then((r) => r.data)
 
 export const login = (data: LoginReqDto) => api.post<TokenResDto>('/api/auth/login', data).then((r) => r.data)
 

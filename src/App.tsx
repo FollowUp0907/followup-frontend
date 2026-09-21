@@ -8,6 +8,7 @@ import { Spinner } from '@/components/ui/Button'
 const LandingPage = lazy(() => import('@/pages/LandingPage'))
 const LoginPage = lazy(() => import('@/pages/LoginPage'))
 const SignupPage = lazy(() => import('@/pages/SignupPage'))
+const InviteAcceptPage = lazy(() => import('@/pages/InviteAcceptPage'))
 const ProjectsPage = lazy(() => import('@/pages/ProjectsPage'))
 const ProjectLayout = lazy(() => import('@/pages/ProjectLayout'))
 const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
@@ -35,6 +36,9 @@ export default function App() {
       <Suspense fallback={<PageFallback />}>
         <Routes>
           <Route path="/" element={<LandingPage />} />
+
+          {/* 초대 링크는 로그인 전에도 열린다 — 어느 프로젝트인지 먼저 보여준다. */}
+          <Route path="/invite/:token" element={<InviteAcceptPage />} />
 
           <Route element={<RedirectIfAuthenticated />}>
             <Route path="/login" element={<LoginPage />} />

@@ -20,29 +20,6 @@ export interface SignupReqDto {
   email: string
   password: string
   name: string
-  /** 이메일 인증을 통과했다는 증표. 백엔드가 아직 인증을 안 받으면 없이 보낸다. */
-  verificationToken?: string
-}
-
-/* ---------- 이메일 인증 (회원가입 전) ---------- */
-export interface EmailVerificationSendReqDto {
-  email: string
-}
-export interface EmailVerificationSendResDto {
-  /** 인증번호 유효시간(초). 기본 300 */
-  expiresIn?: number
-  /** 재발송까지 기다려야 하는 시간(초). 기본 60 */
-  resendAfter?: number
-}
-export interface EmailVerificationConfirmReqDto {
-  email: string
-  code: string
-}
-export interface EmailVerificationConfirmResDto {
-  /** 회원가입 요청에 그대로 실어 보낼 일회용 토큰 */
-  verificationToken: string
-  /** 토큰 유효시간(초). 기본 1800 */
-  expiresIn?: number
 }
 export interface SignupResDto {
   userId: number
@@ -88,6 +65,33 @@ export interface ProjectMemberResDto {
   email: string
   role: ProjectRole
   joinedAt: string
+}
+
+/* ---------- 구성원 초대 ---------- */
+export type InvitationStatus = 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED'
+
+export interface InvitationCreateReqDto {
+  email: string
+}
+export interface InvitationResDto {
+  id: number
+  email: string
+  status: InvitationStatus
+  /** 보낸 시각 */
+  invitedAt: string
+  /** 초대가 만료되는 시각 */
+  expiresAt?: string
+  /** 초대한 사람 이름 */
+  invitedByName?: string
+}
+/** 초대 메일의 링크로 들어왔을 때, 로그인 전에도 볼 수 있는 정보 */
+export interface InvitationPreviewResDto {
+  projectId: number
+  projectName: string
+  email: string
+  status: InvitationStatus
+  invitedByName?: string
+  expiresAt?: string
 }
 
 /* ---------- Meeting ---------- */

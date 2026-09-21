@@ -17,6 +17,19 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+declare module 'axios' {
+  export interface AxiosRequestConfig {
+    /**
+     * 401 이 와도 로그아웃시키지 않는다.
+     *
+     * 아직 백엔드에 없을 수 있는 기능을 부를 때 쓴다. 우리 백엔드(Spring Security)는
+     * 매핑되지 않은 경로에도 401 을 주기 때문에, 그걸 "세션 만료" 로 받으면
+     * 멀쩡히 쓰던 사람이 튕겨 나간다.
+     */
+    skipAuthLogout?: boolean
+  }
+}
+
 /** 401 을 만났을 때 앱 전체가 반응할 수 있도록 하는 훅 */
 let onUnauthorized: (() => void) | null = null
 export function setUnauthorizedHandler(fn: (() => void) | null) {
@@ -68,7 +81,7 @@ api.interceptors.response.use(
      * 아직 없는 엔드포인트라는 뜻이지, 세션과는 상관이 없다.
      */
     const preAuth = (error.config?.url ?? '').startsWith('/api/auth/')
-    if (status === 401 && !preAuth) {
+    if (status === 401 && !preAuth && !error.config?.skipAuthLogout) {
       clearSession()
       onUnauthorized?.()
     }
