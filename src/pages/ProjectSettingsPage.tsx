@@ -6,6 +6,7 @@ import { PageWidth } from '@/components/layout/PageWidth'
 import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { SurfaceCard } from '@/components/ui/Card'
+import { LeaveProjectCard } from '@/features/members/LeaveProjectCard'
 import { MembersSection } from '@/features/members/MembersSection'
 import { FormRow, Input, Textarea } from '@/components/ui/Field'
 import { useToast } from '@/components/ui/Toast'
@@ -126,7 +127,9 @@ export default function ProjectSettingsPage() {
             </dl>
           </SurfaceCard>
 
-          {/* 프로젝트 정보 바로 아래에 붙인다. */}
+          {/* 프로젝트 정보 바로 아래에 붙인다. 소유자는 삭제, 구성원은 나가기. */}
+          {!isOwner && <LeaveProjectCard projectId={projectId} />}
+
           {isOwner && (
             <SurfaceCard className="border-error/30 p-xl">
               <h2 className="text-title-md text-error">프로젝트 삭제</h2>

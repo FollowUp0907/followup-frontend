@@ -1,5 +1,4 @@
 import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { Mail } from 'lucide-react'
 import { errorMessage } from '@/api/client'
 import { Badge } from '@/components/ui/Badge'
@@ -33,7 +32,6 @@ export function MembersSection() {
   const { projectId, members, membersLoading, isOwner } = useProjectContext()
   const { user } = useAuth()
   const toast = useToast()
-  const navigate = useNavigate()
   const removeMember = useRemoveMember(projectId)
   const { data: actionItems } = useActionItems(projectId)
   const { pending, available: invitesAvailable } = useInvitations(projectId)
@@ -44,7 +42,6 @@ export function MembersSection() {
   const [target, setTarget] = useState<ProjectMemberResDto | null>(null)
   const [revokeTarget, setRevokeTarget] = useState<InvitationResDto | null>(null)
   const [resendingId, setResendingId] = useState<number | null>(null)
-  const [leaveOpen, setLeaveOpen] = useState(false)
 
   // 수락을 기다리는 초대도 자리를 차지한다.
   const waiting = invitesAvailable ? pending : []
@@ -83,19 +80,6 @@ export function MembersSection() {
       toast.error(errorMessage(e))
     } finally {
       setResendingId(null)
-    }
-  }
-
-  /** 소유자가 아닌 사람이 스스로 프로젝트에서 빠진다. 맡던 업무는 그대로 남는다. */
-  const leave = async () => {
-    if (!user?.userId) return
-    try {
-      await removeMember.mutateAsync(user.userId)
-      toast.success('프로젝트에서 나왔습니다.')
-      setLeaveOpen(false)
-      navigate('/projects', { replace: true })
-    } catch (e) {
-      toast.error(errorMessage(e))
     }
   }
 
@@ -140,12 +124,7 @@ export function MembersSection() {
             </Button>
           </span>
         ) : (
-          <span className="flex items-center gap-sm">
-            <Badge tone="neutral">MEMBER 권한</Badge>
-            <Button variant="secondary" onClick={() => setLeaveOpen(true)}>
-              프로젝트 나가기
-            </Button>
-          </span>
+          <Badge tone="neutral">MEMBER 권한</Badge>
         )}
       </div>
 
@@ -245,16 +224,6 @@ export function MembersSection() {
         loading={removeMember.isPending}
         onConfirm={remove}
         onClose={() => setTarget(null)}
-      />
-
-      <ConfirmDialog
-        open={leaveOpen}
-        title="이 프로젝트에서 나갈까요?"
-        description="나가도 맡던 업무는 그대로 남습니다. 다시 들어오려면 초대를 받아야 합니다."
-        confirmLabel="나가기"
-        loading={removeMember.isPending}
-        onConfirm={leave}
-        onClose={() => setLeaveOpen(false)}
       />
 
       <ConfirmDialog
