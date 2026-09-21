@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as actionItemApi from '@/api/actionItemApi'
 import { assigneeIdsOf } from '@/features/actionItems/assignees'
+import { useNotificationStream } from './useNotificationStream'
 import * as notificationApi from '@/api/notificationApi'
 import { qk } from '@/lib/queryKeys'
 import { dayjs, daysUntil } from '@/lib/date'
@@ -110,6 +111,15 @@ const NOTIFICATION_POLL_MS = 15_000
 const TASK_POLL_MS = 60_000
 
 /**
+ * SSE 가 붙어 있을 때의 간격.
+ *
+ * 폴링을 끄지 않는다 — 연결이 끊긴 걸 모르고 지나가면 알림이 아예 안 온다.
+ * 그래서 간격만 늘려 안전망으로 남긴다. SSE 가 떨어지면 아래 훅이 다시
+ * 원래 간격으로 돌아온다.
+ */
+const SSE_BACKUP_POLL_MS = 300_000
+
+/**
  * 백엔드가 type 을 단계적으로 올리는 중이라 없을 수도 있고, 예전 REMINDER 행이
  * 남아 있을 수도 있다. 모르는 값은 UNKNOWN 으로 떨어뜨려 중립적으로 보여 준다.
  * ("설정한 알림" 같은 말을 붙이면 안 건 알림에 건 척을 하게 된다)
@@ -158,12 +168,17 @@ export function useNotifications(userId?: number, { active = true }: { active?: 
     if (enabled && active) refresh()
   }, [enabled, active, refresh])
 
+  // 서버가 밀어 주면 폴링은 안전망으로 물러난다.
+  const { connected: streaming } = useNotificationStream(enabled)
+  const notificationPoll = streaming ? SSE_BACKUP_POLL_MS : NOTIFICATION_POLL_MS
+  const taskPoll = streaming ? SSE_BACKUP_POLL_MS : TASK_POLL_MS
+
   // 1) 서버가 만들어 준 알림
   const { data: server } = useQuery({
     queryKey: qk.notifications,
     queryFn: () => notificationApi.listNotifications(),
     enabled,
-    refetchInterval: NOTIFICATION_POLL_MS,
+    refetchInterval: notificationPoll,
     refetchOnWindowFocus: true,
     staleTime: 0,
   })
@@ -203,7 +218,7 @@ export function useNotifications(userId?: number, { active = true }: { active?: 
     queries: (deriveLocally ? uniqueProjects : []).map((p) => ({
       queryKey: qk.actionItems(p.id),
       queryFn: () => actionItemApi.listActionItems(p.id),
-      refetchInterval: TASK_POLL_MS,
+      refetchInterval: taskPoll,
       // 창으로 돌아왔을 때는 주기를 기다리지 않고 바로 맞춘다.
       refetchOnWindowFocus: true,
       staleTime: 0,
