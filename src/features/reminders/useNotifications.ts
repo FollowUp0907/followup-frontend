@@ -36,6 +36,8 @@ export type NotificationKind =
   | 'TASK_CREATED'
   | 'TASK_UPDATED'
   | 'TASK_COMPLETED'
+  /** 초대받은 사람이 수락해 프로젝트에 합류했다 (taskTitle 에 합류한 사람 이름) */
+  | 'MEMBER_JOINED'
   | 'UNKNOWN'
 
 export interface AppNotification {
@@ -124,7 +126,14 @@ const SSE_BACKUP_POLL_MS = 300_000
  * 남아 있을 수도 있다. 모르는 값은 UNKNOWN 으로 떨어뜨려 중립적으로 보여 준다.
  * ("설정한 알림" 같은 말을 붙이면 안 건 알림에 건 척을 하게 된다)
  */
-const SERVER_KINDS = ['DUE_SOON', 'OVERDUE', 'TASK_CREATED', 'TASK_UPDATED', 'TASK_COMPLETED'] as const
+const SERVER_KINDS = [
+  'DUE_SOON',
+  'OVERDUE',
+  'TASK_CREATED',
+  'TASK_UPDATED',
+  'TASK_COMPLETED',
+  'MEMBER_JOINED',
+] as const
 
 function kindOf(n: NotificationResDto): NotificationKind {
   const t = (n as NotificationResDto & { type?: string }).type
@@ -361,5 +370,6 @@ export const KIND_LABEL: Record<NotificationKind, string> = {
   TASK_CREATED: '새 업무가 배정되었습니다',
   TASK_UPDATED: '담당 업무가 수정되었습니다',
   TASK_COMPLETED: '담당 업무가 완료 처리되었습니다',
+  MEMBER_JOINED: '초대를 수락해 합류했습니다',
   UNKNOWN: '업무 알림',
 }

@@ -1,19 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as invitationApi from '@/api/invitationApi'
-import { ApiError } from '@/api/client'
+import { isEndpointMissing } from '@/api/client'
 import { qk } from '@/lib/queryKeys'
 import type { InvitationResDto } from '@/types/api'
 
-/*
- * 백엔드에 초대 API 가 아직 없을 때 돌아오는 상태들.
- * 우리 백엔드(Spring Security)는 매핑 안 된 경로에 401 을 주기도 해서 같이 본다.
- * (코드가 붙은 401 은 진짜 권한 문제이므로 제외)
- */
-function looksMissing(e: unknown) {
-  if (!(e instanceof ApiError)) return false
-  if (e.status === 404 || e.status === 405 || e.status === 501) return true
-  return (e.status === 401 || e.status === 403) && !e.code
-}
+/** 백엔드에 초대 API 가 아직 없을 때를 가려낸다. (판단 기준은 client.ts 에 한곳으로 모아 뒀다) */
+const looksMissing = isEndpointMissing
 
 /**
  * 보낸 초대 목록.

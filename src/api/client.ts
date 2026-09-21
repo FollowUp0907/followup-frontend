@@ -90,6 +90,23 @@ api.interceptors.response.use(
   },
 )
 
+/** 스프링 시큐리티가 "경로 자체를 모를 때" 돌려주는 일반 코드들 */
+const GENERIC_AUTH_CODES = ['UNAUTHORIZED', 'FORBIDDEN', 'ACCESS_DENIED']
+
+/**
+ * 백엔드에 아직 이 엔드포인트가 없는가?
+ *
+ * 우리 백엔드는 매핑되지 않은 경로에 404 가 아니라 **401 UNAUTHORIZED** 를 준다.
+ * 그래서 401/403 중 "일반적인 권한 코드" 인 것도 없는 API 로 본다.
+ * INVALID_GOOGLE_TOKEN 처럼 기능별 코드가 붙어 있으면 진짜 실패로 취급한다.
+ */
+export function isEndpointMissing(e: unknown): boolean {
+  if (!(e instanceof ApiError)) return false
+  if (e.status === 404 || e.status === 405 || e.status === 501) return true
+  if (e.status !== 401 && e.status !== 403) return false
+  return !e.code || GENERIC_AUTH_CODES.includes(e.code)
+}
+
 export function errorMessage(e: unknown): string {
   if (e instanceof ApiError) return e.message
   if (e instanceof Error) return e.message

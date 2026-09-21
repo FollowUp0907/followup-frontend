@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ApiError, errorMessage } from '@/api/client'
+import { ApiError, errorMessage, isEndpointMissing } from '@/api/client'
 import { Spinner } from '@/components/ui/Button'
 import { useAuth } from '@/features/auth/AuthContext'
 import { GOOGLE_CLIENT_ID, isGoogleLoginEnabled, loadGoogleIdentity } from '@/lib/googleAuth'
@@ -23,7 +23,7 @@ function loginErrorMessage(e: unknown): string {
   }
 
   // 서버에 경로 자체가 없을 때. (우리 백엔드는 매핑 안 된 경로에 401 을 주기도 한다)
-  if (e.status === 404 || e.status === 405 || (e.status === 401 && !e.code)) {
+  if (isEndpointMissing(e)) {
     return '구글 로그인을 지금 사용할 수 없습니다. 이메일 로그인을 사용해 주세요.'
   }
   return errorMessage(e)

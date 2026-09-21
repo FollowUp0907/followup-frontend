@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, ArrowLeft, Bell, CalendarClock, CheckCircle2, Pencil, Plus, X } from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Bell, CalendarClock, CheckCircle2, Pencil, Plus, UserPlus, X } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/features/auth/AuthContext'
@@ -15,6 +15,7 @@ const KIND_ICON: Record<NotificationKind, LucideIcon> = {
   TASK_CREATED: Plus,
   TASK_UPDATED: Pencil,
   TASK_COMPLETED: CheckCircle2,
+  MEMBER_JOINED: UserPlus,
   UNKNOWN: Bell,
 }
 
@@ -25,6 +26,7 @@ const KIND_COLOR: Record<NotificationKind, string> = {
   TASK_CREATED: '#0f766e',
   TASK_UPDATED: '#64748b',
   TASK_COMPLETED: '#10b981',
+  MEMBER_JOINED: '#0f766e',
   UNKNOWN: '#64748b',
 }
 
@@ -154,7 +156,12 @@ export function NotificationBell() {
               notification={selected}
               onOpenTask={() => {
                 setOpen(false)
-                navigate(`/projects/${selected.projectId}/tasks/${selected.actionItemId}`)
+                // 업무가 없는 알림(합류 등)은 구성원 목록이 있는 설정으로 보낸다.
+                navigate(
+                  selected.actionItemId
+                    ? `/projects/${selected.projectId}/tasks/${selected.actionItemId}`
+                    : `/projects/${selected.projectId}/settings`,
+                )
               }}
               onRemove={() => {
                 void remove(selected)
@@ -245,7 +252,7 @@ function DetailView({
       )}
       <div className="mt-lg flex gap-xs">
         <Button size="sm" fullWidth className="min-w-0" onClick={onOpenTask}>
-          업무 보기
+          {notification.actionItemId ? '업무 보기' : '구성원 보기'}
         </Button>
         <Button size="sm" variant="secondary" className="shrink-0 whitespace-nowrap" onClick={onRemove}>
           삭제

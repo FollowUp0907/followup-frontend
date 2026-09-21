@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { LogOut, Menu } from 'lucide-react'
+import { LogOut, Menu, Settings } from 'lucide-react'
 import { useAuth } from '@/features/auth/AuthContext'
 import { Avatar } from '@/components/ui/Badge'
 import { Button, ButtonLink } from '@/components/ui/Button'
 import { cn } from '@/lib/cn'
+import { ProfileSettingsPanel } from './ProfileSettingsPanel'
 import { Logo } from './Logo'
 import { NotificationBell } from './NotificationBell'
 
@@ -33,10 +34,12 @@ export function TopNav({
   variant?: 'app' | 'marketing' | 'plain'
   children?: React.ReactNode
 }) {
-  const { user, isAuthenticated, logout } = useAuth()
+  const { user, isAuthenticated, logout, syncName } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
+  // 프로필 팝오버 안에서 계정 설정으로 한 단계 들어간다.
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
@@ -44,6 +47,11 @@ export function TopNav({
     setMenuOpen(false)
     setMobileOpen(false)
   }, [location.pathname])
+
+  // 팝오버를 닫으면 설정 단계도 처음으로 돌려놓는다.
+  useEffect(() => {
+    if (!menuOpen) setSettingsOpen(false)
+  }, [menuOpen])
 
   useEffect(() => {
     if (!menuOpen) return
@@ -117,28 +125,53 @@ export function TopNav({
               {menuOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 top-[calc(100%+8px)] w-[220px] animate-fade-in rounded-lg border border-hairline bg-canvas p-xxs shadow-card"
+                  className="absolute right-0 top-[calc(100%+8px)] w-[264px] animate-fade-in rounded-lg border border-hairline bg-canvas p-xxs shadow-card"
                 >
-                  <div className="px-sm py-xs">
-                    <p className="truncate text-title-sm text-ink">{displayName(user)}</p>
-                    <p className="truncate text-caption font-normal text-muted">{user?.email}</p>
-                  </div>
-                  <div className="my-xxs h-px bg-hairline-soft" />
-                  <Link
-                    to="/projects"
-                    className="block rounded-sm px-sm py-xs text-body-sm text-body transition-colors hover:bg-surface-card"
-                    role="menuitem"
-                  >
-                    내 프로젝트
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="flex w-full items-center gap-xs rounded-sm px-sm py-xs text-left text-body-sm text-body transition-colors hover:bg-surface-card"
-                    role="menuitem"
-                  >
-                    <LogOut size={14} /> 로그아웃
-                  </button>
+                  {settingsOpen ? (
+                    <ProfileSettingsPanel
+                      currentName={user?.name ?? ''}
+                      onBack={() => setSettingsOpen(false)}
+                      onRenamed={(name) => syncName(name)}
+                      onDeleted={() => {
+                        logout()
+                        navigate('/', { replace: true })
+                      }}
+                    />
+                  ) : (
+                    <>
+                      <div className="flex items-start gap-xs px-sm py-xs">
+                        <span className="min-w-0 flex-1">
+                          <p className="truncate text-title-sm text-ink">{displayName(user)}</p>
+                          <p className="truncate text-caption font-normal text-muted">{user?.email}</p>
+                        </span>
+                        {/* 이름 옆 톱니 — 이름 수정과 탈퇴가 여기 들어 있다. */}
+                        <button
+                          type="button"
+                          onClick={() => setSettingsOpen(true)}
+                          aria-label="계정 설정"
+                          className="-mr-xxs mt-xxs inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-sm text-muted transition-colors hover:bg-surface-card hover:text-ink"
+                        >
+                          <Settings size={15} />
+                        </button>
+                      </div>
+                      <div className="my-xxs h-px bg-hairline-soft" />
+                      <Link
+                        to="/projects"
+                        className="block rounded-sm px-sm py-xs text-body-sm text-body transition-colors hover:bg-surface-card"
+                        role="menuitem"
+                      >
+                        내 프로젝트
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={handleLogout}
+                        className="flex w-full items-center gap-xs rounded-sm px-sm py-xs text-left text-body-sm text-body transition-colors hover:bg-surface-card"
+                        role="menuitem"
+                      >
+                        <LogOut size={14} /> 로그아웃
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>

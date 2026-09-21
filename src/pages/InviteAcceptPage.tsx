@@ -95,7 +95,7 @@ export default function InviteAcceptPage() {
 
   const invitation = preview.data
   const done = invitation.status === 'ACCEPTED'
-  const dead = invitation.status === 'EXPIRED' || invitation.status === 'REVOKED'
+  const dead = invitation.status === 'CANCELLED' || invitation.status === 'EXPIRED'
   // 초대받은 주소와 다른 계정으로 로그인해 둔 경우
   const mismatch =
     isAuthenticated && !!user?.email && user.email.toLowerCase() !== invitation.email.toLowerCase()
@@ -112,7 +112,7 @@ export default function InviteAcceptPage() {
       <div className="flex flex-col gap-md">
         {dead && (
           <p className="rounded-md bg-error/10 px-sm py-xs text-body-sm text-error" role="alert">
-            {invitation.status === 'EXPIRED' ? '초대가 만료되었습니다.' : '취소된 초대입니다.'} 초대한 분께 다시
+            {invitation.status === 'CANCELLED' ? '취소된 초대입니다.' : '초대가 만료되었습니다.'} 초대한 분께 다시
             보내 달라고 요청해 주세요.
           </p>
         )}

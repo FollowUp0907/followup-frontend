@@ -68,7 +68,8 @@ export interface ProjectMemberResDto {
 }
 
 /* ---------- 구성원 초대 ---------- */
-export type InvitationStatus = 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED'
+/** 백엔드 enum 은 PENDING / ACCEPTED / CANCELLED. 만료를 따로 주는 경우도 받아 둔다. */
+export type InvitationStatus = 'PENDING' | 'ACCEPTED' | 'CANCELLED' | 'EXPIRED'
 
 export interface InvitationCreateReqDto {
   email: string
@@ -81,6 +82,7 @@ export interface InvitationResDto {
   invitedAt: string
   /** 초대가 만료되는 시각 */
   expiresAt?: string
+  acceptedAt?: string
   /** 초대한 사람 이름 */
   invitedByName?: string
 }
