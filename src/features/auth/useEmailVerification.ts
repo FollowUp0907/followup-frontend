@@ -6,8 +6,14 @@ const CODE_LENGTH = 6
 const DEFAULT_EXPIRES_IN = 300
 const DEFAULT_RESEND_AFTER = 60
 
-/** 백엔드에 아직 인증 API 가 없을 때 돌아오는 상태들 */
-const NOT_IMPLEMENTED = [404, 405, 501]
+/*
+ * 백엔드에 아직 인증 API 가 없을 때 돌아오는 상태들.
+ *
+ * 404/405/501 뿐 아니라 401·403 도 넣었다. 우리 백엔드(Spring Security)는
+ * 매핑되지 않은 경로에 401 을 준다 — 실제로 /api/auth/아무거나 를 찔러 보면 401 이다.
+ * 이 두 엔드포인트는 로그인 전에 부르는 곳이라, 401 이 "세션 만료" 일 수가 없다.
+ */
+const NOT_IMPLEMENTED = [401, 403, 404, 405, 501]
 
 function secondsLeft(until: number | null, now: number) {
   if (!until) return 0

@@ -62,7 +62,13 @@ api.interceptors.response.use(
     }
 
     const { status, data } = error.response
-    if (status === 401) {
+    /*
+     * 401 은 보통 "세션이 끝났다" 는 뜻이라 로그아웃시킨다.
+     * 다만 로그인 전에 부르는 /api/auth/* 는 예외다 — 비밀번호가 틀렸거나
+     * 아직 없는 엔드포인트라는 뜻이지, 세션과는 상관이 없다.
+     */
+    const preAuth = (error.config?.url ?? '').startsWith('/api/auth/')
+    if (status === 401 && !preAuth) {
       clearSession()
       onUnauthorized?.()
     }
