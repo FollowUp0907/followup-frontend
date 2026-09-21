@@ -20,6 +20,29 @@ export interface SignupReqDto {
   email: string
   password: string
   name: string
+  /** 이메일 인증을 통과했다는 증표. 백엔드가 아직 인증을 안 받으면 없이 보낸다. */
+  verificationToken?: string
+}
+
+/* ---------- 이메일 인증 (회원가입 전) ---------- */
+export interface EmailVerificationSendReqDto {
+  email: string
+}
+export interface EmailVerificationSendResDto {
+  /** 인증번호 유효시간(초). 기본 300 */
+  expiresIn?: number
+  /** 재발송까지 기다려야 하는 시간(초). 기본 60 */
+  resendAfter?: number
+}
+export interface EmailVerificationConfirmReqDto {
+  email: string
+  code: string
+}
+export interface EmailVerificationConfirmResDto {
+  /** 회원가입 요청에 그대로 실어 보낼 일회용 토큰 */
+  verificationToken: string
+  /** 토큰 유효시간(초). 기본 1800 */
+  expiresIn?: number
 }
 export interface SignupResDto {
   userId: number

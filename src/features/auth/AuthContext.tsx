@@ -21,7 +21,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>
   /** 구글 ID 토큰으로 로그인 (백엔드가 검증 후 우리 JWT 발급) */
   loginWithGoogle: (idToken: string) => Promise<void>
-  signup: (name: string, email: string, password: string) => Promise<void>
+  signup: (name: string, email: string, password: string, verificationToken?: string) => Promise<void>
   logout: () => void
   /** 멤버 목록에서 알아낸 실제 이름을 프로필에 반영 (백엔드에 /me 가 없어서 필요) */
   syncName: (name: string) => void
@@ -81,8 +81,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(getProfile())
   }, [])
 
-  const signup = useCallback(async (name: string, email: string, password: string) => {
-    await authApi.signup({ name, email, password })
+  const signup = useCallback(async (name: string, email: string, password: string, verificationToken?: string) => {
+    await authApi.signup({ name, email, password, verificationToken })
     const token = await authApi.login({ email, password })
     saveSession(token.accessToken, { email, name })
     setUser(getProfile())
