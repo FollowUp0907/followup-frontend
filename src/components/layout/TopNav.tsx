@@ -130,6 +130,7 @@ export function TopNav({
                   {settingsOpen ? (
                     <ProfileSettingsPanel
                       currentName={user?.name ?? ''}
+                      email={user?.email ?? ''}
                       onBack={() => setSettingsOpen(false)}
                       onRenamed={(name) => syncName(name)}
                       onDeleted={() => {

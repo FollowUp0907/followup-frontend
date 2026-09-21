@@ -13,11 +13,14 @@ import { Input } from '@/components/ui/Field'
  */
 export function ProfileSettingsPanel({
   currentName,
+  email,
   onBack,
   onRenamed,
   onDeleted,
 }: {
   currentName: string
+  /** 탈퇴를 확인할 때 그대로 입력해야 하는 주소 */
+  email: string
   onBack: () => void
   onRenamed: (name: string) => void
   onDeleted: () => void
@@ -29,6 +32,9 @@ export function ProfileSettingsPanel({
 
   const [confirming, setConfirming] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  // 프로젝트 삭제처럼, 자기 이메일을 그대로 적어야 탈퇴된다.
+  const [typed, setTyped] = useState('')
+  const matches = typed.trim().toLowerCase() === email.trim().toLowerCase() && !!email
 
   const changed = name.trim().length > 0 && name.trim() !== currentName
 
@@ -107,6 +113,7 @@ export function ProfileSettingsPanel({
           type="button"
           onClick={() => {
             setConfirming(true)
+            setTyped('')
             setError(null)
           }}
           className="flex w-full items-center gap-xs rounded-sm px-sm py-xs text-left text-body-sm text-error transition-colors hover:bg-error/5"
@@ -123,11 +130,38 @@ export function ProfileSettingsPanel({
             계정이 삭제되고 되돌릴 수 없습니다. 내가 만든 프로젝트와 회의록도 함께 사라집니다. 맡고 있던 업무는
             담당자 없이 남습니다.
           </p>
+
+          <label htmlFor="delete-confirm" className="mt-sm block text-caption leading-relaxed text-body">
+            확인을 위해 <b className="font-semibold text-ink">{email}</b> 을 그대로 입력해 주세요.
+          </label>
+          <Input
+            id="delete-confirm"
+            type="email"
+            autoComplete="off"
+            value={typed}
+            placeholder={email}
+            className="mt-xxs h-9"
+            onChange={(e) => setTyped(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && matches) {
+                e.preventDefault()
+                void remove()
+              }
+            }}
+          />
+
           <div className="mt-sm flex gap-xs">
             <Button size="sm" variant="secondary" className="flex-1" onClick={() => setConfirming(false)}>
               취소
             </Button>
-            <Button size="sm" variant="danger" className="flex-1" loading={deleting} onClick={() => void remove()}>
+            <Button
+              size="sm"
+              variant="danger"
+              className="flex-1"
+              disabled={!matches}
+              loading={deleting}
+              onClick={() => void remove()}
+            >
               탈퇴
             </Button>
           </div>
