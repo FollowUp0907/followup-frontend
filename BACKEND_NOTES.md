@@ -1544,23 +1544,15 @@ DELETE /api/project/{projectId}/member/{myUserId}
 **이미 메신저로 오갔으니 콘솔에서 해당 키를 삭제하고 새로 발급해 주세요.**
 (콘솔 > 프로젝트 설정 > 서비스 계정 > 키 관리) 백엔드 서버의 값도 함께 교체해야 합니다.
 
-## 한 가지 바꿔 주셨으면 하는 것 — `DELETE` 의 본문
+## 구독 해제 — POST 로 정리되었습니다 ✅
 
 ```
-DELETE /api/push/subscriptions
+POST /api/push/subscriptions/unsubscribe
 { "token": "..." }
 ```
 
-DELETE 에 본문을 싣는 건 규격상 금지는 아니지만, **중간 프록시가 조용히 버리는 경우가 있습니다.**
-저희는 Vercel 프록시를 한 번 거칩니다. 본문이 사라지면 구독이 안 지워지고, 로그아웃한 브라우저로
-계속 푸시가 갑니다. 아래 둘 중 하나로 바꿔 주시면 안전합니다.
-
-```
-DELETE /api/push/subscriptions/{token}
-POST   /api/push/subscriptions/unsubscribe   { "token": "..." }
-```
-
-지금은 본문을 실어 보내고 있고, 바꿔 주시면 한 줄 고치면 됩니다.
+DELETE 의 본문은 중간 프록시가 버리는 경우가 있어서(저희는 Vercel 프록시를 한 번 거칩니다)
+POST 로 바꿔 주셨습니다. 프론트도 맞췄습니다.
 
 ## 프론트 동작 (참고)
 

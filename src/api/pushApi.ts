@@ -8,6 +8,11 @@ const OPTIONAL = { skipAuthLogout: true }
 export const subscribePush = (token: string) =>
   api.post<void>('/api/push/subscriptions', { token }, OPTIONAL).then((r) => r.data)
 
-/** 백엔드가 본문으로 토큰을 받는다. axios 는 DELETE 에도 본문을 실어 보낸다. */
+/*
+ * 해제는 DELETE 가 아니라 POST 다.
+ * DELETE 의 본문은 중간 프록시가 버리는 경우가 있어(우리는 Vercel 프록시를 거친다)
+ * 백엔드와 POST 로 맞췄다. 본문이 사라지면 구독이 안 지워져 로그아웃한 브라우저로
+ * 계속 푸시가 간다.
+ */
 export const unsubscribePush = (token: string) =>
-  api.delete<void>('/api/push/subscriptions', { ...OPTIONAL, data: { token } }).then((r) => r.data)
+  api.post<void>('/api/push/subscriptions/unsubscribe', { token }, OPTIONAL).then((r) => r.data)
