@@ -94,7 +94,8 @@ export default function TaskBoardPage() {
   useEffect(() => {
     if (!statusFilter || !STATUS_ORDER.includes(statusFilter)) return
     setSpotlight(statusFilter)
-    const timer = window.setTimeout(() => setSpotlight(null), 1000)
+    // 애니메이션(1200ms)이 끝난 뒤에 지운다. 중간에 끊기면 카드가 뚝 떨어진다.
+    const timer = window.setTimeout(() => setSpotlight(null), 1300)
     return () => window.clearTimeout(timer)
   }, [statusFilter])
 
