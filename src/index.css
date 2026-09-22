@@ -35,6 +35,14 @@
   }
 }
 
+/* 대시보드 아래 두 칸의 폭을 손으로 맞춘 값. 간격 스케일(4~96)에 없는 값이라 클래스로 따로 둔다. */
+.dashboard-overdue-card {
+  margin-right: 30px;
+}
+.dashboard-progress-card {
+  margin-left: -30px;
+}
+
 /* 스크롤바를 얇게 — 칸반 보드 가로 스크롤에서 사용 */
 .thin-scroll::-webkit-scrollbar {
   height: 8px;

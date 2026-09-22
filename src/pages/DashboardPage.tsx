@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FileText, Plus } from 'lucide-react'
 import { errorMessage } from '@/api/client'
@@ -36,22 +35,23 @@ function StatTile({
   /** 상태 인디케이터 색. "전체 업무" 처럼 특정 상태가 아니면 생략한다. */
   dot?: string
 }) {
-  // 누른 순간 그 상태의 색으로 테두리를 밝힌다. 다음 화면에서 같은 색이 이어진다.
-  const [pressed, setPressed] = useState(false)
-
   return (
     <Link
       to={to}
-      onPointerDown={() => setPressed(true)}
-      onPointerUp={() => setPressed(false)}
-      onPointerLeave={() => setPressed(false)}
-      className="block rounded-lg bg-surface-card p-xl transition-[background-color,box-shadow,transform] duration-150 active:bg-surface-strong"
-      style={
-        dot && pressed
-          ? { boxShadow: `0 0 0 2px ${dot}, 0 0 16px 2px ${dot}55`, transform: 'translateY(-1px)' }
-          : undefined
-      }
+      className="group relative block rounded-lg bg-surface-card p-xl transition-colors duration-150 active:bg-surface-strong"
     >
+      {/*
+        마우스를 올려 두면 그 상태의 색으로 테두리가 천천히 뛴다.
+        색이 상태마다 달라 클래스로 못 박으므로 currentColor 로 받고,
+        글자까지 물들지 않도록 빈 덧칸에 얹는다.
+      */}
+      {dot && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-lg opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-hover:animate-ring-breathe motion-reduce:group-hover:animate-none"
+          style={{ color: dot }}
+        />
+      )}
       <span className="flex items-center gap-xs text-caption font-normal text-muted">
         {dot && <span className="h-2 w-2 rounded-pill" style={{ background: dot }} aria-hidden />}
         {label}
@@ -243,7 +243,7 @@ export default function DashboardPage() {
 
       {/* 아래 행 — 왼쪽: 바로 손봐야 할 지연 업무 / 오른쪽: 담당자별 진행률 */}
       <div className="mt-lg grid gap-lg lg:grid-cols-2">
-        <SurfaceCard className="p-xl">
+        <SurfaceCard className="dashboard-overdue-card p-xl">
           <SectionTitle
             title="지연된 업무"
             description={s.overdue > 0 ? `기한이 지난 업무 ${s.overdue}건` : undefined}
@@ -292,7 +292,7 @@ export default function DashboardPage() {
           )}
         </SurfaceCard>
 
-        <SurfaceCard className="p-xl">
+        <SurfaceCard className="dashboard-progress-card p-xl">
           <SectionTitle title="담당자별 진행률" className="mb-md" />
           {!data.memberProgress?.length ? (
             <p className="rounded-md bg-surface-soft px-md py-lg text-center text-body-sm text-muted">

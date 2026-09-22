@@ -112,11 +112,16 @@ export default {
          * 테두리는 두 번 뛰고, 번짐은 처음 한 번만 크게 준다.
          */
         'ring-pulse': {
-          '0%': { boxShadow: '0 0 0 0 currentColor, 0 0 0 0 currentColor', opacity: '0.95' },
-          '30%': { boxShadow: '0 0 0 3px currentColor, 0 0 22px 6px currentColor', opacity: '0.6' },
-          '55%': { boxShadow: '0 0 0 1px currentColor, 0 0 0 0 currentColor', opacity: '0.95' },
-          '80%': { boxShadow: '0 0 0 3px currentColor, 0 0 12px 3px currentColor', opacity: '0.5' },
-          '100%': { boxShadow: '0 0 0 0 currentColor, 0 0 0 0 currentColor', opacity: '0' },
+          '0%': { boxShadow: '0 0 0 0 currentColor', opacity: '0.75' },
+          '35%': { boxShadow: '0 0 0 2px currentColor', opacity: '0.45' },
+          '60%': { boxShadow: '0 0 0 1px currentColor', opacity: '0.7' },
+          '85%': { boxShadow: '0 0 0 2px currentColor', opacity: '0.35' },
+          '100%': { boxShadow: '0 0 0 0 currentColor', opacity: '0' },
+        },
+        /* 마우스를 올려 둔 동안 천천히 반복하는 테두리. 도착 강조보다 더 옅다. */
+        'ring-breathe': {
+          '0%, 100%': { boxShadow: '0 0 0 1px currentColor', opacity: '0.35' },
+          '50%': { boxShadow: '0 0 0 2px currentColor', opacity: '0.7' },
         },
         'slot-in': {
           from: { opacity: '0', transform: 'scaleY(0.6)' },
@@ -147,6 +152,7 @@ export default {
         'page-in': 'page-in 180ms ease-out',
         'tab-in': 'tab-in 220ms cubic-bezier(0.22, 1, 0.36, 1)',
         'ring-pulse': 'ring-pulse 1000ms ease-out',
+        'ring-breathe': 'ring-breathe 1400ms ease-in-out infinite',
         // 들어올 때는 감속, 나갈 때는 가속 — 미는 손을 놓은 것처럼 느껴진다.
         'slide-in-right': 'slide-in-right 260ms cubic-bezier(0.32, 0.72, 0, 1) both',
         'slide-out-right': 'slide-out-right 200ms cubic-bezier(0.4, 0, 1, 1) both',
