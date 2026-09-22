@@ -33,12 +33,21 @@ export function usePushNotifications(enabled: boolean) {
     if (!enabled || !available || pushPermission() !== 'granted') return
     let cancelled = false
     void (async () => {
+      /*
+       * 앱을 열 때마다 토큰을 다시 받아 서버에 등록한다.
+       *
+       * 서비스워커 등록이 사라지면(사용자가 해제했거나 브라우저가 정리했거나) 토큰이
+       * 무효가 되고, 서버에 남아 있던 구독은 죽은 것이 된다. 권한이 이미 허용이면
+       * "알림 켜기" 버튼도 보이지 않아 다시 켤 방법이 없다. 그래서 권한 상태와 무관하게
+       * 여기서 매번 등록을 되살린다.
+       */
       const token = await currentPushToken()
       if (!token || cancelled) return
       try {
         await subscribePush(token)
-      } catch {
-        // 백엔드에 아직 없거나 일시적인 실패 — 알림은 SSE·폴링이 계속 받는다.
+      } catch (e) {
+        if (import.meta.env.DEV) console.warn('[FollowUp] 푸시 구독 등록에 실패했습니다.', e)
+        // 실패해도 알림은 SSE·폴링이 계속 받는다.
       }
     })()
     return () => {

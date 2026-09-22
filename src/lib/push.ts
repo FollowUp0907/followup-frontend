@@ -56,6 +56,17 @@ async function messaging() {
 }
 
 /**
+ * 서비스워커 등록. 여러 번 불러도 안전하다 — 같은 스크립트면 기존 등록을 그대로 돌려준다.
+ *
+ * 등록을 "알림 켜기" 를 누를 때만 했던 적이 있는데, 그러면 등록이 풀린 뒤(직접 해제했거나
+ * 브라우저가 정리했거나) 복구할 길이 없었다. 권한이 이미 허용이면 버튼도 안 보여서
+ * 다시 누를 수도 없다. 그래서 토큰이 필요한 자리에서는 항상 여기를 거친다.
+ */
+async function ensureRegistration() {
+  return navigator.serviceWorker.register(SW_URL, { scope: '/' })
+}
+
+/**
  * 알림 권한을 받고 FCM 토큰을 가져온다.
  * 이미 거부한 사람에게는 다시 묻지 않는다 — 브라우저가 어차피 두 번은 묻지 않는다.
  */
@@ -65,23 +76,30 @@ export async function enablePush(): Promise<string | null> {
   const permission = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission()
   if (permission !== 'granted') return null
 
-  const registration = await navigator.serviceWorker.register(SW_URL, { scope: '/' })
+  const registration = await ensureRegistration()
   const m = await messaging()
   if (!m) return null
 
   return m.getToken(m.instance, { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration })
 }
 
-/** 로그아웃할 때 이 브라우저의 토큰을 지운다. */
+/**
+ * 지금 이 브라우저의 FCM 토큰. 권한이 이미 허용이면 묻지 않고 그대로 가져온다.
+ *
+ * 등록이 없으면 여기서 다시 등록한다. 토큰은 서비스워커 등록에 묶여 있어서,
+ * 등록이 사라지면 토큰도 무효가 되고 서버에 남아 있던 구독은 죽은 것이 된다.
+ * 앱을 열 때마다 이걸 부르고 서버에 다시 등록해야 그 구멍이 메워진다.
+ */
 export async function currentPushToken(): Promise<string | null> {
   if (!isPushConfigured() || !isPushSupported() || Notification.permission !== 'granted') return null
-  const registration = await navigator.serviceWorker.getRegistration('/')
-  if (!registration) return null
+  const registration = await ensureRegistration()
   const m = await messaging()
   if (!m) return null
   try {
     return await m.getToken(m.instance, { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration })
-  } catch {
+  } catch (e) {
+    // 조용히 실패하면 "구독이 없는데 아무도 모르는" 상태가 된다. 개발 중에는 알려 준다.
+    if (import.meta.env.DEV) console.warn('[FollowUp] FCM 토큰을 가져오지 못했습니다.', e)
     return null
   }
 }
