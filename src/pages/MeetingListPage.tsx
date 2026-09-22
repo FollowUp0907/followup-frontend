@@ -19,7 +19,7 @@ export default function MeetingListPage() {
   const { projectId, members } = useProjectContext()
   // 회의마다 이 프로젝트를 누가 맡고 있는지 같이 보여준다.
   const ownerName = members.find((m) => m.role === 'OWNER')?.name
-  const { data, isLoading, isError, error, refetch } = useMeetings(projectId)
+  const { data, isPending, isError, error, refetch } = useMeetings(projectId)
   const [query, setQuery] = useState('')
   // 백엔드가 확정 후에도 status 를 DRAFT 로 두기 때문에 화면에서 다시 판정한다.
   const { statusById } = useMeetingStatuses(projectId)
@@ -59,7 +59,7 @@ export default function MeetingListPage() {
         />
       </div>
 
-      {isLoading && (
+      {isPending && (
         <div className="space-y-sm">
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-[84px]" />
@@ -79,7 +79,7 @@ export default function MeetingListPage() {
         />
       )}
 
-      {!isLoading && !isError && meetings.length === 0 && (
+      {!isPending && !isError && meetings.length === 0 && (
         <EmptyState
           title={keyword ? '검색 결과가 없습니다' : '아직 기록된 회의가 없어요'}
           description={keyword ? `"${query}" 와 일치하는 회의가 없습니다.` : '첫 회의를 만들어 회의록을 남겨보세요.'}

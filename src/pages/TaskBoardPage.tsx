@@ -76,7 +76,7 @@ export default function TaskBoardPage() {
     assigneeId: assigneeFilter ? Number(assigneeFilter) : undefined,
     priority: priorityFilter ?? undefined,
   }
-  const { data, isLoading, isError, error, refetch } = useActionItems(projectId, serverFilters)
+  const { data, isPending, isError, error, refetch } = useActionItems(projectId, serverFilters)
   const { data: meetings } = useMeetings(projectId)
   // 회의별 필터는 항목마다 상세를 조회해야 해서(목록 DTO 에 originMeetingId 없음)
   // 실제로 필터를 걸었을 때만 켠다.
@@ -331,7 +331,7 @@ export default function TaskBoardPage() {
         )}
       </SurfaceCard>
 
-      {isLoading && (
+      {isPending && (
         <div className="grid gap-lg md:grid-cols-3">
           {[0, 1, 2].map((i) => (
             <Skeleton key={i} className="h-[240px]" />
@@ -351,7 +351,7 @@ export default function TaskBoardPage() {
         />
       )}
 
-      {!isLoading && !isError && filtered.length === 0 && (
+      {!isPending && !isError && filtered.length === 0 && (
         <EmptyState
           title={hasActiveFilter ? '조건에 맞는 업무가 없습니다' : '아직 후속 업무가 없습니다'}
           description={
@@ -363,7 +363,7 @@ export default function TaskBoardPage() {
         />
       )}
 
-      {!isLoading && !isError && filtered.length > 0 && view === 'board' && (
+      {!isPending && !isError && filtered.length > 0 && view === 'board' && (
         <div className="grid gap-lg md:grid-cols-3">
           {STATUS_ORDER.map((status) => (
             <BoardColumn
@@ -401,7 +401,7 @@ export default function TaskBoardPage() {
         </div>
       )}
 
-      {!isLoading && !isError && filtered.length > 0 && view === 'list' && (
+      {!isPending && !isError && filtered.length > 0 && view === 'list' && (
         <SurfaceCard className="overflow-hidden">
           {/* 가로 스크롤 없이 화면 폭에 맞춘다. 좁아지면 덜 중요한 칸부터 접는다. */}
           <div>

@@ -26,7 +26,7 @@ const schema = z.object({
 type FormValues = z.infer<typeof schema>
 
 export default function ProjectsPage() {
-  const { data: projects, isLoading, isError, error, refetch } = useProjects()
+  const { data: projects, isPending, isError, error, refetch } = useProjects()
   // 우측 상단에 "이름 미확인" 대신 실제 이름이 뜨도록, 이름을 모를 때만 한 번 알아낸다.
   useProfileName(projects)
   // 초대 링크로 들어왔다가 여기로 떨어진 경우, 적어 둔 초대를 자동으로 수락한다.
@@ -80,7 +80,7 @@ export default function ProjectsPage() {
             }
           />
 
-          {isLoading && (
+          {isPending && (
             <div className="flex flex-col gap-sm">
               {[0, 1].map((i) => (
                 <Skeleton key={i} className="h-[104px]" />
@@ -100,7 +100,7 @@ export default function ProjectsPage() {
             />
           )}
 
-          {!isLoading && !isError && projects?.length === 0 && (
+          {!isPending && !isError && projects?.length === 0 && (
             <EmptyState
               title="아직 프로젝트가 없습니다"
               description="프로젝트를 만들고 첫 회의록을 넣어 보세요."
