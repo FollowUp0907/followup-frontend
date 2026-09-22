@@ -35,23 +35,12 @@ function StatTile({
   /** 상태 인디케이터 색. "전체 업무" 처럼 특정 상태가 아니면 생략한다. */
   dot?: string
 }) {
+  // 마우스를 올리면 카드가 살짝 떠오른다. 색은 쓰지 않는다.
   return (
     <Link
       to={to}
-      className="group relative block rounded-lg bg-surface-card p-xl transition-colors duration-150 active:bg-surface-strong"
+      className="block rounded-lg bg-surface-card p-xl transition-[transform,box-shadow,background-color] duration-200 ease-out hover:-translate-y-1 hover:shadow-card active:translate-y-0 active:bg-surface-strong active:shadow-soft motion-reduce:hover:translate-y-0"
     >
-      {/*
-        마우스를 올려 두면 그 상태의 색으로 테두리가 천천히 뛴다.
-        색이 상태마다 달라 클래스로 못 박으므로 currentColor 로 받고,
-        글자까지 물들지 않도록 빈 덧칸에 얹는다.
-      */}
-      {dot && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-lg opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-hover:animate-ring-breathe motion-reduce:group-hover:animate-none"
-          style={{ color: dot }}
-        />
-      )}
       <span className="flex items-center gap-xs text-caption font-normal text-muted">
         {dot && <span className="h-2 w-2 rounded-pill" style={{ background: dot }} aria-hidden />}
         {label}

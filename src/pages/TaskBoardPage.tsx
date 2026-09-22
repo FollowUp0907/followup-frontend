@@ -415,14 +415,9 @@ export default function TaskBoardPage() {
       )}
 
       {!isPending && !isError && filtered.length > 0 && view === 'list' && (
-        <SurfaceCard className="relative overflow-hidden">
-          {spotlight && (
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-0 rounded-lg animate-ring-pulse motion-reduce:animate-none"
-              style={{ color: STATUS_DOT_COLOR[spotlight] }}
-            />
-          )}
+        <SurfaceCard
+          className={cn('overflow-hidden', spotlight && 'animate-float-settle motion-reduce:animate-none')}
+        >
           {/* 가로 스크롤 없이 화면 폭에 맞춘다. 좁아지면 덜 중요한 칸부터 접는다. */}
           <div>
             <table className="w-full table-fixed border-collapse text-left">
@@ -626,18 +621,13 @@ function BoardColumn({
       }}
       className={cn(
         // cn 은 단순 join 이라 상충하는 유틸을 같이 주면 안 된다. 배경은 한쪽에서만 지정.
-        'relative flex flex-col rounded-lg p-sm transition-[background-color,box-shadow] duration-150',
+        'flex flex-col rounded-lg p-sm transition-[background-color,box-shadow] duration-150',
         isDropTarget ? 'bg-surface-card ring-[1.5px] ring-inset ring-ink' : 'bg-surface-soft',
+        // 대시보드에서 이 상태를 눌러 들어왔다 — 한 번 떠올랐다 가라앉는다.
+        spotlight && 'animate-float-settle motion-reduce:animate-none',
       )}
     >
-      {/* 강조는 따로 얹는다. 이 칸의 글자 색까지 물들이지 않으려고 빈 덧칸을 쓴다. */}
-      {spotlight && (
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-lg animate-ring-pulse motion-reduce:animate-none"
-          style={{ color: STATUS_DOT_COLOR[status] }}
-        />
-      )}
+
       <div className="flex items-center gap-xs px-xs pb-md pt-xs">
         <span className="h-2 w-2 rounded-pill" style={{ background: STATUS_DOT_COLOR[status] }} aria-hidden />
         <h2 className="text-title-sm text-ink">{STATUS_LABEL[status]}</h2>
