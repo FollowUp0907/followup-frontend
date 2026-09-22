@@ -273,9 +273,10 @@ function DetailView({
       </span>
       <p className="text-title-sm text-ink">{notification.taskTitle}</p>
       {notification.at && (
-        <p className="mt-xxs text-caption font-normal text-muted">
-          {notification.dueDate ? `마감일 ${formatDate(notification.at)}` : formatDateTime(notification.at)}
-        </p>
+        <p className="mt-xxs text-caption font-normal text-muted">{formatDateTime(notification.at)}</p>
+      )}
+      {notification.dueDate && (
+        <p className="mt-xxs text-caption font-normal text-muted-soft">마감일 {formatDate(notification.dueDate)}</p>
       )}
       {notification.kind === 'DUE_SOON' && (
         <p className="mt-xs text-caption font-normal text-muted-soft">
@@ -357,7 +358,8 @@ function NotificationRow({
           </span>
           <span className={cn('block truncate text-caption font-normal', n.read ? 'text-muted-soft' : 'text-muted')}>
             {KIND_LABEL[n.kind]}
-            {n.at ? ` · ${n.dueDate ? formatDate(n.at) : dayjs(n.at).fromNow()}` : ''}
+            {/* 마감일이 아니라 알림이 온 시각. 마감은 오른쪽 D-day 뱃지가 말해 준다. */}
+            {n.at ? ` · ${dayjs(n.at).fromNow()}` : ''}
             {n.read && n.kind !== 'OVERDUE' ? ' · 읽음' : ''}
           </span>
         </span>

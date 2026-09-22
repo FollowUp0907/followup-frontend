@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { subscribePush, unsubscribePush } from '@/api/pushApi'
 import {
@@ -21,6 +22,7 @@ import { qk } from '@/lib/queryKeys'
  */
 export function usePushNotifications(enabled: boolean) {
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const [permission, setPermission] = useState<PushPermission>(() => pushPermission())
   const [busy, setBusy] = useState(false)
 
@@ -55,6 +57,20 @@ export function usePushNotifications(enabled: boolean) {
     })
     return () => stop?.()
   }, [enabled, available, permission, qc])
+
+  /*
+   * 알림을 눌렀을 때 서비스워커가 보내는 이동 요청.
+   * 서비스워커가 아직 이 탭을 제어하지 않으면 직접 이동시킬 수 없어서, 대신 경로를 넘겨 준다.
+   */
+  useEffect(() => {
+    if (!available || !('serviceWorker' in navigator)) return
+    const onMessage = (event: MessageEvent) => {
+      const data = event.data as { type?: string; path?: string } | null
+      if (data?.type === 'followup:navigate' && data.path) navigate(data.path)
+    }
+    navigator.serviceWorker.addEventListener('message', onMessage)
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage)
+  }, [available, navigate])
 
   /** 사용자가 직접 켤 때만 권한을 묻는다. 화면에 들어오자마자 묻지 않는다. */
   const turnOn = useCallback(async () => {

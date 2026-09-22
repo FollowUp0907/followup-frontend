@@ -16,6 +16,30 @@ const config = {
   appId: params.get('appId') || '',
 }
 
+/**
+ * 알림에 붙어 온 data 를 꺼낸다.
+ *
+ * 여기가 한 번 틀렸던 곳이다. 백엔드가 notification 을 함께 보내면 **브라우저가
+ * 배너를 자동으로 띄우는데**, 그때 payload 는 그대로 들어오지 않고
+ * `notification.data.FCM_MSG.data` 안에 들어간다. 우리가 직접 띄운 알림만
+ * `notification.data` 에 그대로 있다. 둘 다 받아야 클릭이 동작한다.
+ */
+function readData(notification) {
+  const raw = (notification && notification.data) || {}
+  if (raw.FCM_MSG) return (raw.FCM_MSG.data || raw.FCM_MSG.notification || {})
+  if (raw.data) return raw.data
+  return raw
+}
+
+/** 업무가 있으면 업무 화면, 프로젝트만 있으면 프로젝트 화면. (actionItemId 는 없으면 빈 문자열로 온다) */
+function pathFor(data) {
+  const projectId = data.projectId
+  const actionItemId = data.actionItemId
+  if (projectId && actionItemId) return '/projects/' + projectId + '/tasks/' + actionItemId
+  if (projectId) return '/projects/' + projectId
+  return '/projects'
+}
+
 if (config.apiKey && config.messagingSenderId && config.appId) {
   firebase.initializeApp(config)
   const messaging = firebase.messaging()
@@ -28,13 +52,12 @@ if (config.apiKey && config.messagingSenderId && config.appId) {
   messaging.onBackgroundMessage((payload) => {
     if (payload.notification) return
     const data = payload.data || {}
-    const title = data.taskTitle || '새 알림'
-    self.registration.showNotification(title, {
+    self.registration.showNotification(data.taskTitle || '새 알림', {
       body: data.taskTitle || '',
       icon: '/favicon.png',
       badge: '/favicon.png',
       tag: data.notificationId || undefined,
-      data,
+      data: data,
     })
   })
 }
@@ -43,22 +66,26 @@ if (config.apiKey && config.messagingSenderId && config.appId) {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close()
 
-  const data = event.notification.data || {}
-  const projectId = data.projectId
-  const actionItemId = data.actionItemId
-  let path = '/projects'
-  if (projectId && actionItemId) path = `/projects/${projectId}/tasks/${actionItemId}`
-  else if (projectId) path = `/projects/${projectId}`
+  const data = readData(event.notification)
+  const path = pathFor(data)
+  const url = new URL(path, self.location.origin).href
 
   event.waitUntil(
-    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      for (const client of clients) {
-        if ('focus' in client) {
-          client.navigate(new URL(path, self.location.origin).href)
-          return client.focus()
+    (async () => {
+      const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      for (const client of windows) {
+        if (new URL(client.url).origin !== self.location.origin) continue
+        if ('focus' in client) await client.focus()
+        try {
+          // 서비스워커가 제어 중인 탭이면 그대로 이동시킨다.
+          await client.navigate(url)
+        } catch (e) {
+          // 아직 제어하지 않는 탭(등록 직후 첫 세션 등)은 새로고침 없이 앱에 맡긴다.
+          client.postMessage({ type: 'followup:navigate', path: path })
         }
+        return
       }
-      return self.clients.openWindow(path)
-    }),
+      await self.clients.openWindow(url)
+    })(),
   )
 })

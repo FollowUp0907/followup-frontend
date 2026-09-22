@@ -47,7 +47,7 @@ export interface AppNotification {
   projectId: number
   actionItemId: number
   taskTitle: string
-  /** 목록에 보여 줄 시각 (마감 예고·지연은 마감일) */
+  /** 알림이 온 시각. 마감일이 아니다. */
   at: string
   read: boolean
   /** 있으면 D-3 / D+2 같은 뱃지를 붙인다. */
@@ -70,6 +70,39 @@ export interface AppNotification {
  */
 const LOCAL_READ_KEY = 'followup.notifications.read'
 const LOCAL_HIDDEN_KEY = 'followup.notifications.hidden'
+/**
+ * 프론트가 계산한 알림이 **처음 보인 시각**.
+ *
+ * 마감 예고와 지연은 서버가 만든 알림이 아니라 업무 목록에서 화면이 계산한 것이라
+ * "언제 왔는지"가 없다. 그래서 처음 본 순간을 적어 두고 그걸 알림 시각으로 쓴다.
+ * 적어 두지 않으면 목록을 다시 불러올 때마다 "방금 전"이 된다.
+ */
+const LOCAL_SEEN_KEY = 'followup.notifications.seenAt'
+
+function loadSeenAt(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem(LOCAL_SEEN_KEY)
+    const parsed: unknown = raw ? JSON.parse(raw) : {}
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+    return Object.fromEntries(
+      Object.entries(parsed as Record<string, unknown>).filter(([, v]) => typeof v === 'string'),
+    ) as Record<string, string>
+  } catch {
+    return {}
+  }
+}
+
+function saveSeenAt(map: Record<string, string>) {
+  // 이틀보다 오래된 기록은 버린다. 안 그러면 계속 쌓인다.
+  const cutoff = dayjs().subtract(2, 'day')
+  const kept = Object.fromEntries(Object.entries(map).filter(([, v]) => dayjs(v).isAfter(cutoff)))
+  try {
+    localStorage.setItem(LOCAL_SEEN_KEY, JSON.stringify(kept))
+  } catch {
+    // 저장이 막혀 있어도 이번 세션에는 남는다.
+  }
+  return kept
+}
 
 function loadKeys(storageKey: string): string[] {
   try {
@@ -236,6 +269,7 @@ export function useNotifications(userId?: number, { active = true }: { active?: 
 
   const [localRead, setLocalRead] = useState<string[]>(() => loadKeys(LOCAL_READ_KEY))
   const [hidden, setHidden] = useState<string[]>(() => loadKeys(LOCAL_HIDDEN_KEY))
+  const seenAt = useRef<Record<string, string>>(loadSeenAt())
 
   const fromMyTasks = useMemo<AppNotification[]>(() => {
     if (!userId) return []
@@ -246,28 +280,40 @@ export function useNotifications(userId?: number, { active = true }: { active?: 
       .flatMap<AppNotification>((i) => {
         const left = daysUntil(i.dueDate)
         if (left === null) return []
+        // 이 알림을 처음 본 시각을 알림 시각으로 쓴다. (마감일이 아니다)
+        const stamp = (key: string) => {
+          if (!seenAt.current[key]) seenAt.current[key] = dayjs().toISOString()
+          return seenAt.current[key]
+        }
         const common = {
           projectId: i.projectId,
           actionItemId: i.id,
           taskTitle: i.title,
-          at: i.dueDate ?? '',
           dueDate: i.dueDate ?? undefined,
         }
         if (left < 0) {
           // 지연은 해결될 때까지 계속 떠 있어야 해서 읽음 처리를 두지 않는다.
           // 키에 마감일을 넣는다. 마감을 옮기면 지웠던 알림도 새 알림으로 다시 뜬다.
-          return [{ ...common, key: `overdue-${i.id}-${i.dueDate}`, kind: 'OVERDUE' as const, read: false }]
+          const key = `overdue-${i.id}-${i.dueDate}`
+          return [{ ...common, key, at: stamp(key), kind: 'OVERDUE' as const, read: false }]
         }
         if (left <= DUE_SOON_NOTICE_DAYS) {
           // 키에 오늘 날짜가 들어가서, 읽고 넘겨도 내일 새 알림으로 다시 뜬다.
           const key = `duesoon-${i.id}-${today}`
-          return [{ ...common, key, kind: 'DUE_SOON' as const, read: localRead.includes(key) }]
+          return [{ ...common, key, at: stamp(key), kind: 'DUE_SOON' as const, read: localRead.includes(key) }]
         }
         return []
       })
       .filter((n) => !hidden.includes(n.key))
-      .sort((a, b) => a.at.localeCompare(b.at))
+      // 마감이 가까운 것부터 — 알림 시각은 거의 같으므로 마감일로 줄 세운다.
+      .sort((a, b) => (a.dueDate ?? '').localeCompare(b.dueDate ?? ''))
   }, [itemQueries, userId, localRead, hidden])
+
+  // 처음 본 시각은 다음에 열어도 그대로여야 한다.
+  useEffect(() => {
+    if (fromMyTasks.length === 0) return
+    seenAt.current = saveSeenAt(seenAt.current)
+  }, [fromMyTasks])
 
   const fromServer = useMemo<AppNotification[]>(
     () =>
