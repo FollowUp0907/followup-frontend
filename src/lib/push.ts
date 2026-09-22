@@ -63,7 +63,41 @@ async function messaging() {
  * 다시 누를 수도 없다. 그래서 토큰이 필요한 자리에서는 항상 여기를 거친다.
  */
 async function ensureRegistration() {
-  return navigator.serviceWorker.register(SW_URL, { scope: '/' })
+  const registration = await navigator.serviceWorker.register(SW_URL, { scope: '/' })
+  /*
+   * getToken 은 **활성화된** 워커를 요구한다.
+   * 등록 직후에는 아직 installing 이라 active 가 비어 있고, 그 상태로 부르면 실패한다.
+   * (서비스워커를 지웠다가 새로 깐 직후가 정확히 이 경우다)
+   * ready 는 이 스코프에 활성 워커가 생길 때 풀린다. 혹시 풀리지 않는 경우를 대비해
+   * 10초에서 끊고, 그때는 있는 등록 그대로 시도한다.
+   */
+  if (!registration.active) {
+    await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((resolve) => setTimeout(resolve, 10_000)),
+    ])
+  }
+  return registration
+}
+
+/** 지금 상태를 한 번에 볼 수 있게 남긴다. 콘솔에서 followupPushStatus() 로 부른다. */
+export async function pushStatus() {
+  const registration = isPushSupported() ? await navigator.serviceWorker.getRegistration('/') : undefined
+  let token: string | null = null
+  let tokenError: string | null = null
+  try {
+    token = await currentPushToken()
+  } catch (e) {
+    tokenError = e instanceof Error ? `${e.name}: ${e.message}` : String(e)
+  }
+  return {
+    설정됨: isPushConfigured(),
+    브라우저지원: isPushSupported(),
+    권한: typeof Notification === 'undefined' ? 'unsupported' : Notification.permission,
+    서비스워커: registration ? { scope: registration.scope, active: !!registration.active } : null,
+    토큰: token ? `${token.slice(0, 12)}… (${token.length}자)` : null,
+    토큰오류: tokenError,
+  }
 }
 
 /**
@@ -98,8 +132,8 @@ export async function currentPushToken(): Promise<string | null> {
   try {
     return await m.getToken(m.instance, { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration })
   } catch (e) {
-    // 조용히 실패하면 "구독이 없는데 아무도 모르는" 상태가 된다. 개발 중에는 알려 준다.
-    if (import.meta.env.DEV) console.warn('[FollowUp] FCM 토큰을 가져오지 못했습니다.', e)
+    // 조용히 실패하면 "구독이 없는데 아무도 모르는" 상태가 된다. 배포본에서도 남긴다.
+    console.warn('[FollowUp] FCM 토큰을 가져오지 못했습니다.', e)
     return null
   }
 }

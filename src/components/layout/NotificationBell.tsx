@@ -62,7 +62,7 @@ function DDay({ dueDate, kind }: { dueDate?: string; kind: NotificationKind }) {
  * 지연 알림은 해결될 때까지 계속 보이므로 읽음/삭제가 없다.
  */
 export function NotificationBell() {
-  const { user } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<AppNotification | null>(null)
@@ -70,7 +70,12 @@ export function NotificationBell() {
 
   const { all, unreadCount, markRead, markAllRead, remove } = useNotifications(user?.userId, { active: open })
   // 앱을 꺼 둔 동안에도 알림이 닿게 하는 브라우저 알림. 켜는 것은 사용자가 직접 한다.
-  const push = usePushNotifications(!!user?.userId)
+  /*
+   * 푸시는 로그인 여부만 보면 된다.
+   * 예전에는 user.userId 가 있어야 켰는데, 토큰의 sub 를 숫자로 못 읽으면 userId 가 0 이 되고
+   * 그러면 푸시가 통째로 꺼진다 — 알림 목록은 멀쩡히 보여서 알아채기 어렵다.
+   */
+  const push = usePushNotifications(isAuthenticated)
 
   useEffect(() => {
     if (!open) return

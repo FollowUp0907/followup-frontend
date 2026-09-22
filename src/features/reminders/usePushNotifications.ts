@@ -9,6 +9,7 @@ import {
   isPushSupported,
   onPushMessage,
   pushPermission,
+  pushStatus,
 } from '@/lib/push'
 import type { PushPermission } from '@/lib/push'
 import { qk } from '@/lib/queryKeys'
@@ -28,11 +29,24 @@ export function usePushNotifications(enabled: boolean) {
 
   const available = isPushConfigured() && isPushSupported()
 
-  // 이미 허용해 둔 브라우저는 조용히 다시 등록한다.
+  /*
+   * 콘솔에서 `followupPushStatus()` 로 지금 상태를 볼 수 있게 해 둔다.
+   * 푸시는 눈에 보이는 단계가 없어서, 막혔을 때 어디서 막혔는지 물어볼 방법이 필요하다.
+   */
+  useEffect(() => {
+    ;(window as unknown as { followupPushStatus?: unknown }).followupPushStatus = pushStatus
+  }, [])
+
+  /*
+   * 이미 허용해 둔 브라우저는 조용히 다시 등록한다.
+   *
+   * 앱을 열 때 한 번, 그리고 서비스워커가 새로 제어를 넘겨받을 때 한 번 더 한다.
+   * 워커가 바뀌면 토큰도 바뀔 수 있어서, 앱 로드 때만 하면 그 사이가 빈다.
+   */
   useEffect(() => {
     if (!enabled || !available || pushPermission() !== 'granted') return
     let cancelled = false
-    void (async () => {
+    const resubscribe = async () => {
       /*
        * 앱을 열 때마다 토큰을 다시 받아 서버에 등록한다.
        *
@@ -41,17 +55,27 @@ export function usePushNotifications(enabled: boolean) {
        * "알림 켜기" 버튼도 보이지 않아 다시 켤 방법이 없다. 그래서 권한 상태와 무관하게
        * 여기서 매번 등록을 되살린다.
        */
-      const token = await currentPushToken()
-      if (!token || cancelled) return
       try {
+        const token = await currentPushToken()
+        if (!token) {
+          // 토큰을 못 받으면 구독도 못 한다. 왜 못 받았는지는 위에서 이미 남겼다.
+          return
+        }
+        if (cancelled) return
         await subscribePush(token)
       } catch (e) {
-        if (import.meta.env.DEV) console.warn('[FollowUp] 푸시 구독 등록에 실패했습니다.', e)
+        // 등록·토큰·구독 어디서 막혀도 여기로 온다. 조용히 넘어가면 원인을 찾을 수 없다.
+        console.warn('[FollowUp] 푸시 구독을 등록하지 못했습니다.', e)
         // 실패해도 알림은 SSE·폴링이 계속 받는다.
       }
-    })()
+    }
+
+    void resubscribe()
+    // 서비스워커가 교체되면 토큰이 달라질 수 있다.
+    navigator.serviceWorker?.addEventListener('controllerchange', resubscribe)
     return () => {
       cancelled = true
+      navigator.serviceWorker?.removeEventListener('controllerchange', resubscribe)
     }
   }, [enabled, available])
 
