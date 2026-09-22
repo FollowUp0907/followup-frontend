@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { errorMessage } from '@/api/client'
-import { Plus, Search } from 'lucide-react'
+import { Crown, Plus, Search } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageWidth } from '@/components/layout/PageWidth'
 import { Pager, usePager } from '@/components/ui/Pager'
@@ -16,7 +16,9 @@ import { formatDateTime } from '@/lib/date'
 import { dayjs } from '@/lib/date'
 
 export default function MeetingListPage() {
-  const { projectId } = useProjectContext()
+  const { projectId, members } = useProjectContext()
+  // 회의마다 이 프로젝트를 누가 맡고 있는지 같이 보여준다.
+  const ownerName = members.find((m) => m.role === 'OWNER')?.name
   const { data, isLoading, isError, error, refetch } = useMeetings(projectId)
   const [query, setQuery] = useState('')
   // 백엔드가 확정 후에도 status 를 DRAFT 로 두기 때문에 화면에서 다시 판정한다.
@@ -107,7 +109,18 @@ export default function MeetingListPage() {
                     <h2 className="truncate text-title-md text-ink">{m.title}</h2>
                     <MeetingStatusBadge status={statusById.get(m.id) ?? m.status} />
                   </div>
-                  <p className="mt-xxs text-body-sm text-muted">{formatDateTime(m.scheduledAt)}</p>
+                  <p className="mt-xxs flex flex-wrap items-center gap-xs text-body-sm text-muted">
+                    <span>{formatDateTime(m.scheduledAt)}</span>
+                    {ownerName && (
+                      <>
+                        <span aria-hidden>·</span>
+                        <span className="inline-flex items-center gap-xxs text-muted-soft">
+                          <Crown size={12} aria-hidden />
+                          소유자 {ownerName}
+                        </span>
+                      </>
+                    )}
+                  </p>
                 </div>
                 <span className="text-nav-link text-muted">상세 보기 →</span>
               </Link>

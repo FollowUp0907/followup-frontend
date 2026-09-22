@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Link, useNavigate } from 'react-router-dom'
 import { z } from 'zod'
-import { ChevronRight, Plus } from 'lucide-react'
+import { ChevronRight, Crown, Plus } from 'lucide-react'
 import { errorMessage } from '@/api/client'
 import { TopNav } from '@/components/layout/TopNav'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -16,6 +16,7 @@ import { useToast } from '@/components/ui/Toast'
 import { useProfileName } from '@/features/auth/useProfileName'
 import { useAcceptPendingInvite } from '@/features/members/useAcceptPendingInvite'
 import { useCreateProject, useProjects } from '@/features/projects/queries'
+import { useProjectOwners } from '@/features/projects/useProjectOwners'
 import { formatServerRelative } from '@/lib/date'
 
 const schema = z.object({
@@ -30,6 +31,7 @@ export default function ProjectsPage() {
   useProfileName(projects)
   // 초대 링크로 들어왔다가 여기로 떨어진 경우, 적어 둔 초대를 자동으로 수락한다.
   useAcceptPendingInvite()
+  const ownerById = useProjectOwners(projects)
   // 4개까지는 그냥 보이고, 그 이상이면 인디케이터로 넘긴다.
   const page = usePager(projects ?? [], 4)
   const createProject = useCreateProject()
@@ -117,8 +119,15 @@ export default function ProjectsPage() {
                       <p className="mt-xxs line-clamp-1 text-body-sm text-body">
                         {p.description || '설명이 없습니다.'}
                       </p>
-                      <p className="mt-xs text-caption font-normal text-muted-soft">
-                        최근 업데이트 {formatServerRelative(p.updatedAt)}
+                      <p className="mt-xs flex flex-wrap items-center gap-xs text-caption font-normal text-muted-soft">
+                        {ownerById.get(p.id) && (
+                          <span className="inline-flex items-center gap-xxs">
+                            <Crown size={12} aria-hidden />
+                            소유자 {ownerById.get(p.id)}
+                          </span>
+                        )}
+                        {ownerById.get(p.id) && <span aria-hidden>·</span>}
+                        <span>최근 업데이트 {formatServerRelative(p.updatedAt)}</span>
                       </p>
                     </div>
                     <ChevronRight size={18} className="shrink-0 text-muted" />

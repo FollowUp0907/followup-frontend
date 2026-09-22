@@ -323,7 +323,12 @@ export function useNotifications(userId?: number, { active = true }: { active?: 
         projectId: n.projectId,
         actionItemId: n.actionItemId,
         taskTitle: n.taskTitle,
-        at: n.remindAt,
+        /*
+         * 도착한 시각을 보여준다.
+         * remindAt 은 "언제 알릴 예정인가"라서 마감 예고에서는 마감 쪽 시각이 온다.
+         * 실제로 만들어진 시각은 createdAt 이다.
+         */
+        at: n.createdAt || n.remindAt,
         read: !!n.readAt,
         serverId: n.id,
       })),
