@@ -109,10 +109,6 @@ export default function ProjectSettingsPage() {
             <h2 className="mb-md text-title-md text-ink">프로젝트 정보</h2>
             <dl className="space-y-sm text-body-sm">
               <div className="flex justify-between gap-md">
-                <dt className="text-muted">프로젝트 ID</dt>
-                <dd className="tabular-nums text-ink">{project.id}</dd>
-              </div>
-              <div className="flex justify-between gap-md">
                 <dt className="text-muted">생성일</dt>
                 <dd className="text-ink">{formatServerDateTime(project.createdAt)}</dd>
               </div>

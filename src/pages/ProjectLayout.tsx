@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useParams } from 'react-router-dom'
+import { Navigate, Outlet, useLocation, useParams } from 'react-router-dom'
 import { Calendar, CheckSquare, LayoutDashboard, Settings } from 'lucide-react'
 import { TopNav } from '@/components/layout/TopNav'
 import { NavPillGroup } from '@/components/ui/NavPillGroup'
@@ -10,6 +10,7 @@ import { useProject } from '@/features/projects/queries'
 
 export default function ProjectLayout() {
   const params = useParams()
+  const location = useLocation()
   const projectId = Number(params.projectId)
   const { data: project, isLoading, isError, error } = useProject(projectId)
 
@@ -57,7 +58,10 @@ export default function ProjectLayout() {
 
           {project && (
             <ProjectProvider project={project}>
-              <Outlet />
+              {/* 탭이 바뀔 때마다 다시 그려지도록 경로를 key 로 준다. 쿼리만 바뀔 때는 그대로 둔다. */}
+              <div key={location.pathname} className="animate-tab-in">
+                <Outlet />
+              </div>
             </ProjectProvider>
           )}
         </div>

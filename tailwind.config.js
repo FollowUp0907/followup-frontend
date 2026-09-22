@@ -101,6 +101,11 @@ export default {
           from: { opacity: '0', transform: 'translateX(10px)' },
           to: { opacity: '1', transform: 'translateX(0)' },
         },
+        // 탭 전환 — 목록 페이지네이션(page-in)보다 조금 느리고 위로 올라온다.
+        'tab-in': {
+          from: { opacity: '0', transform: 'translateY(8px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
         'slot-in': {
           from: { opacity: '0', transform: 'scaleY(0.6)' },
           to: { opacity: '1', transform: 'scaleY(1)' },
@@ -128,6 +133,7 @@ export default {
         'scale-in': 'scale-in 140ms ease-out',
         'slot-in': 'slot-in 120ms ease-out',
         'page-in': 'page-in 180ms ease-out',
+        'tab-in': 'tab-in 220ms cubic-bezier(0.22, 1, 0.36, 1)',
         // 들어올 때는 감속, 나갈 때는 가속 — 미는 손을 놓은 것처럼 느껴진다.
         'slide-in-right': 'slide-in-right 260ms cubic-bezier(0.32, 0.72, 0, 1) both',
         'slide-out-right': 'slide-out-right 200ms cubic-bezier(0.4, 0, 1, 1) both',

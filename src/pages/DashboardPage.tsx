@@ -144,7 +144,10 @@ export default function DashboardPage() {
             }
             className="mb-md"
             action={
-              <Link to={`${base}/tasks`} className="text-nav-link text-muted transition-colors hover:text-ink">
+              <Link
+                to={`${base}/tasks?due=soon`}
+                className="text-nav-link text-muted transition-colors hover:text-ink"
+              >
                 전체 보기
               </Link>
             }
