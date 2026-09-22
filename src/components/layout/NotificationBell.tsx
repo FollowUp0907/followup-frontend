@@ -1,10 +1,22 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AlertTriangle, ArrowLeft, Bell, CalendarClock, CheckCircle2, Pencil, Plus, UserPlus, X } from 'lucide-react'
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Bell,
+  BellRing,
+  CalendarClock,
+  CheckCircle2,
+  Pencil,
+  Plus,
+  UserPlus,
+  X,
+} from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { useAuth } from '@/features/auth/AuthContext'
 import { KIND_LABEL, useNotifications } from '@/features/reminders/useNotifications'
+import { usePushNotifications } from '@/features/reminders/usePushNotifications'
 import type { AppNotification, NotificationKind } from '@/features/reminders/useNotifications'
 import { cn } from '@/lib/cn'
 import { dDayLabel, dayjs, formatDate, formatDateTime } from '@/lib/date'
@@ -57,6 +69,8 @@ export function NotificationBell() {
   const ref = useRef<HTMLDivElement>(null)
 
   const { all, unreadCount, markRead, markAllRead, remove } = useNotifications(user?.userId, { active: open })
+  // 앱을 꺼 둔 동안에도 알림이 닿게 하는 브라우저 알림. 켜는 것은 사용자가 직접 한다.
+  const push = usePushNotifications(!!user?.userId)
 
   useEffect(() => {
     if (!open) return
@@ -170,6 +184,30 @@ export function NotificationBell() {
             />
           ) : (
             <div className="max-h-[360px] overflow-y-auto">
+              {push.available && push.permission === 'default' && (
+                <button
+                  type="button"
+                  onClick={() => void push.turnOn()}
+                  disabled={push.busy}
+                  className="flex w-full items-start gap-xs border-b border-hairline-soft px-md py-sm text-left transition-colors hover:bg-surface-card disabled:opacity-60"
+                >
+                  <BellRing size={15} className="mt-[2px] shrink-0 text-ink" aria-hidden />
+                  <span className="min-w-0">
+                    <span className="block text-body-sm font-semibold text-ink">브라우저 알림 켜기</span>
+                    <span className="block text-caption font-normal text-muted">
+                      창을 닫아 둔 동안에도 새 업무와 마감 알림을 받습니다
+                    </span>
+                  </span>
+                </button>
+              )}
+
+              {push.available && push.permission === 'denied' && (
+                <p className="border-b border-hairline-soft px-md py-sm text-caption font-normal text-muted">
+                  브라우저에서 이 사이트의 알림을 막아 두었습니다. 주소창의 자물쇠 아이콘에서 허용으로 바꾸면 창을
+                  닫아 둔 동안에도 알림을 받습니다.
+                </p>
+              )}
+
               {all.length === 0 && (
                 <p className="px-md py-xl text-center text-body-sm text-muted">새로운 알림이 없습니다.</p>
               )}

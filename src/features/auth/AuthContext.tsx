@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import * as authApi from '@/api/authApi'
 import { setUnauthorizedHandler } from '@/api/client'
+import { forgetPushSubscription } from '@/features/reminders/usePushNotifications'
 import {
   clearSession,
   getProfile,
@@ -46,6 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
 
   const logout = useCallback(() => {
+    // 이 브라우저로는 더 이상 푸시를 받지 않는다. 실패해도 로그아웃은 계속된다.
+    void forgetPushSubscription()
     clearSession()
     setUser(null)
     queryClient.clear()
