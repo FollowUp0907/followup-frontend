@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FileText, Plus } from 'lucide-react'
 import { errorMessage } from '@/api/client'
@@ -35,8 +36,22 @@ function StatTile({
   /** 상태 인디케이터 색. "전체 업무" 처럼 특정 상태가 아니면 생략한다. */
   dot?: string
 }) {
+  // 누른 순간 그 상태의 색으로 테두리를 밝힌다. 다음 화면에서 같은 색이 이어진다.
+  const [pressed, setPressed] = useState(false)
+
   return (
-    <Link to={to} className="block rounded-lg bg-surface-card p-xl transition-colors active:bg-surface-strong">
+    <Link
+      to={to}
+      onPointerDown={() => setPressed(true)}
+      onPointerUp={() => setPressed(false)}
+      onPointerLeave={() => setPressed(false)}
+      className="block rounded-lg bg-surface-card p-xl transition-[background-color,box-shadow,transform] duration-150 active:bg-surface-strong"
+      style={
+        dot && pressed
+          ? { boxShadow: `0 0 0 2px ${dot}, 0 0 16px 2px ${dot}55`, transform: 'translateY(-1px)' }
+          : undefined
+      }
+    >
       <span className="flex items-center gap-xs text-caption font-normal text-muted">
         {dot && <span className="h-2 w-2 rounded-pill" style={{ background: dot }} aria-hidden />}
         {label}

@@ -1,4 +1,4 @@
-import { useId, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { CalendarClock, ChevronDown, ChevronsUp, Equal, ExternalLink, GripVertical, Plus, Search, Trash2 } from 'lucide-react'
 import { errorMessage } from '@/api/client'
@@ -85,6 +85,18 @@ export default function TaskBoardPage() {
   const createItem = useCreateActionItem(projectId)
   const deleteItem = useDeleteActionItem(projectId)
   const navigate = useNavigate()
+
+  /*
+   * 대시보드에서 상태 칸을 눌러 들어오면, 그 목록을 1초 동안 짚어 준다.
+   * 어느 칸을 눌렀는지 화면이 바뀐 뒤에도 이어 보이게 하려는 것이다.
+   */
+  const [spotlight, setSpotlight] = useState<ActionItemStatus | null>(null)
+  useEffect(() => {
+    if (!statusFilter || !STATUS_ORDER.includes(statusFilter)) return
+    setSpotlight(statusFilter)
+    const timer = window.setTimeout(() => setSpotlight(null), 1000)
+    return () => window.clearTimeout(timer)
+  }, [statusFilter])
 
   const [createOpen, setCreateOpen] = useState(false)
   // 카드·행을 누르면 오른쪽 패널로 열린다. 톱니 메뉴로만 전체 화면으로 넘어간다.
@@ -369,6 +381,7 @@ export default function TaskBoardPage() {
             <BoardColumn
               key={status}
               status={status}
+              spotlight={spotlight === status}
               items={byStatus(status)}
               memberName={memberName}
               onOpenPreview={setPreviewId}
@@ -402,7 +415,14 @@ export default function TaskBoardPage() {
       )}
 
       {!isPending && !isError && filtered.length > 0 && view === 'list' && (
-        <SurfaceCard className="overflow-hidden">
+        <SurfaceCard className="relative overflow-hidden">
+          {spotlight && (
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-0 rounded-lg animate-ring-pulse motion-reduce:animate-none"
+              style={{ color: STATUS_DOT_COLOR[spotlight] }}
+            />
+          )}
           {/* 가로 스크롤 없이 화면 폭에 맞춘다. 좁아지면 덜 중요한 칸부터 접는다. */}
           <div>
             <table className="w-full table-fixed border-collapse text-left">
@@ -557,6 +577,7 @@ function FilterField({ label, children }: { label: string; children: (id: string
 /** 컬럼 하나. 5개씩 끊어 보여 주고 화살표·스와이프·인디케이터로 넘긴다. */
 function BoardColumn({
   status,
+  spotlight,
   items,
   memberName,
   onOpenPreview,
@@ -570,6 +591,8 @@ function BoardColumn({
   onCardDragEnd,
 }: {
   status: ActionItemStatus
+  /** 대시보드에서 이 상태를 눌러 들어왔다 — 1초 동안 테두리를 밝힌다. */
+  spotlight: boolean
   items: ActionItemListResDto[]
   memberName: (userId?: number) => string
   onOpenPreview: (id: number) => void
@@ -603,10 +626,18 @@ function BoardColumn({
       }}
       className={cn(
         // cn 은 단순 join 이라 상충하는 유틸을 같이 주면 안 된다. 배경은 한쪽에서만 지정.
-        'flex flex-col rounded-lg p-sm transition-[background-color,box-shadow] duration-150',
+        'relative flex flex-col rounded-lg p-sm transition-[background-color,box-shadow] duration-150',
         isDropTarget ? 'bg-surface-card ring-[1.5px] ring-inset ring-ink' : 'bg-surface-soft',
       )}
     >
+      {/* 강조는 따로 얹는다. 이 칸의 글자 색까지 물들이지 않으려고 빈 덧칸을 쓴다. */}
+      {spotlight && (
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-lg animate-ring-pulse motion-reduce:animate-none"
+          style={{ color: STATUS_DOT_COLOR[status] }}
+        />
+      )}
       <div className="flex items-center gap-xs px-xs pb-md pt-xs">
         <span className="h-2 w-2 rounded-pill" style={{ background: STATUS_DOT_COLOR[status] }} aria-hidden />
         <h2 className="text-title-sm text-ink">{STATUS_LABEL[status]}</h2>

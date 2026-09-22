@@ -106,6 +106,18 @@ export default {
           from: { opacity: '0', transform: 'translateY(8px)' },
           to: { opacity: '1', transform: 'translateY(0)' },
         },
+        /*
+         * 대시보드에서 상태 칸을 눌러 들어왔을 때 해당 목록을 한 번 짚어 준다.
+         * 색은 currentColor 로 받는다 — 상태마다 색이 달라서 클래스로는 못 박는다.
+         * 테두리는 두 번 뛰고, 번짐은 처음 한 번만 크게 준다.
+         */
+        'ring-pulse': {
+          '0%': { boxShadow: '0 0 0 0 currentColor, 0 0 0 0 currentColor', opacity: '0.95' },
+          '30%': { boxShadow: '0 0 0 3px currentColor, 0 0 22px 6px currentColor', opacity: '0.6' },
+          '55%': { boxShadow: '0 0 0 1px currentColor, 0 0 0 0 currentColor', opacity: '0.95' },
+          '80%': { boxShadow: '0 0 0 3px currentColor, 0 0 12px 3px currentColor', opacity: '0.5' },
+          '100%': { boxShadow: '0 0 0 0 currentColor, 0 0 0 0 currentColor', opacity: '0' },
+        },
         'slot-in': {
           from: { opacity: '0', transform: 'scaleY(0.6)' },
           to: { opacity: '1', transform: 'scaleY(1)' },
@@ -134,6 +146,7 @@ export default {
         'slot-in': 'slot-in 120ms ease-out',
         'page-in': 'page-in 180ms ease-out',
         'tab-in': 'tab-in 220ms cubic-bezier(0.22, 1, 0.36, 1)',
+        'ring-pulse': 'ring-pulse 1000ms ease-out',
         // 들어올 때는 감속, 나갈 때는 가속 — 미는 손을 놓은 것처럼 느껴진다.
         'slide-in-right': 'slide-in-right 260ms cubic-bezier(0.32, 0.72, 0, 1) both',
         'slide-out-right': 'slide-out-right 200ms cubic-bezier(0.4, 0, 1, 1) both',
