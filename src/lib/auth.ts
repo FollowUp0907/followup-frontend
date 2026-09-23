@@ -52,8 +52,13 @@ export function isTokenExpired(token: string): boolean {
 export function getUserIdFromToken(token: string): number | null {
   const payload = decodeJwtPayload(token)
   const sub = payload?.sub
-  const n = Number(sub)
-  return Number.isFinite(n) ? n : null
+  /*
+   * 양의 정수일 때만 사용자 id 로 인정한다.
+   * Number('') 도, Number(null) 도 0 이라 그냥 Number.isFinite 로 거르면
+   * "id 를 못 읽었다" 가 조용히 0 번 사용자로 둔갑한다.
+   */
+  const n = typeof sub === 'string' || typeof sub === 'number' ? Number(sub) : NaN
+  return Number.isInteger(n) && n > 0 ? n : null
 }
 
 export function saveSession(token: string, profile: Omit<StoredProfile, 'userId'> & { userId?: number }) {

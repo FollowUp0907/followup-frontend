@@ -1583,14 +1583,59 @@ GET /api/project/13/meetings  →  500
 이 API 는 경로 파라미터 말고는 프론트가 보내는 값이 없어서(쿼리·본문 없음) 요청 쪽에서 만들 수 있는
 문제는 아닙니다.
 
-## 확인 부탁드릴 것
+## 확인 부탁드릴 것 — 가능성이 높은 순서
 
-1. **서버 로그의 스택 트레이스** — 어느 줄에서 터지는지
-2. 프로젝트 13번의 **회의 행에 null 이 있는지** — `scheduledAt`, `createdBy`, `title` 등
-   (특히 목록 DTO 로 변환할 때 null 을 못 견디는 필드가 있는지)
-3. 회의 **참여자나 이어받은 업무가 지워진 뒤 남은 참조**가 있는지
-4. 500 응답 본문에 `code` 를 실어 주시면 화면에서 원인을 구분해 안내할 수 있습니다
-   (지금은 공통 문구 "서버에서 오류가 발생했습니다" 로만 보입니다)
+**① 회의를 만든 사람이 지금 프로젝트에 없는 경우** (최근 변경과 시점이 맞습니다)
+
+며칠 전에 **"프로젝트 나가기"** 를 넣었습니다. 소유자가 아닌 구성원이 스스로 빠질 수 있고,
+호출은 기존 `DELETE /api/project/{id}/member/{userId}` 를 씁니다.
+`MeetingListResDto.createdBy` 를 채우면서 **project_member 를 조인**한다면, 나간 사람이 만든
+회의에서 조인이 비어 NPE 가 납니다.
+
+```sql
+-- 13번 프로젝트의 회의를 만든 사람 중, 지금 구성원이 아닌 사람이 있는지
+SELECT m.id, m.title, m.created_by
+FROM meeting m
+WHERE m.project_id = 13
+  AND m.created_by NOT IN (SELECT user_id FROM project_member WHERE project_id = 13);
+```
+
+**② 참여자에 존재하지 않는 사용자 id 가 저장된 경우**
+
+프론트에서 회의를 만들 때 작성자를 참여자로 미리 넣습니다. 그런데 토큰의 `sub` 를 숫자로
+읽지 못하면 사용자 id 가 **0** 이 되는 경로가 있었습니다. 그 상태로 만들었다면
+`participant` 에 `user_id = 0` 이 들어갔을 수 있습니다.
+
+```sql
+SELECT * FROM meeting_participant mp
+WHERE mp.meeting_id IN (SELECT id FROM meeting WHERE project_id = 13)
+  AND mp.user_id NOT IN (SELECT id FROM users);
+```
+
+> **프론트는 고쳤습니다.** 이제 id 가 0 이거나 읽히지 않으면 참여자로 넣지 않습니다.
+> 다만 **이미 저장된 행은 남아 있습니다.** 있으면 지워 주세요.
+
+**③ 이어받은 업무가 나중에 삭제된 경우**
+
+회의를 만들 때 `carryOverActionItemIds` 로 이전 회의의 미완료 업무를 이어받습니다.
+그 업무를 나중에 삭제하면 참조만 남습니다.
+
+```sql
+SELECT * FROM meeting_carry_over c
+WHERE c.action_item_id NOT IN (SELECT id FROM action_item);
+```
+
+**④ 그 외**
+
+- 서버 로그의 **스택 트레이스** — 위 셋 중 어느 것인지 한 번에 가려집니다
+- 500 응답 본문에 `code` 를 실어 주시면 화면에서 원인을 구분해 안내할 수 있습니다
+  (지금은 공통 문구 "서버에서 오류가 발생했습니다" 로만 보입니다)
+
+## 근본 대책 제안
+
+셋 다 **"참조가 끊긴 행 하나 때문에 목록 전체가 죽는"** 모양입니다.
+조인이 비었을 때 그 회의만 값을 비우고 나머지는 내려 주면, 같은 종류의 문제가 다시 나도
+목록이 통째로 막히지는 않습니다.
 
 ## 프론트에서 고친 것
 

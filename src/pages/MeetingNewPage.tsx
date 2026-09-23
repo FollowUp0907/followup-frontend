@@ -43,7 +43,14 @@ export default function MeetingNewPage() {
   // 참여자도 5명씩 끊어 보여 준다.
   const memberPage = usePager(members, 5)
 
-  const [participantIds, setParticipantIds] = useState<number[]>(() => (user ? [user.userId] : []))
+  /*
+   * 만든 사람을 참여자로 미리 넣어 둔다.
+   * 다만 id 를 못 읽어 0 이 들어간 경우는 넣지 않는다 — 없는 사용자를 참여자로
+   * 저장하면 나중에 회의 목록을 읽을 때 터진다.
+   */
+  const [participantIds, setParticipantIds] = useState<number[]>(() =>
+    user && user.userId > 0 ? [user.userId] : [],
+  )
   const [carryOverIds, setCarryOverIds] = useState<number[]>([])
   const [confirmOpen, setConfirmOpen] = useState(false)
   // 회의를 만들다가 빠진 사람이 보이면 여기서 바로 추가할 수 있게 한다.
@@ -134,7 +141,10 @@ export default function MeetingNewPage() {
         title: values.title,
         scheduledAt: fromDateTimeLocalInput(values.scheduledAt),
         content: content.trim() || undefined,
-        participantIds: participantIds.length ? participantIds : undefined,
+        // 혹시라도 섞인 빈 id 는 보내지 않는다.
+        participantIds: participantIds.filter((id) => id > 0).length
+          ? participantIds.filter((id) => id > 0)
+          : undefined,
         carryOverActionItemIds: carryOverIds.length ? carryOverIds : undefined,
       })
       toast.success('회의를 만들었습니다.')
