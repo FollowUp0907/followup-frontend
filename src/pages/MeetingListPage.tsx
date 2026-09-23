@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { errorMessage } from '@/api/client'
-import { Crown, Plus, Search } from 'lucide-react'
+import { PenLine, Plus, Search } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PageWidth } from '@/components/layout/PageWidth'
 import { Pager, usePager } from '@/components/ui/Pager'
@@ -17,8 +17,13 @@ import { dayjs } from '@/lib/date'
 
 export default function MeetingListPage() {
   const { projectId, members } = useProjectContext()
-  // 회의마다 이 프로젝트를 누가 맡고 있는지 같이 보여준다.
-  const ownerName = members.find((m) => m.role === 'OWNER')?.name
+  /*
+   * 회의마다 그 회의를 만든 사람을 보여준다. (프로젝트 소유자가 아니다)
+   * 목록 응답에는 만든 사람의 userId 만 있어서 구성원 목록에서 이름을 찾는다.
+   * 그 사이 프로젝트를 나간 사람이면 찾지 못하는데, 그때는 이름 없이 둔다 —
+   * "알 수 없음" 이라고 적는 것보다 낫다.
+   */
+  const creatorName = (userId?: number) => members.find((m) => m.userId === userId)?.name
   const { data, isPending, isError, error, refetch } = useMeetings(projectId)
   const [query, setQuery] = useState('')
   // 백엔드가 확정 후에도 status 를 DRAFT 로 두기 때문에 화면에서 다시 판정한다.
@@ -111,12 +116,12 @@ export default function MeetingListPage() {
                   </div>
                   <p className="mt-xxs flex flex-wrap items-center gap-xs text-body-sm text-muted">
                     <span>{formatDateTime(m.scheduledAt)}</span>
-                    {ownerName && (
+                    {creatorName(m.createdBy) && (
                       <>
                         <span aria-hidden>·</span>
                         <span className="inline-flex items-center gap-xxs text-muted-soft">
-                          <Crown size={12} aria-hidden />
-                          소유자 {ownerName}
+                          <PenLine size={12} aria-hidden />
+                          {creatorName(m.createdBy)} 작성
                         </span>
                       </>
                     )}
